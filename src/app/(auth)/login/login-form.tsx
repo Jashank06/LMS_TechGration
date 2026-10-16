@@ -3,17 +3,17 @@
 import * as React from "react"
 import Link from "next/link"
 import { useTransition } from "react"
-import { loginAction, demoLoginAction } from "@/actions/auth"
+import { motion } from "motion/react"
+import { loginAction } from "@/actions/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { InlineAlert } from "@/components/feedback/inline-alert"
-import { Eye, EyeOff, Loader2, Sparkles, GraduationCap, School, ShieldAlert, ArrowRight } from "lucide-react"
+import { Eye, EyeOff, Loader2, ArrowRight, Mail, Lock, Sparkles, ShieldCheck } from "lucide-react"
 
 export function LoginForm() {
   const [isPending, startTransition] = useTransition()
-  const [demoPendingRole, setDemoPendingRole] = React.useState<string | null>(null)
   const [showPassword, setShowPassword] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
@@ -30,144 +30,96 @@ export function LoginForm() {
     })
   }
 
-  function handleDemoLogin(role: "student" | "teacher" | "admin") {
-    setError(null)
-    setDemoPendingRole(role)
-    startTransition(async () => {
-      const result = await demoLoginAction(role)
-      if (result && !result.success) {
-        setError(result.error || `Could not sign in with ${role} demo account.`)
-        setDemoPendingRole(null)
-      }
-    })
-  }
-
   return (
-    <div className="space-y-6">
-      {/* 1-Click Demo Login Banner */}
-      <div className="rounded-xl border border-brand-teal/40 bg-brand-teal/5 dark:bg-brand-teal/10 p-4 shadow-sm">
-        <div className="flex items-center gap-2 mb-2 text-xs font-semibold uppercase tracking-wider text-brand-ink dark:text-brand-teal">
-          <Sparkles className="w-4 h-4 text-brand-teal animate-pulse" />
-          <span>Instant 1-Click Demo Access</span>
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, ease: "easeOut" }}
+      className="relative rounded-3xl p-7 sm:p-9 border border-border/80 dark:border-white/10 bg-card/85 dark:bg-[#0c1117]/85 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] overflow-hidden"
+    >
+      {/* Specular top rim highlight */}
+      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-brand-teal to-transparent opacity-80" />
+
+      {/* Security Badge & Header */}
+      <div className="mb-6">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-teal/10 dark:bg-brand-teal/15 border border-brand-teal/30 text-brand-ink dark:text-brand-teal text-[11px] font-semibold uppercase tracking-wider mb-3">
+          <Sparkles className="w-3.5 h-3.5 text-brand-teal animate-pulse" />
+          <span>Enterprise Secure Login</span>
         </div>
-        <p className="text-xs text-muted-foreground mb-3">
-          Click any role to test the live portal immediately without typing credentials:
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+          Welcome back
+        </h1>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1.5 leading-relaxed">
+          Access your courses, scheduled live classes, and verified certificates.
         </p>
-        <div className="grid grid-cols-3 gap-2">
-          <Button
-            type="button"
-            variant="default"
-            size="sm"
-            disabled={isPending}
-            onClick={() => handleDemoLogin("student")}
-            className="flex items-center justify-center gap-1.5 text-xs font-medium bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal shadow-sm transition-all"
-          >
-            {demoPendingRole === "student" ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <GraduationCap className="w-3.5 h-3.5" />
-            )}
-            <span>Student</span>
-          </Button>
-
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={isPending}
-            onClick={() => handleDemoLogin("teacher")}
-            className="flex items-center justify-center gap-1.5 text-xs font-medium border-border hover:border-brand-teal/40 transition-all"
-          >
-            {demoPendingRole === "teacher" ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <School className="w-3.5 h-3.5" />
-            )}
-            <span>Teacher</span>
-          </Button>
-
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={isPending}
-            onClick={() => handleDemoLogin("admin")}
-            className="flex items-center justify-center gap-1.5 text-xs font-medium border-border hover:border-brand-teal/40 transition-all"
-          >
-            {demoPendingRole === "admin" ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <ShieldAlert className="w-3.5 h-3.5" />
-            )}
-            <span>Admin</span>
-          </Button>
-        </div>
-      </div>
-
-      <div className="relative flex items-center">
-        <div className="flex-grow border-t border-border" />
-        <span className="flex-shrink mx-4 text-xs uppercase tracking-wider text-muted-foreground font-medium">
-          Or sign in with email
-        </span>
-        <div className="flex-grow border-t border-border" />
       </div>
 
       {error && (
-        <InlineAlert
-          variant="error"
-          title="Sign-in failed"
-          message={error}
-        />
+        <div className="mb-5">
+          <InlineAlert
+            variant="error"
+            title="Sign-in failed"
+            message={error}
+          />
+        </div>
       )}
 
       {/* Main Login Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email" className="text-xs font-medium">
-            Email address
+        {/* Email Field with embedded icon */}
+        <div className="space-y-1.5 group">
+          <Label htmlFor="email" className="text-xs font-semibold text-foreground/90">
+            Work or Student Email
           </Label>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            placeholder="student@techgration.com"
-            defaultValue="student@techgration.com"
-            disabled={isPending}
-            className="h-10 text-sm focus-visible:ring-brand-teal"
-          />
+          <div className="relative">
+            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-brand-teal transition-colors pointer-events-none">
+              <Mail className="w-4 h-4" />
+            </div>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="username"
+              required
+              placeholder="name@company.com"
+              disabled={isPending}
+              className="h-11 sm:h-12 pl-10 pr-4 text-sm rounded-xl border border-border/80 dark:border-white/10 bg-background/60 dark:bg-black/30 placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-brand-teal/40 focus-visible:border-brand-teal transition-all shadow-inner"
+            />
+          </div>
         </div>
 
-        <div className="space-y-2">
+        {/* Password Field with embedded icon and peek button */}
+        <div className="space-y-1.5 group">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password" className="text-xs font-medium">
+            <Label htmlFor="password" className="text-xs font-semibold text-foreground/90">
               Password
             </Label>
             <Link
               href="/forgot-password"
-              className="text-xs text-brand-ink dark:text-brand-teal hover:underline font-medium transition-colors"
+              className="text-xs text-brand-ink dark:text-brand-teal font-medium hover:underline transition-colors"
             >
               Forgot password?
             </Link>
           </div>
           <div className="relative">
+            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-brand-teal transition-colors pointer-events-none">
+              <Lock className="w-4 h-4" />
+            </div>
             <Input
               id="password"
               name="password"
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"
               required
-              placeholder="••••••••"
-              defaultValue="Student@123"
+              placeholder="••••••••••••"
               disabled={isPending}
-              className="h-10 text-sm pr-10 focus-visible:ring-brand-teal"
+              className="h-11 sm:h-12 pl-10 pr-10 text-sm rounded-xl border border-border/80 dark:border-white/10 bg-background/60 dark:bg-black/30 placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-brand-teal/40 focus-visible:border-brand-teal transition-all shadow-inner"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               aria-label={showPassword ? "Hide password" : "Show password"}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-teal"
             >
               {showPassword ? (
                 <EyeOff className="w-4 h-4" />
@@ -178,46 +130,60 @@ export function LoginForm() {
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 pt-1">
+        {/* Remember me option */}
+        <div className="flex items-center space-x-2 pt-1 pb-1">
           <Checkbox id="remember" name="remember" defaultChecked />
           <Label
             htmlFor="remember"
             className="text-xs font-normal text-muted-foreground cursor-pointer select-none"
           >
-            Keep me signed in on this device
+            Keep me securely signed in on this device
           </Label>
         </div>
 
-        <Button
-          type="submit"
-          disabled={isPending}
-          className="w-full h-10 font-semibold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal transition-all shadow-md mt-2"
-        >
-          {isPending && !demoPendingRole ? (
-            <div className="flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Verifying credentials...</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1.5">
-              <span>Sign In to Student Portal</span>
-              <ArrowRight className="w-4 h-4" />
-            </div>
-          )}
-        </Button>
+        {/* High-Impact Cyber Shimmer Button */}
+        <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+          <Button
+            type="submit"
+            disabled={isPending}
+            className="relative group overflow-hidden w-full h-11 sm:h-12 rounded-xl font-bold text-sm tracking-wide bg-gradient-to-r from-brand-teal via-[#2ceeee] to-brand-teal text-brand-charcoal shadow-[0_4px_25px_-4px_rgba(0,214,214,0.4)] hover:shadow-[0_6px_30px_-3px_rgba(0,214,214,0.6)] transition-all duration-300 mt-2"
+          >
+            {/* Shimmer sweep effect */}
+            <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/35 to-transparent pointer-events-none" />
+
+            {isPending ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-brand-charcoal" />
+                <span>Authenticating credentials...</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span>Sign In to Learning Portal</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            )}
+          </Button>
+        </motion.div>
       </form>
 
-      <div className="text-center pt-2">
-        <p className="text-xs text-muted-foreground">
-          Don&apos;t have an account yet?{" "}
+      {/* Switch to Register */}
+      <div className="mt-6 pt-5 border-t border-border/60 dark:border-white/10 text-center">
+        <p className="text-xs text-muted-foreground font-normal">
+          Don&apos;t have an enterprise account?{" "}
           <Link
             href="/register"
-            className="text-brand-ink dark:text-brand-teal font-semibold hover:underline transition-colors"
+            className="text-brand-ink dark:text-brand-teal font-semibold hover:underline transition-colors ml-1"
           >
             Create an account
           </Link>
         </p>
       </div>
-    </div>
+
+      {/* Security footer note */}
+      <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground/80">
+        <ShieldCheck className="w-3.5 h-3.5 text-brand-teal" />
+        <span>End-to-End TLS Encryption & Zero-Trust Session</span>
+      </div>
+    </motion.div>
   )
 }

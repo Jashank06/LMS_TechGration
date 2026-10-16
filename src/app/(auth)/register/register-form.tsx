@@ -23,6 +23,8 @@ import {
   RefreshCw,
   Edit2,
   Sparkles,
+  User,
+  Lock,
 } from "lucide-react"
 
 export function RegisterForm() {
@@ -207,13 +209,48 @@ export function RegisterForm() {
   }
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, ease: "easeOut" }}
+      className="relative rounded-3xl p-7 sm:p-9 border border-border/80 dark:border-white/10 bg-card/85 dark:bg-[#0c1117]/85 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] overflow-hidden"
+    >
+      {/* Specular top rim highlight */}
+      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-brand-teal to-transparent opacity-80" />
+
+      {/* Header & Step Pill */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-teal/10 dark:bg-brand-teal/15 border border-brand-teal/30 text-brand-ink dark:text-brand-teal text-[11px] font-semibold uppercase tracking-wider">
+            <Sparkles className="w-3.5 h-3.5 text-brand-teal animate-pulse" />
+            <span>{step === 1 ? "Step 1 of 2: Create Account" : step === 2 ? "Step 2 of 2: Verify Email" : "All Set!"}</span>
+          </div>
+
+          <span className="text-[11px] font-mono font-medium text-muted-foreground">
+            {step === 1 ? "1 / 2" : step === 2 ? "2 / 2" : "✓"}
+          </span>
+        </div>
+
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+          {step === 1 ? "Create student account" : step === 2 ? "Verify your email" : "Welcome aboard!"}
+        </h1>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1.5 leading-relaxed">
+          {step === 1
+            ? "Start your journey with hands-on labs, live classes, and verified certificates."
+            : step === 2
+            ? "Enter the 6-digit one-time code sent to your email to verify identity."
+            : "Your account is active. Preparing your workspace..."}
+        </p>
+      </div>
+
       {error && (
-        <InlineAlert
-          variant="error"
-          title="Registration alert"
-          message={error}
-        />
+        <div className="mb-5">
+          <InlineAlert
+            variant="error"
+            title="Registration alert"
+            message={error}
+          />
+        </div>
       )}
 
       <AnimatePresence mode="wait">
@@ -221,56 +258,72 @@ export function RegisterForm() {
         {step === 1 && (
           <motion.form
             key="step-1"
-            initial={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, x: -16 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
+            exit={{ opacity: 0, x: 16 }}
             transition={{ duration: 0.25 }}
             onSubmit={handleSendOtp}
             className="space-y-4"
           >
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-xs font-medium text-foreground">
-                Full name
+            {/* Full Name */}
+            <div className="space-y-1.5 group">
+              <Label htmlFor="name" className="text-xs font-semibold text-foreground/90">
+                Full Name
               </Label>
-              <Input
-                id="name"
-                name="name"
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Aarav Sharma"
-                disabled={isLoading}
-                className="h-10 text-sm focus-visible:ring-brand-teal"
-              />
+              <div className="relative">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-brand-teal transition-colors pointer-events-none">
+                  <User className="w-4 h-4" />
+                </div>
+                <Input
+                  id="name"
+                  name="name"
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Aarav Sharma"
+                  disabled={isLoading}
+                  className="h-11 sm:h-12 pl-10 pr-4 text-sm rounded-xl border border-border/80 dark:border-white/10 bg-background/60 dark:bg-black/30 placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-brand-teal/40 focus-visible:border-brand-teal transition-all shadow-inner"
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-xs font-medium text-foreground">
-                Email address
+            {/* Email Address */}
+            <div className="space-y-1.5 group">
+              <Label htmlFor="email" className="text-xs font-semibold text-foreground/90">
+                Email Address
               </Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="aarav@company.com"
-                disabled={isLoading}
-                className="h-10 text-sm focus-visible:ring-brand-teal"
-              />
-              <p className="text-[11px] text-muted-foreground">
+              <div className="relative">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-brand-teal transition-colors pointer-events-none">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="aarav@company.com"
+                  disabled={isLoading}
+                  className="h-11 sm:h-12 pl-10 pr-4 text-sm rounded-xl border border-border/80 dark:border-white/10 bg-background/60 dark:bg-black/30 placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-brand-teal/40 focus-visible:border-brand-teal transition-all shadow-inner"
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground/80 pl-1">
                 A 6-digit verification code will be sent to this email.
               </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-xs font-medium text-foreground">
-                Create password
+            {/* Password */}
+            <div className="space-y-1.5 group">
+              <Label htmlFor="password" className="text-xs font-semibold text-foreground/90">
+                Create Secure Password
               </Label>
               <div className="relative">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-brand-teal transition-colors pointer-events-none">
+                  <Lock className="w-4 h-4" />
+                </div>
                 <Input
                   id="password"
                   name="password"
@@ -281,13 +334,13 @@ export function RegisterForm() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="At least 8 characters"
                   disabled={isLoading}
-                  className="h-10 text-sm pr-10 focus-visible:ring-brand-teal"
+                  className="h-11 sm:h-12 pl-10 pr-10 text-sm rounded-xl border border-border/80 dark:border-white/10 bg-background/60 dark:bg-black/30 placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-brand-teal/40 focus-visible:border-brand-teal transition-all shadow-inner"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-teal"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -295,36 +348,37 @@ export function RegisterForm() {
 
               {/* Password Strength Indicator */}
               {password && (
-                <div className="space-y-2 pt-1">
+                <div className="space-y-2 pt-1.5 p-3 rounded-xl bg-muted/40 border border-border/50">
                   <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-muted-foreground">Password strength:</span>
+                    <span className="text-muted-foreground font-medium">Strength:</span>
                     <span className="font-semibold text-foreground">{strength.label}</span>
                   </div>
-                  <div className="h-1.5 w-full bg-muted/60 rounded-full overflow-hidden">
+                  <div className="h-1.5 w-full bg-muted/80 rounded-full overflow-hidden">
                     <div
                       className={`h-full transition-all duration-300 rounded-full ${strength.color}`}
                       style={{ width: strength.width }}
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-1 text-[10px] text-muted-foreground pt-1">
-                    <span className={passCheck.length ? "text-emerald-500 font-medium" : ""}>
-                      ✓ 8+ Characters
+                  <div className="grid grid-cols-2 gap-1 text-[10px] text-muted-foreground pt-0.5">
+                    <span className={passCheck.length ? "text-emerald-500 font-semibold" : ""}>
+                      {passCheck.length ? "✓" : "○"} 8+ Characters
                     </span>
-                    <span className={passCheck.uppercase ? "text-emerald-500 font-medium" : ""}>
-                      ✓ 1 Uppercase Letter
+                    <span className={passCheck.uppercase ? "text-emerald-500 font-semibold" : ""}>
+                      {passCheck.uppercase ? "✓" : "○"} 1 Uppercase Letter
                     </span>
-                    <span className={passCheck.number ? "text-emerald-500 font-medium" : ""}>
-                      ✓ 1 Number
+                    <span className={passCheck.number ? "text-emerald-500 font-semibold" : ""}>
+                      {passCheck.number ? "✓" : "○"} 1 Number
                     </span>
-                    <span className={passCheck.special ? "text-emerald-500 font-medium" : ""}>
-                      ✓ 1 Special Character
+                    <span className={passCheck.special ? "text-emerald-500 font-semibold" : ""}>
+                      {passCheck.special ? "✓" : "○"} 1 Special Symbol
                     </span>
                   </div>
                 </div>
               )}
             </div>
 
-            <div className="flex items-start space-x-2 pt-2">
+            {/* Terms checkbox */}
+            <div className="flex items-start space-x-2 pt-1">
               <Checkbox
                 id="terms"
                 checked={termsAccepted}
@@ -336,35 +390,40 @@ export function RegisterForm() {
                 className="text-xs font-normal text-muted-foreground leading-snug cursor-pointer select-none"
               >
                 I agree to the{" "}
-                <Link href="/terms" className="text-brand-teal hover:underline">
+                <Link href="/terms" className="text-brand-ink dark:text-brand-teal font-medium hover:underline">
                   Terms of Service
                 </Link>{" "}
                 and{" "}
-                <Link href="/privacy" className="text-brand-teal hover:underline">
+                <Link href="/privacy" className="text-brand-ink dark:text-brand-teal font-medium hover:underline">
                   Privacy Policy
                 </Link>
                 .
               </Label>
             </div>
 
-            <Button
-              type="submit"
-              disabled={isLoading || !name || !email || !password}
-              className="w-full h-10 font-semibold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal transition-all shadow-md mt-4"
-            >
-              {isLoading ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Sending verification code...</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5">
-                  <Mail className="w-4 h-4" />
-                  <span>Verify Email & Continue</span>
-                  <ArrowRight className="w-4 h-4" />
-                </div>
-              )}
-            </Button>
+            {/* Shimmer Button */}
+            <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+              <Button
+                type="submit"
+                disabled={isLoading || !name || !email || !password}
+                className="relative group overflow-hidden w-full h-11 sm:h-12 rounded-xl font-bold text-sm tracking-wide bg-gradient-to-r from-brand-teal via-[#2ceeee] to-brand-teal text-brand-charcoal shadow-[0_4px_25px_-4px_rgba(0,214,214,0.4)] hover:shadow-[0_6px_30px_-3px_rgba(0,214,214,0.6)] transition-all duration-300 mt-2"
+              >
+                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/35 to-transparent pointer-events-none" />
+
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-brand-charcoal" />
+                    <span>Sending verification code...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4" />
+                    <span>Send Verification Code</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                )}
+              </Button>
+            </motion.div>
           </motion.form>
         )}
 
@@ -372,23 +431,23 @@ export function RegisterForm() {
         {step === 2 && (
           <motion.div
             key="step-2"
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 16 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
+            exit={{ opacity: 0, x: -16 }}
             transition={{ duration: 0.25 }}
-            className="space-y-6"
+            className="space-y-5"
           >
             {/* Recipient email pill with edit button */}
-            <div className="flex items-center justify-between p-3 rounded-xl bg-card/80 border border-border">
+            <div className="flex items-center justify-between p-3 rounded-2xl bg-muted/40 border border-border/70 dark:border-white/10">
               <div className="flex items-center gap-2.5 overflow-hidden">
-                <div className="w-8 h-8 rounded-lg bg-brand-teal/15 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-brand-teal/15 flex items-center justify-center shrink-0">
                   <Mail className="w-4 h-4 text-brand-teal" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">
-                    Code dispatched to
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                    Code sent to
                   </p>
-                  <p className="text-xs font-medium text-foreground truncate">{email}</p>
+                  <p className="text-xs font-semibold text-foreground truncate">{email}</p>
                 </div>
               </div>
               <Button
@@ -397,7 +456,7 @@ export function RegisterForm() {
                 size="sm"
                 onClick={() => setStep(1)}
                 disabled={isLoading}
-                className="h-8 text-xs text-muted-foreground hover:text-foreground shrink-0 gap-1"
+                className="h-8 text-xs text-muted-foreground hover:text-foreground shrink-0 gap-1 rounded-lg"
               >
                 <Edit2 className="w-3.5 h-3.5" />
                 <span>Change</span>
@@ -409,10 +468,10 @@ export function RegisterForm() {
                 Enter 6-Digit Verification Code
               </h2>
               <p className="text-xs text-muted-foreground">
-                Check your inbox (and spam folder) for the one-time code.
+                Check your inbox (and spam folder) for the verification code.
               </p>
 
-              <div className="pt-2">
+              <div className="pt-2 flex justify-center">
                 <OtpInput
                   length={6}
                   value={otpCode}
@@ -436,7 +495,7 @@ export function RegisterForm() {
                   type="button"
                   onClick={handleResendOtp}
                   disabled={isLoading}
-                  className="inline-flex items-center gap-1.5 text-xs text-brand-teal hover:underline font-medium transition-colors"
+                  className="inline-flex items-center gap-1.5 text-xs text-brand-ink dark:text-brand-teal hover:underline font-semibold transition-colors"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                   <span>Resend Verification Code</span>
@@ -444,31 +503,35 @@ export function RegisterForm() {
               ) : (
                 <p className="text-xs text-muted-foreground">
                   Resend code in{" "}
-                  <span className="font-mono font-semibold text-foreground">
+                  <span className="font-mono font-bold text-foreground">
                     {resendCooldown}s
                   </span>
                 </p>
               )}
             </div>
 
-            <Button
-              type="button"
-              onClick={() => handleVerifyOtp()}
-              disabled={isLoading || otpCode.length !== 6}
-              className="w-full h-10 font-semibold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal transition-all shadow-md"
-            >
-              {isLoading ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Verifying code & creating account...</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>Verify & Launch Account</span>
-                </div>
-              )}
-            </Button>
+            <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+              <Button
+                type="button"
+                onClick={() => handleVerifyOtp()}
+                disabled={isLoading || otpCode.length !== 6}
+                className="relative group overflow-hidden w-full h-11 sm:h-12 rounded-xl font-bold text-sm tracking-wide bg-gradient-to-r from-brand-teal via-[#2ceeee] to-brand-teal text-brand-charcoal shadow-[0_4px_25px_-4px_rgba(0,214,214,0.4)] hover:shadow-[0_6px_30px_-3px_rgba(0,214,214,0.6)] transition-all duration-300"
+              >
+                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/35 to-transparent pointer-events-none" />
+
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-brand-charcoal" />
+                    <span>Verifying code & creating account...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Verify & Launch Account</span>
+                  </div>
+                )}
+              </Button>
+            </motion.div>
           </motion.div>
         )}
 
@@ -484,32 +547,39 @@ export function RegisterForm() {
               <CheckCircle2 className="w-8 h-8 text-brand-teal animate-bounce" />
             </div>
             <div className="space-y-1">
-              <h2 className="text-xl font-bold tracking-tight text-foreground">
+              <h2 className="text-xl font-extrabold tracking-tight text-foreground">
                 Welcome to TechGration LMS!
               </h2>
               <p className="text-xs text-muted-foreground">
                 Your email has been verified. Redirecting to your dashboard...
               </p>
             </div>
-            <div className="flex items-center justify-center gap-2 pt-2 text-xs text-brand-teal font-medium">
+            <div className="flex items-center justify-center gap-2 pt-2 text-xs text-brand-ink dark:text-brand-teal font-medium">
               <Sparkles className="w-4 h-4 animate-spin" />
-              <span>Initializing workspace...</span>
+              <span>Initializing personalized workspace...</span>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="text-center pt-2">
-        <p className="text-xs text-muted-foreground">
+      {/* Switch to Sign In */}
+      <div className="mt-6 pt-5 border-t border-border/60 dark:border-white/10 text-center">
+        <p className="text-xs text-muted-foreground font-normal">
           Already have an account?{" "}
           <Link
             href="/login"
-            className="text-brand-ink dark:text-brand-teal font-semibold hover:underline transition-colors"
+            className="text-brand-ink dark:text-brand-teal font-semibold hover:underline transition-colors ml-1"
           >
             Sign in
           </Link>
         </p>
       </div>
-    </div>
+
+      {/* Security footer note */}
+      <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground/80">
+        <ShieldCheck className="w-3.5 h-3.5 text-brand-teal" />
+        <span>End-to-End TLS Encryption & Zero-Trust Session</span>
+      </div>
+    </motion.div>
   )
 }

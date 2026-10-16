@@ -96,7 +96,11 @@ export function BrandLogo({
                 Tech<span className="text-brand-ink dark:text-brand-teal font-bold">Gration</span>
               </span>
               <span className="text-[11px] text-muted-foreground font-medium">
-                Student Portal
+                {portalName === "LMS"
+                  ? "Enterprise LMS"
+                  : portalName
+                  ? `${portalName} Portal`
+                  : "Enterprise LMS"}
               </span>
             </div>
           </div>
