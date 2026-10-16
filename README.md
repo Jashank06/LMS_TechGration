@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TechGration LMS — Learning Management System
 
-## Getting Started
+Enterprise-grade Learning Management System powered by **Next.js 16 (App Router)**, **React 19**, **Tailwind CSS v4**, **Motion (v14)**, **Prisma ORM**, and **MongoDB**.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🍃 Database Architecture: MongoDB
+
+The entire database layer is natively backed by **MongoDB** (MongoDB Atlas Cloud Cluster or Docker MongoDB with replica set `rs0` for multi-document ACID transactions).
+
+### Environment Configuration (`.env`)
+```env
+DATABASE_URL="mongodb+srv://<db_username>:<db_password>@cluster0.95o6h5q.mongodb.net/techgration_lms?retryWrites=true&w=majority&appName=Cluster0"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Database Management Commands
+- **Sync Schema & Indexes to MongoDB**:
+  ```bash
+  pnpm db:push
+  # or: npx prisma db push
+  ```
+- **Seed Sample Data to MongoDB**:
+  ```bash
+  pnpm db:seed
+  # or: npx tsx prisma/seed.ts
+  ```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛡️ Administrative Portal & Test Credentials
 
-## Learn More
+Access the Admin Command Center at `/admin/login` (or `/login`).
 
-To learn more about Next.js, take a look at the following resources:
+| Role | Email | Password | Scope |
+|---|---|---|---|
+| **Super Admin** | `superadmin@techgration.com` | `SuperAdmin@2026!` | Full platform authority & immutable permissions |
+| **Operations Admin** | `admin@techgration.com` | `Admin@2026!` | User management, course review, and billing |
+| **Instructor** | `rohit.sharma@techgration.com` | `Teacher@2026!` | Curriculum authoring and live classrooms |
+| **Student** | `arjun.patel@techgration.com` | `Student@2026!` | Course catalog, video lessons, assignments |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+*Tip: The login screen includes 1-click **Demo Account Switcher** buttons to instantly test any role.*
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 🚀 Running the Project
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+# Install dependencies
+pnpm install
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Start development server
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) for the public landing page or [http://localhost:3000/admin/dashboard](http://localhost:3000/admin/dashboard) for the administrative console.

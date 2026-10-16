@@ -1,0 +1,686 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  ALL_LEVELS
+}
+
+enum CourseFormat {
+  SELF_PACED
+  LIVE_INTERACTIVE
+  HYBRID
+}
+
+enum LessonType {
+  VIDEO
+  READING
+  QUIZ
+  ASSIGNMENT
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum LiveClassStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  IN_REVIEW
+  GRADED
+  LATE
+}
+
+enum QuestionType {
+  MCQ_SINGLE
+  MCQ_MULTI
+  TRUE_FALSE
+  SHORT_ANSWER
+}
+
+enum CourseApprovalStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  NEEDS_REVISION
+  PUBLISHED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum MeetingPlatform {
+  ZOOM
+  GOOGLE_MEET
+  TEAMS
+  CUSTOM
+}
+
+enum DispatchKind {
+  SCHEDULED
+  REMINDER
+  RESCHEDULED
+  CANCELLED
+  MANUAL
+}
+
+enum DispatchStatus {
+  PROCESSING
+  SENT
+  PARTIAL
+  FAILED
+  SKIPPED
+  CANCELLED
+}
+
+enum OtpPurpose {
+  REGISTRATION
+  PASSWORD_RESET
+}
+
+model User {
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  email        String      @unique
+  passwordHash String
+  name         String
+  role         Role        @default(STUDENT)
+  status       UserStatus  @default(ACTIVE)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  profile            UserProfile?
+  sessions           Session[]
+  enrollments        Enrollment[]
+  lessonProgress     LessonProgress[]
+  bookmarks          Bookmark[]
+  notes              LearningNote[]
+  discussions        LessonDiscussion[]
+  submissions        AssignmentSubmission[]
+  assessmentAttempts AssessmentAttempt[]
+  attendanceRecords  AttendanceRecord[]
+  certificates       Certificate[]
+  notifications      Notification[]
+  payments           PaymentTransaction[]
+  auditLogs          AuditLog[]
+  taughtCourses      Course[]    @relation("CourseInstructor")
+  invitedById        String?     @db.ObjectId
+}
+
+model UserProfile {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @unique @db.ObjectId
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatarUrl     String?
+  headline      String?
+  bio           String?
+  phone         String?
+  timezone      String   @default("Asia/Kolkata")
+  education     String?
+  learningGoals String?
+  leaderboardAnonymous Boolean @default(false)
+}
+
+model Session {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Course {
+  id              String               @id @default(auto()) @map("_id") @db.ObjectId
+  slug            String               @unique
+  title           String
+  subtitle        String?
+  description     String
+  thumbnailUrl    String
+  category        String
+  level           CourseLevel          @default(ALL_LEVELS)
+  format          CourseFormat         @default(HYBRID)
+  instructorName  String
+  instructorTitle String
+  durationHours   Int                  @default(12)
+  outcomes        String[]
+  prerequisites   String[]
+  isPublished     Boolean              @default(true)
+  isFeatured      Boolean              @default(false)
+  approvalStatus  CourseApprovalStatus @default(PUBLISHED)
+  reviewerNotes   String?
+  reviewedById    String?              @db.ObjectId
+  reviewedAt      DateTime?
+  submittedAt     DateTime?
+  price           Float                @default(0)
+  compareAtPrice  Float?
+  currency        String               @default("INR")
+  categoryId      String?              @db.ObjectId
+  categoryRel     Category?            @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  instructorId    String?              @db.ObjectId
+  instructor      User?                @relation("CourseInstructor", fields: [instructorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdById     String?              @db.ObjectId
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  modules      Module[]
+  enrollments  Enrollment[]
+  liveClasses  LiveClass[]
+  assignments  Assignment[]
+  assessments  Assessment[]
+  certificates Certificate[]
+  payments     PaymentTransaction[]
+  materials    CourseMaterial[]
+
+  @@index([category])
+  @@index([approvalStatus])
+  @@index([instructorId])
+}
+
+model Module {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  courseId    String   @db.ObjectId
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  position    Int
+  createdAt   DateTime @default(now())
+
+  lessons Lesson[]
+
+  @@index([courseId, position])
+}
+
+model Lesson {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  moduleId    String     @db.ObjectId
+  module      Module     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title       String
+  slug        String
+  type        LessonType @default(VIDEO)
+  durationSec Int        @default(600)
+  position    Int
+  videoUrl    String?
+  content     String?
+  isPreview   Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+
+  resources   LessonResource[]
+  progress    LessonProgress[]
+  bookmarks   Bookmark[]
+  notes       LearningNote[]
+  discussions LessonDiscussion[]
+
+  @@index([moduleId, position])
+}
+
+model LessonResource {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  lessonId String @db.ObjectId
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  title    String
+  fileUrl  String
+  fileSize String
+  fileType String
+}
+
+model CourseMaterial {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  courseId  String   @db.ObjectId
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title     String
+  fileUrl   String
+  fileSize  String   @default("1.0 MB")
+  fileType  String   @default("PDF")
+  createdAt DateTime @default(now())
+
+  @@index([courseId])
+}
+
+model Enrollment {
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String           @db.ObjectId
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId       String           @db.ObjectId
+  course         Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status         EnrollmentStatus @default(ACTIVE)
+  progressPct    Float            @default(0)
+  enrolledAt     DateTime         @default(now())
+  completedAt    DateTime?
+  lastAccessedAt DateTime         @default(now())
+  lastLessonId   String?
+
+  @@unique([userId, courseId])
+  @@index([userId, status])
+}
+
+model LessonProgress {
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String         @db.ObjectId
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId    String         @db.ObjectId
+  lesson      Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  status      ProgressStatus @default(NOT_STARTED)
+  positionSec Int            @default(0)
+  watchedSec  Int            @default(0)
+  completedAt DateTime?
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([userId, lessonId])
+}
+
+model Bookmark {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId  String   @db.ObjectId
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, lessonId])
+}
+
+model LearningNote {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @db.ObjectId
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId     String   @db.ObjectId
+  lesson       Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  body         String
+  timestampSec Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId, lessonId])
+}
+
+model LessonDiscussion {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  lessonId   String    @db.ObjectId
+  lesson     Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  userId     String    @db.ObjectId
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  authorName String
+  authorRole String    @default("Student")
+  question   String
+  answer     String?
+  answeredAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([lessonId])
+}
+
+model LiveClass {
+  id             String          @id @default(auto()) @map("_id") @db.ObjectId
+  courseId       String          @db.ObjectId
+  course         Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title          String
+  description    String?
+  instructorName String
+  startsAt       DateTime
+  endsAt         DateTime
+  timezone       String          @default("Asia/Kolkata")
+  meetingUrl     String
+  recordingUrl   String?
+  status         LiveClassStatus @default(SCHEDULED)
+  createdAt      DateTime        @default(now())
+
+  instructorId       String?         @db.ObjectId
+  platform           MeetingPlatform @default(ZOOM)
+  reminderOffsetsMin Int[]
+  joinOpensMinBefore Int             @default(10)
+
+  attendances AttendanceRecord[]
+  dispatches  ReminderDispatch[]
+
+  @@index([courseId, startsAt])
+  @@index([instructorId, startsAt])
+  @@index([status, startsAt])
+}
+
+model AttendanceRecord {
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  liveClassId String           @db.ObjectId
+  liveClass   LiveClass        @relation(fields: [liveClassId], references: [id], onDelete: Cascade)
+  userId      String           @db.ObjectId
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      AttendanceStatus @default(PRESENT)
+  markedAt    DateTime         @default(now())
+
+  @@unique([liveClassId, userId])
+}
+
+model Assignment {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  courseId     String   @db.ObjectId
+  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title        String
+  instructions String
+  maxMarks     Int      @default(100)
+  dueAt        DateTime
+  attachments  String[]
+  createdAt    DateTime @default(now())
+
+  submissions AssignmentSubmission[]
+
+  @@index([courseId, dueAt])
+}
+
+model AssignmentSubmission {
+  id           String           @id @default(auto()) @map("_id") @db.ObjectId
+  assignmentId String           @db.ObjectId
+  assignment   Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  userId       String           @db.ObjectId
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  studentNotes String?
+  fileUrl      String?
+  fileName     String?
+  submittedAt  DateTime         @default(now())
+  status       SubmissionStatus @default(SUBMITTED)
+  marksAwarded Int?
+  feedback     String?
+  gradedAt     DateTime?
+
+  @@unique([assignmentId, userId])
+}
+
+model Assessment {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  courseId     String   @db.ObjectId
+  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  timeLimitSec Int      @default(900)
+  passingPct   Int      @default(70)
+  createdAt    DateTime @default(now())
+
+  questions Question[]
+  attempts  AssessmentAttempt[]
+
+  @@index([courseId])
+}
+
+model Question {
+  id           String       @id @default(auto()) @map("_id") @db.ObjectId
+  assessmentId String       @db.ObjectId
+  assessment   Assessment   @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  prompt       String
+  type         QuestionType @default(MCQ_SINGLE)
+  position     Int
+  explanation  String?
+  points       Int          @default(10)
+
+  options QuestionOption[]
+  answers AttemptAnswer[]
+
+  @@index([assessmentId, position])
+}
+
+model QuestionOption {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  questionId String   @db.ObjectId
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  label      String
+  isCorrect  Boolean  @default(false)
+  position   Int
+}
+
+model AssessmentAttempt {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  assessmentId String     @db.ObjectId
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  userId       String     @db.ObjectId
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scorePct     Float      @default(0)
+  earnedMarks  Int        @default(0)
+  totalMarks   Int        @default(0)
+  passed       Boolean    @default(false)
+  startedAt    DateTime   @default(now())
+  submittedAt  DateTime?
+
+  answers AttemptAnswer[]
+
+  @@index([assessmentId, userId])
+  @@index([userId, submittedAt])
+}
+
+model AttemptAnswer {
+  id                String            @id @default(auto()) @map("_id") @db.ObjectId
+  attemptId         String            @db.ObjectId
+  attempt           AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId        String            @db.ObjectId
+  question          Question          @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOptionIds String[]
+  textResponse      String?
+  isCorrect         Boolean           @default(false)
+  pointsAwarded     Int               @default(0)
+
+  @@index([attemptId, questionId])
+}
+
+model Certificate {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  code        String   @unique
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId    String   @db.ObjectId
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  studentName String
+  courseTitle String
+  issuedAt    DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Announcement {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  body        String
+  targetRole  String   @default("ALL")
+  publishedAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  href      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+}
+
+model RolePermission {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  role       Role
+  permission String
+  granted    Boolean  @default(true)
+  updatedAt  DateTime @updatedAt
+
+  @@unique([role, permission])
+  @@index([role])
+}
+
+model Category {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  name         String     @unique
+  slug         String     @unique
+  description  String?
+  icon         String?
+  parentId     String?    @db.ObjectId
+  parent       Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children     Category[] @relation("CategoryHierarchy")
+  skills       String[]
+  tags         String[]
+  displayOrder Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  courses      Course[]
+
+  @@index([parentId])
+}
+
+model Coupon {
+  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  code              String    @unique
+  discountPct       Int
+  maxDiscountAmount Float?
+  minCartAmount     Float?
+  maxUses           Int?
+  usedCount         Int       @default(0)
+  validUntil        DateTime?
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model PaymentTransaction {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  orderId       String        @unique
+  paymentId     String?
+  signature     String?
+  userId        String        @db.ObjectId
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId      String        @db.ObjectId
+  course        Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  amount        Float
+  currency      String        @default("INR")
+  status        PaymentStatus @default(PENDING)
+  paymentMethod String?
+  couponCode    String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([status])
+}
+
+model AuditLog {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  actorId    String?  @db.ObjectId
+  actorEmail String
+  actorRole  Role?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action     String
+  resource   String
+  resourceId String?
+  details    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([action])
+  @@index([resource])
+  @@index([createdAt])
+  @@index([actorEmail])
+}
+
+model PlatformSetting {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  section     String
+  key         String   @unique
+  value       Json
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+
+  @@index([section])
+}
+
+model OtpVerification {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  email     String
+  otpCode   String
+  purpose   OtpPurpose
+  expiresAt DateTime
+  attempts  Int        @default(0)
+  isUsed    Boolean    @default(false)
+  metadata  Json?
+  createdAt DateTime   @default(now())
+
+  @@index([email, purpose])
+}
+
+model ReminderDispatch {
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  liveClassId String         @db.ObjectId
+  liveClass   LiveClass      @relation(fields: [liveClassId], references: [id], onDelete: Cascade)
+  kind        DispatchKind
+  offsetMin   Int            @default(0)
+  status      DispatchStatus @default(PROCESSING)
+  recipients  Int            @default(0)
+  sentCount   Int            @default(0)
+  failedCount Int            @default(0)
+  createdAt   DateTime       @default(now())
+  completedAt DateTime?
+
+  @@unique([liveClassId, kind, offsetMin])
+}
+
+model EmailLog {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  toEmail     String
+  subject     String
+  template    String
+  liveClassId String?  @db.ObjectId
+  status      String
+  error       String?
+  createdAt   DateTime @default(now())
+
+  @@index([liveClassId])
+  @@index([toEmail, createdAt])
+}
