@@ -24,7 +24,7 @@ export function StudentShellClient({ user, counts, children }: StudentShellClien
     <div className="flex h-screen w-full overflow-hidden bg-background">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block shrink-0">
-        <StudentSidebar user={user} />
+        <StudentSidebar user={user} counts={counts} />
       </div>
 
       {/* Mobile Drawer Backdrop and Drawer */}
@@ -46,7 +46,7 @@ export function StudentShellClient({ user, counts, children }: StudentShellClien
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <StudentSidebar user={user} onCloseMobile={() => setMobileSidebarOpen(false)} />
+            <StudentSidebar user={user} counts={counts} onCloseMobile={() => setMobileSidebarOpen(false)} />
           </div>
         </div>
       )}

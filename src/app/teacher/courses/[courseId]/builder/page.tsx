@@ -38,6 +38,7 @@ import {
   CheckSquare,
   HelpCircle,
   Award,
+  Trophy,
   Edit2,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -647,6 +648,14 @@ export default function TeacherCourseHubPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {/* Course Leaderboard */}
+          <Button asChild variant="outline" size="sm" className="gap-1.5 shadow-xs border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10">
+            <Link href={`/teacher/leaderboard?courseId=${course.id}`}>
+              <Trophy className="w-3.5 h-3.5 text-amber-500" />
+              <span>Course Leaderboard</span>
+            </Link>
+          </Button>
+
           {/* Preview Student Portal Experience */}
           <Button asChild variant="outline" size="sm" className="gap-1.5 shadow-xs">
             <a href={`/student/courses/${course.id}`} target="_blank" rel="noopener noreferrer">

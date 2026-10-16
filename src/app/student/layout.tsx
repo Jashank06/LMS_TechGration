@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Metadata } from "next"
 import { requireStudent } from "@/server/auth"
+import { getStudentNavCounts } from "@/server/services/nav-counts"
 import { StudentShellClient } from "./student-shell-client"
 
 export const dynamic = "force-dynamic"
@@ -16,6 +17,7 @@ export default async function StudentLayout({
   children: React.ReactNode
 }) {
   const user = await requireStudent()
+  const counts = await getStudentNavCounts(user.id)
 
   return (
     <StudentShellClient
@@ -26,6 +28,7 @@ export default async function StudentLayout({
         avatarUrl: user.profile?.avatarUrl,
         headline: user.profile?.headline,
       }}
+      counts={counts}
     >
       {children}
     </StudentShellClient>

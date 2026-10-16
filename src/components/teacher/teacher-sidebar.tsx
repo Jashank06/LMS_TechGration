@@ -11,6 +11,7 @@ import {
   UserCheck,
   CheckSquare,
   HelpCircle,
+  Trophy,
   Users,
   BarChart3,
   LogOut,
@@ -19,14 +20,45 @@ import {
   ExternalLink,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "sonner"
+import type { TeacherNavCounts } from "@/server/services/nav-counts"
 
-export function TeacherSidebar() {
+export interface TeacherSidebarProps {
+  user?: {
+    name: string
+    email: string
+    avatarUrl?: string | null
+    headline?: string | null
+  } | null
+  counts?: TeacherNavCounts | null
+}
+
+export function TeacherSidebar({ user, counts: initialCounts }: TeacherSidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [collapsed, setCollapsed] = React.useState(false)
+  const [counts, setCounts] = React.useState<TeacherNavCounts | null>(initialCounts ?? null)
+
+  // Fetch or sync dynamic counts
+  React.useEffect(() => {
+    if (initialCounts) {
+      setCounts(initialCounts)
+      return
+    }
+    let cancelled = false
+    fetch("/api/teacher/nav-counts")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data && typeof data.assignmentsToReview === "number") {
+          setCounts(data)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [initialCounts])
 
   const navItems = [
     {
@@ -42,11 +74,17 @@ export function TeacherSidebar() {
       iconGradient: "from-blue-500 to-indigo-600",
     },
     {
+      label: "Course Leaderboard",
+      href: "/teacher/leaderboard",
+      icon: Trophy,
+      iconGradient: "from-amber-400 to-yellow-500",
+    },
+    {
       label: "Live Classes",
       href: "/teacher/live-classes",
       icon: Video,
       iconGradient: "from-rose-500 to-red-600",
-      badge: "Today",
+      badge: counts && counts.liveToday > 0 ? `${counts.liveToday} Today` : undefined,
       badgeColor: "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30",
     },
     {
@@ -60,7 +98,10 @@ export function TeacherSidebar() {
       href: "/teacher/assignments",
       icon: CheckSquare,
       iconGradient: "from-amber-400 to-orange-500",
-      badge: "2 Active",
+      badge:
+        counts && counts.assignmentsToReview > 0
+          ? `${counts.assignmentsToReview} Pending`
+          : undefined,
       badgeColor: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30",
     },
     {
@@ -68,7 +109,7 @@ export function TeacherSidebar() {
       href: "/teacher/quizzes",
       icon: HelpCircle,
       iconGradient: "from-purple-500 to-violet-600",
-      badge: "1 Quiz",
+      badge: counts && counts.quizzes > 0 ? String(counts.quizzes) : undefined,
       badgeColor: "bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30",
     },
     {
@@ -95,6 +136,16 @@ export function TeacherSidebar() {
       toast.error("Logout failed")
     }
   }
+
+  const teacherName = user?.name || "Course Instructor"
+  const teacherHeadline = user?.headline || "Faculty Member"
+  const initials = teacherName
+    .split(" ")
+    .filter(Boolean)
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "TC"
 
   return (
     <aside
@@ -147,7 +198,7 @@ export function TeacherSidebar() {
                   <span className="truncate">{item.label}</span>
                   {item.badge && (
                     <span
-                      className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
+                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                         isActive ? "bg-foreground/15 text-foreground" : item.badgeColor
                       }`}
                     >
@@ -176,15 +227,21 @@ export function TeacherSidebar() {
 
       {/* Teacher Profile & Logout Footer */}
       <div className="p-3 border-t border-border">
-        <div className={`flex items-center gap-3 p-2 rounded-xl bg-muted/40 ${collapsed ? "justify-center p-1" : ""}`}>
+        <div
+          className={`flex items-center gap-3 p-2 rounded-xl bg-muted/40 ${
+            collapsed ? "justify-center p-1" : ""
+          }`}
+        >
           <Avatar className="w-9 h-9 border border-primary/30">
-            <AvatarImage src="/brand/tg-mark.png" alt="Dr. Vikram Joshi" />
-            <AvatarFallback className="bg-brand-teal text-primary-foreground text-xs font-bold">VJ</AvatarFallback>
+            {user?.avatarUrl && <AvatarImage src={user.avatarUrl} alt={teacherName} />}
+            <AvatarFallback className="bg-brand-teal text-primary-foreground text-xs font-bold">
+              {initials}
+            </AvatarFallback>
           </Avatar>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <div className="text-xs font-bold text-foreground truncate">Dr. Vikram Joshi</div>
-              <div className="text-[11px] text-muted-foreground truncate">Cloud Systems Faculty</div>
+              <div className="text-xs font-bold text-foreground truncate">{teacherName}</div>
+              <div className="text-[11px] text-muted-foreground truncate">{teacherHeadline}</div>
             </div>
           )}
           {!collapsed && (

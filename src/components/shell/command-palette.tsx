@@ -12,6 +12,8 @@ import {
   BookOpen,
   Video,
   FileCheck2,
+  HelpCircle,
+  Trophy,
   Award,
   Settings,
   LayoutDashboard,
@@ -44,18 +46,12 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     { title: "Dashboard", href: "/student/dashboard", icon: LayoutDashboard, category: "Navigation" },
     { title: "My Enrolled Courses", href: "/student/my-courses", icon: BookOpen, category: "Navigation" },
     { title: "Course Catalog", href: "/student/catalog", icon: Compass, category: "Navigation" },
-    { title: "Live Classes Schedule", href: "/student/live-classes", icon: Video, category: "Navigation" },
-    { title: "Assignments Workspace", href: "/student/assignments", icon: FileCheck2, category: "Navigation" },
-    { title: "Certificates Center", href: "/student/certificates", icon: Award, category: "Navigation" },
-    { title: "Interview Prep (Locked)", href: "/student/interview", icon: Sparkles, category: "Navigation" },
-    { title: "Profile & Settings", href: "/student/settings", icon: Settings, category: "Navigation" },
-    // Direct Course shortcuts
-    { title: "AWS Solutions Architecture Professional", href: "/student/my-courses", icon: BookOpen, category: "Courses" },
-    { title: "Production Kubernetes & Service Mesh", href: "/student/my-courses", icon: BookOpen, category: "Courses" },
-    { title: "Full-Stack Distributed Systems with Next.js", href: "/student/my-courses", icon: BookOpen, category: "Courses" },
-    // Direct Quick Actions
-    { title: "Join Upcoming Live Session (AWS Multi-Region)", href: "/student/live-classes", icon: Video, category: "Live Classes" },
-    { title: "Submit Terraform VPC Assignment", href: "/student/assignments", icon: FileCheck2, category: "Assignments" },
+    { title: "Course Leaderboard", href: "/student/leaderboard", icon: Trophy, category: "Performance" },
+    { title: "Quizzes & Tests", href: "/student/quizzes", icon: HelpCircle, category: "Assessments" },
+    { title: "Assignments Workspace", href: "/student/assignments", icon: FileCheck2, category: "Assessments" },
+    { title: "Live Classes Schedule", href: "/student/live-classes", icon: Video, category: "Classes" },
+    { title: "Certificates Center", href: "/student/certificates", icon: Award, category: "Credentials" },
+    { title: "Profile & Settings", href: "/student/settings", icon: Settings, category: "Account" },
   ]
 
   const filtered = navigationItems.filter(item =>

@@ -4,8 +4,20 @@ import * as React from "react"
 import { usePathname } from "next/navigation"
 import { TeacherSidebar } from "./teacher-sidebar"
 import { TeacherHeader } from "./teacher-header"
+import type { TeacherNavCounts } from "@/server/services/nav-counts"
 
-export function TeacherShell({ children }: { children: React.ReactNode }) {
+export interface TeacherShellProps {
+  children: React.ReactNode
+  user?: {
+    name: string
+    email: string
+    avatarUrl?: string | null
+    headline?: string | null
+  } | null
+  counts?: TeacherNavCounts | null
+}
+
+export function TeacherShell({ children, user, counts }: TeacherShellProps) {
   const pathname = usePathname()
   const isLoginPage = pathname === "/teacher/login"
 
@@ -16,7 +28,7 @@ export function TeacherShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
       {/* Teacher Navigation Sidebar */}
-      <TeacherSidebar />
+      <TeacherSidebar user={user} counts={counts} />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">

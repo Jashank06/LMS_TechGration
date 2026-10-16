@@ -31,6 +31,7 @@ import {
   FileCheck2,
   HelpCircle,
   Award,
+  Trophy,
   ArrowRight,
 } from "lucide-react"
 import { QuickSubmitAssignmentModal } from "@/components/student/quick-submit-assignment-modal"
@@ -244,6 +245,13 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
         </Link>
 
         <div className="flex items-center gap-2">
+          <Link
+            href={`/student/leaderboard?courseId=${course.id}`}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25 border border-amber-500/30 transition-all shadow-xs"
+          >
+            <Trophy className="w-3.5 h-3.5 text-amber-500" />
+            <span>Course Leaderboard</span>
+          </Link>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-brand-teal/15 text-brand-teal border border-brand-teal/30">
             <Radio className="w-3 h-3 text-brand-teal animate-pulse" />
             <span>Live Interactive Course</span>

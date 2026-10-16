@@ -19,5 +19,21 @@ services:
     environment:
       MP_MAX_MESSAGES: 500
 
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: techgration-lms-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+    depends_on:
+      - mongodb
+
 volumes:
   mongodata:
