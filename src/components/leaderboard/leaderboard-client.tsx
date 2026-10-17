@@ -1,9 +1,23 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion } from "motion/react"
-import { Trophy, RotateCcw, EyeOff, Eye, Download, Users, Target, BarChart3, Loader2 } from "lucide-react"
+import {
+  Trophy,
+  RotateCcw,
+  EyeOff,
+  Eye,
+  Download,
+  Users,
+  Target,
+  BarChart3,
+  Loader2,
+  Gift,
+  Crown,
+  Sparkles,
+} from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { setLeaderboardAnonymousAction } from "@/actions/leaderboard"
@@ -115,6 +129,19 @@ export function LeaderboardClient({ data, courses, variant, basePath, anonymousS
               <span>{anonymousSelf ? "Show my name" : "Hide my name"}</span>
             </Button>
           )}
+          {!staff && (
+            <Link href="/student/rewards">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-xl text-xs font-semibold border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500"
+              >
+                <Gift className="w-3.5 h-3.5 mr-1.5" />
+                <span>Champion Swag</span>
+              </Button>
+            </Link>
+          )}
           {staff && hasRanked && (
             <Button asChild size="sm" className="rounded-xl text-xs font-bold">
               <a href={`/api/teacher/leaderboard/export?courseId=${data.course.id}`}>
@@ -143,6 +170,37 @@ export function LeaderboardClient({ data, courses, variant, basePath, anonymousS
           )
         })}
       </div>
+
+      {/* Champion Swag Promotional Banner */}
+      {!staff && (
+        <div className="relative overflow-hidden rounded-3xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-yellow-500/10 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 backdrop-blur-md">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-500 shrink-0 shadow-md">
+              <Crown className="w-6 h-6 animate-pulse" />
+            </div>
+            <div>
+              <p className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-1.5">
+                <span>Rank #1 Champion Reward Unlocked at the Top!</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-500 border border-amber-500/40">
+                  FREE SWAG
+                </span>
+              </p>
+              <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
+                The student with the highest marks in assignments & quizzes earns official TechGration T-Shirt, Cap, Armor Laptop Sleeve & boAt Earbuds.
+              </p>
+            </div>
+          </div>
+          <Link href="/student/rewards">
+            <Button
+              size="sm"
+              className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs shrink-0 shadow-md shadow-amber-500/20"
+            >
+              <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+              <span>Explore Swag Hub</span>
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {hasRanked ? (
         <>

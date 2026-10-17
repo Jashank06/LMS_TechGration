@@ -40,6 +40,8 @@ import {
   Award,
   Trophy,
   Edit2,
+  Key,
+  Share2,
 } from "lucide-react"
 import { toast } from "sonner"
 import { CreateAssignmentModal } from "@/components/teacher/create-assignment-modal"
@@ -113,6 +115,8 @@ export interface LiveClassItem {
   meetingUrl: string | null
   recordingUrl: string | null
   status: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED"
+  meetingId?: string | null
+  meetingPasscode?: string | null
 }
 
 export interface MaterialItem {
@@ -205,13 +209,18 @@ export default function TeacherCourseHubPage() {
   // Live Class Scheduling Modal State
   const [showScheduleModal, setShowScheduleModal] = React.useState(false)
   const [isScheduling, setIsScheduling] = React.useState(false)
+  const [isGeneratingMeeting, setIsGeneratingMeeting] = React.useState(false)
+  const [copiedInviteId, setCopiedInviteId] = React.useState<string | null>(null)
   const [scheduleForm, setScheduleForm] = React.useState({
     title: "",
     description: "",
     startsAt: "",
     durationMinutes: 90,
-    meetingUrl: "https://meet.google.com/jan-hnzk-nhf",
-    platform: "GOOGLE_MEET",
+    platform: "ZOOM" as "ZOOM" | "GOOGLE_MEET" | "CUSTOM",
+    meetingUrl: "https://us06web.zoom.us/j/89248109283?pwd=TG2026",
+    meetingId: "892 4810 9283",
+    meetingPasscode: "TG2026",
+    notifyStudents: true,
   })
 
   // Timetable Generator State
@@ -307,6 +316,122 @@ export default function TeacherCourseHubPage() {
     }
   }
 
+  // Quick time shortcuts
+  const handleQuickTimePreset = (preset: "tonight-9pm" | "tomorrow-10am" | "tomorrow-8pm") => {
+    const now = new Date()
+    const target = new Date()
+    if (preset === "tonight-9pm") {
+      target.setHours(21, 0, 0, 0)
+      if (target.getTime() <= now.getTime()) {
+        target.setDate(target.getDate() + 1)
+      }
+    } else if (preset === "tomorrow-10am") {
+      target.setDate(target.getDate() + 1)
+      target.setHours(10, 0, 0, 0)
+    } else if (preset === "tomorrow-8pm") {
+      target.setDate(target.getDate() + 1)
+      target.setHours(20, 0, 0, 0)
+    }
+
+    const year = target.getFullYear()
+    const month = String(target.getMonth() + 1).padStart(2, "0")
+    const day = String(target.getDate()).padStart(2, "0")
+    const hours = String(target.getHours()).padStart(2, "0")
+    const minutes = String(target.getMinutes()).padStart(2, "0")
+    setScheduleForm((prev) => ({
+      ...prev,
+      startsAt: `${year}-${month}-${day}T${hours}:${minutes}`,
+    }))
+    toast.success(
+      preset === "tonight-9pm"
+        ? "Time set to Tonight at 9:00 PM"
+        : preset === "tomorrow-10am"
+        ? "Time set to Tomorrow at 10:00 AM"
+        : "Time set to Tomorrow at 8:00 PM"
+    )
+  }
+
+  // 1-Click Auto-Generate Meeting
+  const handleAutoGenerateMeeting = async (targetPlatform: "ZOOM" | "GOOGLE_MEET" | "CUSTOM") => {
+    setIsGeneratingMeeting(true)
+    try {
+      const res = await fetch("/api/live-classes/generate-meeting", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          platform: targetPlatform,
+          topic: scheduleForm.title.trim() || course?.title || "Live Class Session",
+          startsAt: scheduleForm.startsAt || new Date().toISOString(),
+          durationMinutes: scheduleForm.durationMinutes,
+          courseTitle: course?.title,
+        }),
+      })
+      const data = await res.json()
+      if (res.ok && data.meeting) {
+        setScheduleForm((prev) => ({
+          ...prev,
+          platform: targetPlatform,
+          meetingUrl: data.meeting.meetingUrl,
+          meetingId: data.meeting.meetingId || "",
+          meetingPasscode: data.meeting.passcode || "",
+        }))
+        toast.success(
+          targetPlatform === "ZOOM"
+            ? "✨ Zoom meeting link, ID & Passcode generated!"
+            : targetPlatform === "GOOGLE_MEET"
+            ? "✨ Google Meet room link generated!"
+            : "✨ TechGration classroom link generated!"
+        )
+      } else {
+        toast.error("Failed to generate meeting link")
+      }
+    } catch {
+      toast.error("Network error while generating meeting")
+    } finally {
+      setIsGeneratingMeeting(false)
+    }
+  }
+
+  // Copy Full Invitation for WhatsApp / Slack
+  const handleCopyFormattedInvite = (cls: LiveClassItem) => {
+    const startDate = new Date(cls.startsAt)
+    const dateFormatted = startDate.toLocaleDateString("en-IN", {
+      weekday: "long",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })
+    const timeFormatted = startDate.toLocaleTimeString("en-IN", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    })
+
+    const platformName =
+      cls.platform === "ZOOM"
+        ? "Zoom Cloud Meetings"
+        : cls.platform === "GOOGLE_MEET"
+        ? "Google Meet"
+        : "TechGration Classroom"
+
+    let text = `🚀 *TechGration Technologies — Live Interactive Class*\n\n`
+    text += `📚 *Course:* ${course?.title || "Artificial Intelligence"}\n`
+    text += `🎯 *Topic:* ${cls.title}\n`
+    text += `👨‍🏫 *Instructor:* ${cls.instructorName}\n`
+    text += `📅 *Date & Time:* ${dateFormatted} at ${timeFormatted} IST\n`
+    text += `📍 *Platform:* ${platformName}\n\n`
+    text += `🔗 *Join Link:* ${cls.meetingUrl}\n`
+    if (cls.meetingId) text += `🆔 *Meeting ID:* ${cls.meetingId}\n`
+    if (cls.meetingPasscode) text += `🔑 *Passcode:* ${cls.meetingPasscode}\n`
+    text += `\n_Please join 5-10 minutes early. High-speed internet recommended._`
+
+    navigator.clipboard.writeText(text)
+    setCopiedInviteId(cls.id)
+    triggerBrandCelebration()
+    toast.success("Full class invitation copied! Ready to share on WhatsApp or Slack.")
+    setTimeout(() => setCopiedInviteId(null), 3000)
+  }
+
   // Handle Schedule Live Class
   const handleScheduleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -329,22 +454,28 @@ export default function TeacherCourseHubPage() {
           startsAt: startDate.toISOString(),
           endsAt: endDate.toISOString(),
           meetingUrl: scheduleForm.meetingUrl.trim(),
+          meetingId: scheduleForm.meetingId?.trim() || null,
+          meetingPasscode: scheduleForm.meetingPasscode?.trim() || null,
           platform: scheduleForm.platform,
+          notifyStudents: scheduleForm.notifyStudents,
         }),
       })
 
       const data = await res.json()
       if (res.ok && data.liveClass) {
         triggerBrandCelebration()
-        toast.success("Live class scheduled successfully!")
+        toast.success(data.message || "Live class scheduled successfully! Enrolled students notified.")
         setShowScheduleModal(false)
         setScheduleForm({
           title: "",
           description: "",
           startsAt: "",
           durationMinutes: 90,
-          meetingUrl: "https://meet.google.com/jan-hnzk-nhf",
-          platform: "GOOGLE_MEET",
+          platform: "ZOOM",
+          meetingUrl: "https://us06web.zoom.us/j/89248109283?pwd=TG2026",
+          meetingId: "892 4810 9283",
+          meetingPasscode: "TG2026",
+          notifyStudents: true,
         })
         await fetchCourseData()
       } else {
@@ -893,9 +1024,23 @@ export default function TeacherCourseHubPage() {
                             <span>Next Upcoming Session</span>
                           </span>
                         )}
-                        <span className="text-xs font-mono text-muted-foreground">
-                          {activeOrUpcomingClass.platform}
-                        </span>
+
+                        {activeOrUpcomingClass.platform === "ZOOM" ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-500/15 text-blue-500 border border-blue-500/30">
+                            <Video className="w-3.5 h-3.5" />
+                            <span>Zoom Meeting</span>
+                          </span>
+                        ) : activeOrUpcomingClass.platform === "GOOGLE_MEET" ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">
+                            <Video className="w-3.5 h-3.5" />
+                            <span>Google Meet</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-500/15 text-purple-500 border border-purple-500/30">
+                            <Video className="w-3.5 h-3.5" />
+                            <span>TechGration Classroom</span>
+                          </span>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -922,7 +1067,7 @@ export default function TeacherCourseHubPage() {
                       )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-border/60">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-border/60">
                       <div>
                         <div className="text-[11px] text-muted-foreground">Date & Start Time</div>
                         <div className="text-sm font-bold text-foreground">
@@ -946,9 +1091,16 @@ export default function TeacherCourseHubPage() {
                       </div>
 
                       <div>
-                        <div className="text-[11px] text-muted-foreground">Meeting Room</div>
-                        <div className="text-sm font-mono text-brand-teal truncate">
-                          {activeOrUpcomingClass.meetingUrl || "https://meet.google.com/jan-hnzk-nhf"}
+                        <div className="text-[11px] text-muted-foreground">Meeting ID</div>
+                        <div className="text-sm font-mono font-bold text-foreground truncate">
+                          {activeOrUpcomingClass.meetingId || "Auto-assigned"}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="text-[11px] text-muted-foreground">Passcode</div>
+                        <div className="text-sm font-mono font-bold text-brand-teal truncate">
+                          {activeOrUpcomingClass.meetingPasscode || "Not required"}
                         </div>
                       </div>
                     </div>
@@ -960,21 +1112,41 @@ export default function TeacherCourseHubPage() {
                         className="font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal h-11 px-6 rounded-xl shadow-teal-glow gap-2 text-sm"
                       >
                         <a
-                          href={activeOrUpcomingClass.meetingUrl || "https://meet.google.com/jan-hnzk-nhf"}
+                          href={activeOrUpcomingClass.meetingUrl || "https://us06web.zoom.us"}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
                           <Video className="w-4 h-4" />
-                          <span>Launch as Host (Google Meet)</span>
+                          <span>
+                            Launch as Host ({activeOrUpcomingClass.platform === "ZOOM" ? "Zoom" : activeOrUpcomingClass.platform === "GOOGLE_MEET" ? "Google Meet" : "Live Room"})
+                          </span>
                           <ExternalLink className="w-3.5 h-3.5 ml-1" />
                         </a>
                       </Button>
 
                       <Button
                         variant="outline"
+                        onClick={() => handleCopyFormattedInvite(activeOrUpcomingClass)}
+                        className="h-11 rounded-xl text-xs font-semibold gap-1.5"
+                      >
+                        {copiedInviteId === activeOrUpcomingClass.id ? (
+                          <>
+                            <Check className="w-4 h-4 text-emerald-500" />
+                            <span>Invite Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Share2 className="w-4 h-4 text-muted-foreground" />
+                            <span>Copy WhatsApp / Slack Invite</span>
+                          </>
+                        )}
+                      </Button>
+
+                      <Button
+                        variant="outline"
                         onClick={() =>
                           handleCopyMeetUrl(
-                            activeOrUpcomingClass.meetingUrl || "https://meet.google.com/jan-hnzk-nhf",
+                            activeOrUpcomingClass.meetingUrl || "",
                             activeOrUpcomingClass.id
                           )
                         }
@@ -983,12 +1155,12 @@ export default function TeacherCourseHubPage() {
                         {copiedMeetId === activeOrUpcomingClass.id ? (
                           <>
                             <Check className="w-4 h-4 text-emerald-500" />
-                            <span>Copied Link!</span>
+                            <span>Link Copied!</span>
                           </>
                         ) : (
                           <>
                             <Copy className="w-4 h-4 text-muted-foreground" />
-                            <span>Copy Student Meet Link</span>
+                            <span>Copy Direct Link</span>
                           </>
                         )}
                       </Button>
@@ -1013,7 +1185,7 @@ export default function TeacherCourseHubPage() {
                   <div className="space-y-1">
                     <h3 className="text-base font-bold text-foreground">No Live Classes Scheduled Yet</h3>
                     <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                      Schedule a live Google Meet class for your students. They will immediately see it on their course portal with countdown and join buttons.
+                      Schedule a live Zoom or Google Meet class for your students. They will immediately receive an email with calendar invite (.ics), in-app notification, and countdown on their course hub.
                     </p>
                   </div>
                   <Button
@@ -1875,11 +2047,11 @@ export default function TeacherCourseHubPage() {
                 </button>
               </div>
 
-              <form onSubmit={handleScheduleSubmit} className="space-y-4">
+              <form onSubmit={handleScheduleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto pr-1">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-foreground">Session Title *</label>
                   <Input
-                    placeholder="e.g. Live Class: High-Performance Neural Architectures"
+                    placeholder="e.g. Live Class: High-Performance Neural Architectures & PyTorch"
                     value={scheduleForm.title}
                     onChange={(e) => setScheduleForm({ ...scheduleForm, title: e.target.value })}
                     required
@@ -1893,14 +2065,42 @@ export default function TeacherCourseHubPage() {
                     placeholder="Detailed agenda or topics for students..."
                     value={scheduleForm.description}
                     onChange={(e) => setScheduleForm({ ...scheduleForm, description: e.target.value })}
-                    rows={3}
+                    rows={2}
                     className="w-full rounded-xl border border-border bg-input p-3 text-xs outline-none focus:ring-2 focus:ring-brand-teal"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
+                {/* Quick Time Presets */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-foreground">Date & Start Time *</label>
+                    <span className="text-[10px] text-muted-foreground">Quick Presets:</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 pb-1">
+                    <button
+                      type="button"
+                      onClick={() => handleQuickTimePreset("tonight-9pm")}
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-brand-teal/15 text-brand-teal border border-brand-teal/30 hover:bg-brand-teal/25 transition-all"
+                    >
+                      🌙 Tonight 9:00 PM
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleQuickTimePreset("tomorrow-10am")}
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-secondary hover:bg-secondary/80 text-foreground border border-border transition-all"
+                    >
+                      ☀️ Tomorrow 10:00 AM
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleQuickTimePreset("tomorrow-8pm")}
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-secondary hover:bg-secondary/80 text-foreground border border-border transition-all"
+                    >
+                      🌆 Tomorrow 8:00 PM
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Input
                       type="datetime-local"
                       value={scheduleForm.startsAt}
@@ -1908,10 +2108,7 @@ export default function TeacherCourseHubPage() {
                       required
                       className="text-xs"
                     />
-                  </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-foreground">Duration (Minutes)</label>
                     <select
                       value={scheduleForm.durationMinutes}
                       onChange={(e) =>
@@ -1927,18 +2124,141 @@ export default function TeacherCourseHubPage() {
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-foreground">Google Meet Link</label>
-                  <Input
-                    placeholder="https://meet.google.com/jan-hnzk-nhf"
-                    value={scheduleForm.meetingUrl}
-                    onChange={(e) => setScheduleForm({ ...scheduleForm, meetingUrl: e.target.value })}
-                    required
-                    className="text-xs font-mono"
+                {/* Meeting Platform Selector */}
+                <div className="space-y-2 pt-2 border-t border-border">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-foreground">Meeting Platform</label>
+                    <button
+                      type="button"
+                      onClick={() => handleAutoGenerateMeeting(scheduleForm.platform)}
+                      disabled={isGeneratingMeeting}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-teal hover:underline"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      <span>{isGeneratingMeeting ? "Generating..." : "⚡ 1-Click Auto Generate"}</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setScheduleForm((prev) => ({
+                          ...prev,
+                          platform: "ZOOM",
+                          meetingUrl: "https://us06web.zoom.us/j/89248109283?pwd=TG2026",
+                          meetingId: "892 4810 9283",
+                          meetingPasscode: "TG2026",
+                        }))
+                      }}
+                      className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all ${
+                        scheduleForm.platform === "ZOOM"
+                          ? "border-blue-500 bg-blue-500/15 text-blue-500 shadow-sm"
+                          : "border-border bg-card/60 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Video className="w-4 h-4 text-blue-500" />
+                      <span>Zoom</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setScheduleForm((prev) => ({
+                          ...prev,
+                          platform: "GOOGLE_MEET",
+                          meetingUrl: "https://meet.google.com/tgk-vntk-ai",
+                          meetingId: "tgk-vntk-ai",
+                          meetingPasscode: "Not required",
+                        }))
+                      }}
+                      className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all ${
+                        scheduleForm.platform === "GOOGLE_MEET"
+                          ? "border-emerald-500 bg-emerald-500/15 text-emerald-500 shadow-sm"
+                          : "border-border bg-card/60 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Video className="w-4 h-4 text-emerald-500" />
+                      <span>Google Meet</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setScheduleForm((prev) => ({
+                          ...prev,
+                          platform: "CUSTOM",
+                          meetingUrl: `https://meet.jit.si/TechGration-${course?.code || "AI"}-${Date.now().toString(36)}`,
+                          meetingId: "WebRTC Classroom",
+                          meetingPasscode: "None",
+                        }))
+                      }}
+                      className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all ${
+                        scheduleForm.platform === "CUSTOM"
+                          ? "border-purple-500 bg-purple-500/15 text-purple-500 shadow-sm"
+                          : "border-border bg-card/60 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Video className="w-4 h-4 text-purple-500" />
+                      <span>In-App / Jitsi</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Meeting Link & Credentials */}
+                <div className="space-y-2">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-foreground">
+                      {scheduleForm.platform === "ZOOM"
+                        ? "Zoom Join URL *"
+                        : scheduleForm.platform === "GOOGLE_MEET"
+                        ? "Google Meet URL *"
+                        : "Classroom Meeting Link *"}
+                    </label>
+                    <Input
+                      placeholder="https://us06web.zoom.us/j/..."
+                      value={scheduleForm.meetingUrl}
+                      onChange={(e) => setScheduleForm({ ...scheduleForm, meetingUrl: e.target.value })}
+                      required
+                      className="text-xs font-mono"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-foreground">Meeting ID</label>
+                      <Input
+                        placeholder="e.g. 892 4810 9283"
+                        value={scheduleForm.meetingId}
+                        onChange={(e) => setScheduleForm({ ...scheduleForm, meetingId: e.target.value })}
+                        className="text-xs font-mono"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-foreground">Passcode</label>
+                      <Input
+                        placeholder="e.g. TG2026"
+                        value={scheduleForm.meetingPasscode}
+                        onChange={(e) => setScheduleForm({ ...scheduleForm, meetingPasscode: e.target.value })}
+                        className="text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Real-time Student Dispatch Toggle */}
+                <div className="p-3 rounded-xl border border-brand-teal/30 bg-brand-teal/5 flex items-start gap-2.5">
+                  <input
+                    type="checkbox"
+                    id="notifyToggle"
+                    checked={scheduleForm.notifyStudents}
+                    onChange={(e) => setScheduleForm({ ...scheduleForm, notifyStudents: e.target.checked })}
+                    className="mt-0.5 rounded text-brand-teal focus:ring-brand-teal accent-brand-teal cursor-pointer"
                   />
-                  <p className="text-[11px] text-muted-foreground">
-                    Students will receive this Google Meet room link with 1-click launch.
-                  </p>
+                  <label htmlFor="notifyToggle" className="text-[11px] text-foreground leading-snug cursor-pointer">
+                    <strong className="block font-bold">Instant Student Delivery Active</strong>
+                    Immediately dispatch transactional emails with Google/Apple Calendar (.ics) file and push in-app alerts to all enrolled students.
+                  </label>
                 </div>
 
                 <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
@@ -1955,7 +2275,7 @@ export default function TeacherCourseHubPage() {
                     disabled={isScheduling}
                     className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold text-xs shadow-teal-glow"
                   >
-                    {isScheduling ? "Scheduling..." : "Schedule Live Class"}
+                    {isScheduling ? "Scheduling Session..." : "Schedule Live Class"}
                   </Button>
                 </div>
               </form>

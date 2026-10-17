@@ -30,7 +30,7 @@ import { toast } from "sonner"
 export default function TeacherLoginPage() {
   const router = useRouter()
   const [email, setEmail] = React.useState("jaykumar0305@gmail.com")
-  const [password, setPassword] = React.useState("Teacher@2026!")
+  const [password, setPassword] = React.useState("Jashank@123")
   const [showPassword, setShowPassword] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
   const [demoLoading, setDemoLoading] = React.useState(false)
@@ -85,7 +85,7 @@ export default function TeacherLoginPage() {
       }
 
       triggerBrandCelebration()
-      toast.success("Logged in as Dr. Vikram Joshi (Demo Instructor)")
+      toast.success("Logged in as " + (data.user?.name || "Vineet Sir"))
       router.push("/teacher/dashboard")
       router.refresh()
     } catch {
@@ -148,7 +148,7 @@ export default function TeacherLoginPage() {
                       <span>Instant Demo Access</span>
                     </div>
                     <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                      Login as Dr. Vikram Joshi (Lead Cloud Instructor)
+                      Login as Vineet Sir (Course Instructor)
                     </p>
                   </div>
                   <Button

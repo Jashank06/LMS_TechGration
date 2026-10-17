@@ -152,6 +152,7 @@ model User {
   auditLogs          AuditLog[]
   taughtCourses      Course[]    @relation("CourseInstructor")
   invitedById        String?     @db.ObjectId
+  rewardClaims       RewardClaim[]
 }
 
 model UserProfile {
@@ -222,6 +223,7 @@ model Course {
   certificates Certificate[]
   payments     PaymentTransaction[]
   materials    CourseMaterial[]
+  rewardClaims RewardClaim[]
 
   @@index([category])
   @@index([approvalStatus])
@@ -378,6 +380,8 @@ model LiveClass {
 
   instructorId       String?         @db.ObjectId
   platform           MeetingPlatform @default(ZOOM)
+  meetingId          String?
+  meetingPasscode    String?
   reminderOffsetsMin Int[]
   joinOpensMinBefore Int             @default(10)
 
@@ -685,3 +689,40 @@ model EmailLog {
   @@index([liveClassId])
   @@index([toEmail, createdAt])
 }
+
+enum RewardClaimStatus {
+  PENDING
+  APPROVED
+  PROCESSING
+  DISPATCHED
+  DELIVERED
+  REJECTED
+}
+
+model RewardClaim {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String            @db.ObjectId
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId        String            @db.ObjectId
+  course          Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  rewardId        String
+  rewardTitle     String
+  selectedOption  String
+  status          RewardClaimStatus @default(PENDING)
+  trackingCode    String?
+  courier         String?
+  shippingName    String
+  shippingPhone   String
+  shippingAddress String
+  shippingCity    String
+  shippingState   String
+  shippingPincode String
+  claimedAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  adminNotes      String?
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([status])
+}
+

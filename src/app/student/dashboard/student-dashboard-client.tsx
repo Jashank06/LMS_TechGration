@@ -258,6 +258,16 @@ export function StudentDashboardClient({
                   <span>Resume Learning</span>
                 </Link>
               </Button>
+            ) : activeEnrollment ? (
+              <Button
+                asChild
+                className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold shadow-md shadow-brand-teal/20 px-5 h-11 rounded-xl transition-all"
+              >
+                <Link href={`/student/courses/${activeEnrollment.course.id}`}>
+                  <PlayCircle className="w-4 h-4 mr-2" />
+                  <span>Start Learning</span>
+                </Link>
+              </Button>
             ) : (
               <Button
                 asChild
@@ -339,7 +349,7 @@ export function StudentDashboardClient({
               </Link>
             </div>
 
-            {activeEnrollment && resumeLesson ? (
+            {activeEnrollment ? (
               <div className="space-y-5">
                 <div className="flex flex-col sm:flex-row gap-4 items-start p-3 rounded-2xl bg-secondary/30 border border-border/60">
                   <div className="relative w-full sm:w-44 aspect-video rounded-xl overflow-hidden border border-border/60 shrink-0 bg-muted">
@@ -363,10 +373,16 @@ export function StudentDashboardClient({
                       {activeEnrollment.course.title}
                     </h3>
                     <p className="text-xs text-muted-foreground line-clamp-2">
-                      Current Lesson:{" "}
-                      <strong className="text-foreground font-semibold">
-                        {resumeLesson.title}
-                      </strong>
+                      {resumeLesson ? (
+                        <>
+                          Current Lesson:{" "}
+                          <strong className="text-foreground font-semibold">
+                            {resumeLesson.title}
+                          </strong>
+                        </>
+                      ) : (
+                        <span>Ready to begin your study journey</span>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -382,19 +398,31 @@ export function StudentDashboardClient({
                 </div>
 
                 <div className="pt-1">
-                  <Button
-                    asChild
-                    className="font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal px-5 rounded-xl h-10 shadow-xs"
-                  >
-                    <Link href={`/student/learn/${resumeLesson.id}`}>
-                      <PlayCircle className="w-4 h-4 mr-2" />
-                      <span>Resume &quot;{resumeLesson.title}&quot;</span>
-                    </Link>
-                  </Button>
+                  {resumeLesson ? (
+                    <Button
+                      asChild
+                      className="font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal px-5 rounded-xl h-10 shadow-xs"
+                    >
+                      <Link href={`/student/learn/${resumeLesson.id}`}>
+                        <PlayCircle className="w-4 h-4 mr-2" />
+                        <span>Resume &quot;{resumeLesson.title}&quot;</span>
+                      </Link>
+                    </Button>
+                  ) : (
+                    <Button
+                      asChild
+                      className="font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal px-5 rounded-xl h-10 shadow-xs"
+                    >
+                      <Link href={`/student/courses/${activeEnrollment.course.id}`}>
+                        <PlayCircle className="w-4 h-4 mr-2" />
+                        <span>Start Learning</span>
+                      </Link>
+                    </Button>
+                  )}
                 </div>
               </div>
             ) : (
-              /* Clean, friendly, simple empty state */
+              /* Clean, friendly, simple empty state when really not enrolled */
               <div className="py-12 px-6 rounded-2xl border border-dashed border-border/80 bg-secondary/15 flex flex-col items-center justify-center text-center space-y-4 my-2">
                 <div className="w-14 h-14 rounded-2xl bg-brand-teal/15 border border-brand-teal/30 flex items-center justify-center text-brand-teal shadow-xs">
                   <BookOpen className="w-7 h-7" />

@@ -20,6 +20,11 @@ import {
   Flame,
   Briefcase,
   TrendingUp,
+  Terminal,
+  Mic,
+  Volume2,
+  Activity,
+  Zap,
   Cpu,
   Video,
 } from "lucide-react"
@@ -246,104 +251,213 @@ export function InterviewClient({
       </div>
 
       {/* ========================================================================= */}
-      {/* FEATURE PREVIEW: WHAT YOU WILL UNLOCK                                     */}
+      {/* FUTURISTIC AI TECHNICAL INTERVIEW SIMULATION STUDIO                       */}
       {/* ========================================================================= */}
-      <div className="space-y-4 pt-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-purple-500/15 text-purple-500 border border-purple-500/20">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="text-base sm:text-lg font-extrabold text-foreground tracking-tight">
-                What You Will Unlock
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                Exclusive placement acceleration features unlocked upon eligibility.
-              </p>
-            </div>
-          </div>
-          <span className="text-xs font-semibold text-muted-foreground">
-            Feature Roadmap Preview
-          </span>
-        </div>
+      <div className="relative group">
+        {/* Ambient Back Glow */}
+        <div className="pointer-events-none absolute -inset-2 bg-gradient-to-r from-purple-500/15 via-cyan-500/15 to-emerald-500/15 rounded-[2.5rem] blur-2xl opacity-60" />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Feature 1 */}
-          <div className="p-5 rounded-2xl border border-border/80 bg-card/60 backdrop-blur-md space-y-3 relative overflow-hidden group hover:border-cyan-500/40 transition-colors">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/15 text-cyan-500 border border-cyan-500/25 flex items-center justify-center shadow-xs">
-              <Bot className="w-5 h-5" />
+        {/* Studio Console Container */}
+        <div className="relative rounded-[2rem] border-2 border-border/80 bg-gradient-to-b from-[#0C1014] to-[#070A0D] p-6 sm:p-8 shadow-2xl backdrop-blur-2xl overflow-hidden text-left text-white space-y-6">
+          
+          {/* macOS Terminal Titlebar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-red-500/80 inline-block shadow-xs" />
+                <span className="w-3 h-3 rounded-full bg-amber-500/80 inline-block shadow-xs" />
+                <span className="w-3 h-3 rounded-full bg-emerald-500/80 inline-block shadow-xs" />
+              </div>
+              <div className="flex items-center gap-2 text-xs font-mono text-neutral-300">
+                <Terminal className="w-3.5 h-3.5 text-brand-teal" />
+                <span>tg-ai-interview-viva://live-sandbox [ARM64_NEURAL_ENGINE]</span>
+              </div>
             </div>
-            <div className="space-y-1">
-              <h4 className="text-sm font-bold text-foreground">
-                AI Technical Voice & Architectural Viva
-              </h4>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Adaptive AI interviewer simulates live technical screenings, asking targeted deep-dive questions based on your course curriculum.
-              </p>
-            </div>
-            <div className="pt-2 flex items-center gap-1.5 text-[11px] font-mono text-cyan-500 font-semibold">
-              <Cpu className="w-3.5 h-3.5" />
-              <span>Real-Time Code & Concept Analysis</span>
+
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                <Lock className="w-3 h-3" />
+                <span>LOCKED STUDIO • ACTIVATES AT 100%</span>
+              </span>
             </div>
           </div>
 
-          {/* Feature 2 */}
-          <div className="p-5 rounded-2xl border border-border/80 bg-card/60 backdrop-blur-md space-y-3 relative overflow-hidden group hover:border-purple-500/40 transition-colors">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/15 text-purple-500 border border-purple-500/25 flex items-center justify-center shadow-xs">
-              <UserCheck className="w-5 h-5" />
+          {/* Studio Stage Layout (2 Columns) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+            {/* Left 7 Cols: AI Voice Viva & Waveform */}
+            <div className="lg:col-span-7 rounded-2xl bg-white/[0.03] border border-white/10 p-5 sm:p-6 flex flex-col justify-between space-y-5">
+              <div className="space-y-4">
+                {/* Voice Agent Identity */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-brand-teal/20 to-cyan-500/10 border border-brand-teal/30 flex items-center justify-center text-brand-teal shadow-lg shadow-brand-teal/10">
+                      <Bot className="w-5 h-5" />
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping inline-block" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs sm:text-sm font-extrabold text-white flex items-center gap-1.5">
+                        <span>TechGration AI Technical Examiner</span>
+                        <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-md bg-brand-teal/20 text-brand-teal border border-brand-teal/30">v2.5</span>
+                      </h4>
+                      <p className="text-[11px] text-neutral-400">Adaptive Architectural & Deep Learning Viva</p>
+                    </div>
+                  </div>
+
+                  <span className="text-[10px] font-mono text-neutral-400 flex items-center gap-1">
+                    <Activity className="w-3 h-3 text-brand-teal" />
+                    <span>Live Viva Stream</span>
+                  </span>
+                </div>
+
+                {/* Examiner Question Bubble */}
+                <div className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-2">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-brand-teal font-bold flex items-center gap-1.5">
+                    <Volume2 className="w-3 h-3" />
+                    <span>Real-Time Viva Question:</span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-neutral-200 leading-relaxed font-sans">
+                    &quot;Hello <strong className="text-white">{studentName}</strong>. Let&apos;s evaluate your architectural depth in distributed systems. Walk me through how you would architect a high-throughput vector database search handling 50k QPS with sub-50ms latency using HNSW indexing and GPU quantization.&quot;
+                  </p>
+                </div>
+
+                {/* Animated Audio Equalizer Waveform */}
+                <div className="p-3 rounded-xl bg-black/30 border border-white/5 flex items-center justify-between gap-1.5 overflow-hidden">
+                  <div className="flex items-center gap-2 text-[10px] font-mono text-neutral-400 shrink-0">
+                    <Radio className="w-3 h-3 text-cyan-400 animate-pulse" />
+                    <span>Neural Audio:</span>
+                  </div>
+                  <div className="flex items-center gap-1 h-8 flex-1 justify-end">
+                    {[40, 75, 55, 90, 60, 30, 85, 100, 70, 45, 95, 65, 80, 50, 90, 40, 70, 85, 60, 100, 45, 80].map((h, i) => (
+                      <span
+                        key={i}
+                        className="w-1 rounded-full bg-gradient-to-t from-brand-teal via-cyan-400 to-emerald-400 opacity-80 animate-pulse"
+                        style={{
+                          height: `${h}%`,
+                          animationDuration: `${0.6 + (i % 5) * 0.15}s`,
+                          animationDelay: `${(i % 4) * 0.1}s`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Candidate Voice Input State (Locked) */}
+              <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs text-neutral-400">
+                <span className="flex items-center gap-2 font-mono text-[11px]">
+                  <Mic className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                  <span>Candidate Mic Input (Locked until 100% completion)</span>
+                </span>
+                <span className="text-[10px] font-mono text-emerald-400">AST Analysis Ready</span>
+              </div>
             </div>
-            <div className="space-y-1">
-              <h4 className="text-sm font-bold text-foreground">
-                1-on-1 Faculty Mock Screening
-              </h4>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Schedule a 45-minute live 1-on-1 video mock interview with Lead Course Architect (Jay Kumar) to fine-tune your problem-solving presentation.
-              </p>
-            </div>
-            <div className="pt-2 flex items-center gap-1.5 text-[11px] font-mono text-purple-400 font-semibold">
-              <Video className="w-3.5 h-3.5" />
-              <span>Direct Mentorship & Detailed Feedback</span>
+
+            {/* Right 5 Cols: Diagnostic Telemetry HUD */}
+            <div className="lg:col-span-5 rounded-2xl bg-white/[0.03] border border-white/10 p-5 sm:p-6 flex flex-col justify-between space-y-4">
+              <div className="space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-neutral-300 flex items-center gap-2">
+                    <Cpu className="w-3.5 h-3.5 text-purple-400" />
+                    <span>Viva Telemetry HUD</span>
+                  </h4>
+                  <span className="text-[10px] font-mono text-emerald-400 font-bold">CALIBRATED</span>
+                </div>
+
+                {/* Score Meters */}
+                <div className="space-y-2.5">
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[11px] font-mono">
+                      <span className="text-neutral-400">System Architecture</span>
+                      <span className="text-brand-teal font-bold">98 / 100</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-brand-teal to-cyan-400 w-[98%]" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[11px] font-mono">
+                      <span className="text-neutral-400">Algorithmic Precision</span>
+                      <span className="text-emerald-400 font-bold">95 / 100</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 w-[95%]" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[11px] font-mono">
+                      <span className="text-neutral-400">Technical Articulation</span>
+                      <span className="text-purple-400 font-bold">96 / 100</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-purple-500 to-indigo-400 w-[96%]" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[11px] font-mono">
+                      <span className="text-neutral-400">Production Reliability</span>
+                      <span className="text-amber-400 font-bold">94 / 100</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-amber-400 to-orange-500 w-[94%]" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Telemetry Verdict */}
+                <div className="p-3.5 rounded-xl bg-gradient-to-br from-emerald-500/10 to-brand-teal/5 border border-emerald-500/25 space-y-1">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 font-mono">
+                    <Zap className="w-3.5 h-3.5" />
+                    <span>Tier-1 Recruiter Clearance</span>
+                  </div>
+                  <p className="text-[11px] text-neutral-300 leading-relaxed">
+                    Evaluated candidates scoring ≥ 85% receive automated referral routing to TechGration enterprise hiring partners.
+                  </p>
+                </div>
+              </div>
+
+              {/* 1-on-1 Faculty Tag */}
+              <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-neutral-400 font-mono">
+                <span className="flex items-center gap-1.5">
+                  <UserCheck className="w-3.5 h-3.5 text-brand-teal" />
+                  <span>Faculty Mock: Jay Kumar</span>
+                </span>
+                <span className="text-white font-bold">45m Live 1-on-1</span>
+              </div>
             </div>
           </div>
 
-          {/* Feature 3 */}
-          <div className="p-5 rounded-2xl border border-border/80 bg-card/60 backdrop-blur-md space-y-3 relative overflow-hidden group hover:border-blue-500/40 transition-colors">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/15 text-blue-500 border border-blue-500/25 flex items-center justify-center shadow-xs">
-              <TrendingUp className="w-5 h-5" />
-            </div>
-            <div className="space-y-1">
-              <h4 className="text-sm font-bold text-foreground">
-                Interview Readiness Diagnostic Matrix
-              </h4>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Receive granular rubric scoring on System Architecture, Algorithmic Precision, Code Quality, and Engineering Communication.
-              </p>
-            </div>
-            <div className="pt-2 flex items-center gap-1.5 text-[11px] font-mono text-blue-400 font-semibold">
-              <Binary className="w-3.5 h-3.5" />
-              <span>Personalized Improvement Roadmap</span>
+          {/* Bottom Career Pipeline Ribbon */}
+          <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+              <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-1">
+                <div className="text-[10px] font-mono font-bold text-amber-400 uppercase">Phase 1 (Active)</div>
+                <div className="text-xs font-bold text-white">100% Course Study</div>
+                <div className="text-[10px] text-neutral-400">Labs & Lectures</div>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-1">
+                <div className="text-[10px] font-mono font-bold text-brand-teal uppercase">Phase 2 (Locked)</div>
+                <div className="text-xs font-bold text-white">AI Voice Viva</div>
+                <div className="text-[10px] text-neutral-400">Architectural Drill</div>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-1">
+                <div className="text-[10px] font-mono font-bold text-purple-400 uppercase">Phase 3 (Locked)</div>
+                <div className="text-xs font-bold text-white">1-on-1 Faculty Mock</div>
+                <div className="text-[10px] text-neutral-400">Lead Architect Defense</div>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-1">
+                <div className="text-[10px] font-mono font-bold text-emerald-400 uppercase">Phase 4 (Locked)</div>
+                <div className="text-xs font-bold text-white">Placement Dispatch</div>
+                <div className="text-[10px] text-neutral-400">Hiring Partner Network</div>
+              </div>
             </div>
           </div>
 
-          {/* Feature 4 */}
-          <div className="p-5 rounded-2xl border border-border/80 bg-card/60 backdrop-blur-md space-y-3 relative overflow-hidden group hover:border-emerald-500/40 transition-colors">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-500 border border-emerald-500/25 flex items-center justify-center shadow-xs">
-              <Briefcase className="w-5 h-5" />
-            </div>
-            <div className="space-y-1">
-              <h4 className="text-sm font-bold text-foreground">
-                Enterprise Placement Referral Gateway
-              </h4>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Candidates scoring ≥ 85% on their mock evaluations receive direct resume routing and referrals to TechGration hiring partners.
-              </p>
-            </div>
-            <div className="pt-2 flex items-center gap-1.5 text-[11px] font-mono text-emerald-400 font-semibold">
-              <Award className="w-3.5 h-3.5" />
-              <span>Fast-Track Recruiter Visibility</span>
-            </div>
-          </div>
         </div>
       </div>
     </div>

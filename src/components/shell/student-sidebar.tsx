@@ -19,6 +19,9 @@ import {
   LogOut,
   ChevronRight,
   ExternalLink,
+  Lock,
+  Sparkles,
+  Gift,
 } from "lucide-react"
 
 export interface StudentNavCountsProp {
@@ -34,6 +37,7 @@ interface AppleNavItem {
   /** Real (database-driven) count shown as a pill. Hidden when 0. */
   countKey?: keyof StudentNavCountsProp
   isNew?: boolean
+  isLocked?: boolean
 }
 
 const mainNavItems: AppleNavItem[] = [
@@ -50,20 +54,20 @@ const mainNavItems: AppleNavItem[] = [
     iconGradient: "from-blue-500 to-indigo-600",
   },
   {
-    title: "Explore Courses",
-    href: "/student/catalog",
-    icon: Compass,
-    iconGradient: "from-emerald-400 to-teal-600",
-  },
-]
-
-const academicNavItems: AppleNavItem[] = [
-  {
     title: "Live Classes",
     href: "/student/live-classes",
     icon: Video,
     iconGradient: "from-rose-500 to-red-600",
   },
+  // {
+  //   title: "Explore Courses",
+  //   href: "/student/catalog",
+  //   icon: Compass,
+  //   iconGradient: "from-emerald-400 to-teal-600",
+  // },
+]
+
+const academicNavItems: AppleNavItem[] = [
   {
     title: "Assignments",
     href: "/student/assignments",
@@ -86,10 +90,24 @@ const academicNavItems: AppleNavItem[] = [
     isNew: true,
   },
   {
+    title: "Rewards & Swag",
+    href: "/student/rewards",
+    icon: Gift,
+    iconGradient: "from-amber-400 via-orange-500 to-rose-500",
+    isNew: true,
+  },
+  {
     title: "Certificates",
     href: "/student/certificates",
     icon: Award,
     iconGradient: "from-yellow-400 to-amber-500",
+  },
+  {
+    title: "Interview Prep",
+    href: "/student/interview",
+    icon: Sparkles,
+    iconGradient: "from-cyan-400 to-blue-600",
+    isLocked: true,
   },
 ]
 
@@ -194,6 +212,12 @@ export function StudentSidebar({ user, counts, onCloseMobile }: StudentSidebarPr
                 {showNew && (
                   <span className="px-1.5 py-0.5 text-[9px] font-black tracking-wider rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white animate-pulse">
                     NEW
+                  </span>
+                )}
+                {item.isLocked && (
+                  <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1 font-mono">
+                    <Lock className="w-2.5 h-2.5" />
+                    <span>Locked</span>
                   </span>
                 )}
                 {isActive && (

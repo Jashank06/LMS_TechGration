@@ -159,18 +159,24 @@ export default async function CourseDetailPage({ params }: PageProps) {
     }
   })
 
-  // Map recordings
-  const recordings = allLessons.map((l, idx) => ({
-    id: l.id,
-    title: l.title,
-    description: l.content,
-    durationSec: l.durationSec,
-    durationMinutes: Math.round(l.durationSec / 60),
-    videoUrl: l.videoUrl,
-    position: idx + 1,
-    isCompleted: completedLessonSet.has(l.id),
-    resourcesCount: l.resources.length,
-  }))
+  // Map recordings (strictly real live classes that have an actual recordingUrl)
+  const recordings = course.liveClasses
+    .filter((lc) => Boolean(lc.recordingUrl && lc.recordingUrl.trim().length > 0))
+    .map((lc, idx) => {
+      const durationMs = new Date(lc.endsAt).getTime() - new Date(lc.startsAt).getTime()
+      const durationSec = Math.max(300, Math.round(durationMs / 1000))
+      return {
+        id: lc.id,
+        title: lc.title,
+        description: lc.description,
+        durationSec,
+        durationMinutes: Math.round(durationSec / 60),
+        videoUrl: lc.recordingUrl,
+        position: idx + 1,
+        isCompleted: false,
+        resourcesCount: 0,
+      }
+    })
 
   // Map live classes
   const liveClasses = course.liveClasses.map((lc) => ({
@@ -185,6 +191,8 @@ export default async function CourseDetailPage({ params }: PageProps) {
     recordingUrl: lc.recordingUrl,
     platform: lc.platform,
     status: lc.status,
+    meetingId: lc.meetingId,
+    meetingPasscode: lc.meetingPasscode,
   }))
 
   const courseHubData: CourseHubData = {

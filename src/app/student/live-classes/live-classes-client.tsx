@@ -166,7 +166,7 @@ export function LiveClassesClient({
                     </Button>
 
                     <span className="text-[11px] text-muted-foreground text-center font-medium">
-                      Direct Google Meet / Room Link
+                      Direct Zoom / Meet Room Link
                     </span>
                   </div>
                 </div>

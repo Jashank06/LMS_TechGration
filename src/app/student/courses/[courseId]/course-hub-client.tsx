@@ -35,6 +35,7 @@ import {
   ArrowRight,
 } from "lucide-react"
 import { QuickSubmitAssignmentModal } from "@/components/student/quick-submit-assignment-modal"
+import { toast } from "sonner"
 
 export interface CourseHubData {
   id: string
@@ -64,6 +65,8 @@ export interface CourseHubData {
     recordingUrl: string | null
     platform: string
     status: string
+    meetingId?: string | null
+    meetingPasscode?: string | null
   }>
   recordings: Array<{
     id: string
@@ -201,12 +204,28 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
     return () => clearInterval(interval)
   }, [liveOrUpcomingClass])
 
+  const [copiedId, setCopiedId] = React.useState(false)
+  const [copiedPasscode, setCopiedPasscode] = React.useState(false)
+
   // Copy Meeting Link Handler
   const handleCopyMeetLink = () => {
-    const url = liveOrUpcomingClass?.meetingUrl || "https://meet.google.com/jan-hnzk-nhf"
+    const url = liveOrUpcomingClass?.meetingUrl || "https://us06web.zoom.us/j/89248109283?pwd=TG2026"
     navigator.clipboard.writeText(url)
     setCopiedLink(true)
+    toast.success("Meeting link copied to clipboard!")
     setTimeout(() => setCopiedLink(false), 2000)
+  }
+
+  const getGoogleCalendarUrl = () => {
+    if (!liveOrUpcomingClass) return "#"
+    const startIso = new Date(liveOrUpcomingClass.startsAt).toISOString().replace(/-|:|\.\d\d\d/g, "")
+    const endIso = new Date(liveOrUpcomingClass.endsAt).toISOString().replace(/-|:|\.\d\d\d/g, "")
+    const title = encodeURIComponent(`${liveOrUpcomingClass.title} — ${course.title}`)
+    const details = encodeURIComponent(
+      `Live Class hosted by ${liveOrUpcomingClass.instructorName}.\nJoin Link: ${liveOrUpcomingClass.meetingUrl}\n${liveOrUpcomingClass.meetingId ? `Meeting ID: ${liveOrUpcomingClass.meetingId}\n` : ""}${liveOrUpcomingClass.meetingPasscode ? `Passcode: ${liveOrUpcomingClass.meetingPasscode}\n` : ""}`
+    )
+    const loc = encodeURIComponent(liveOrUpcomingClass.meetingUrl || "")
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startIso}/${endIso}&details=${details}&location=${loc}`
   }
 
   // Filtered Study Materials
@@ -292,7 +311,7 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
             <div className="flex flex-wrap items-center gap-6 pt-2 text-xs sm:text-sm text-muted-foreground font-medium">
               <div className="flex items-center gap-2">
                 <Video className="w-4 h-4 text-brand-teal" />
-                <span>Google Meet Live Classes</span>
+                <span>Live Interactive Classes (Zoom & Google Meet)</span>
               </div>
               <div className="flex items-center gap-2">
                 <PlayCircle className="w-4 h-4 text-brand-teal" />
@@ -544,7 +563,7 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
                   <div className="pointer-events-none absolute -top-24 -right-24 w-80 h-80 bg-brand-teal/15 rounded-full blur-3xl" />
 
                   <div className="relative z-10 space-y-6">
-                    {/* Status Badge & Header */}
+                    {/* Status Badge & Platform */}
                     <div className="flex flex-wrap items-center justify-between gap-4">
                       {liveOrUpcomingClass.isLiveNow ? (
                         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-500/15 text-rose-500 border border-rose-500/30 font-extrabold text-xs tracking-wider animate-pulse">
@@ -558,10 +577,22 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
                         </div>
                       )}
 
-                      <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 bg-secondary/70 px-3 py-1 rounded-xl">
-                        <Users className="w-3.5 h-3.5 text-brand-teal" />
-                        <span>Platform: Google Meet</span>
-                      </span>
+                      {liveOrUpcomingClass.platform === "ZOOM" ? (
+                        <span className="text-xs font-semibold text-blue-500 flex items-center gap-1.5 bg-blue-500/15 border border-blue-500/30 px-3 py-1 rounded-xl">
+                          <Video className="w-3.5 h-3.5 text-blue-500" />
+                          <span>Platform: Zoom Cloud Meeting</span>
+                        </span>
+                      ) : liveOrUpcomingClass.platform === "GOOGLE_MEET" ? (
+                        <span className="text-xs font-semibold text-emerald-500 flex items-center gap-1.5 bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 rounded-xl">
+                          <Video className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>Platform: Google Meet</span>
+                        </span>
+                      ) : (
+                        <span className="text-xs font-semibold text-purple-400 flex items-center gap-1.5 bg-purple-500/15 border border-purple-500/30 px-3 py-1 rounded-xl">
+                          <Video className="w-3.5 h-3.5 text-purple-400" />
+                          <span>Platform: TechGration Classroom</span>
+                        </span>
+                      )}
                     </div>
 
                     {/* Class Title & Description */}
@@ -571,9 +602,74 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
                       </h2>
                       <p className="text-sm text-muted-foreground leading-relaxed max-w-3xl">
                         {liveOrUpcomingClass.description ||
-                          "Join the live session with instructor Jay Kumar. We will cover end-to-end architecture, interactive code demonstrations, and real-time Q&A."}
+                          `Join the live interactive lecture hosted by instructor ${liveOrUpcomingClass.instructorName || course.instructorName || "Vineet Sir"}. We will cover core architecture, hands-on demonstrations, and live student Q&A.`}
                       </p>
                     </div>
+
+                    {/* Meeting ID & Passcode info cards (when available) */}
+                    {(liveOrUpcomingClass.meetingId || liveOrUpcomingClass.meetingPasscode) && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md">
+                        {liveOrUpcomingClass.meetingId && (
+                          <div className="flex items-center justify-between p-3 rounded-2xl border border-border/80 bg-secondary/40 backdrop-blur-md">
+                            <div className="space-y-0.5">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                                Meeting ID
+                              </span>
+                              <span className="text-sm font-mono font-bold text-foreground">
+                                {liveOrUpcomingClass.meetingId}
+                              </span>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                navigator.clipboard.writeText(liveOrUpcomingClass.meetingId || "")
+                                setCopiedId(true)
+                                toast.success("Meeting ID copied to clipboard!")
+                                setTimeout(() => setCopiedId(false), 2000)
+                              }}
+                              className="h-8 px-2 text-xs"
+                            >
+                              {copiedId ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-500" />
+                              ) : (
+                                <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+                              )}
+                            </Button>
+                          </div>
+                        )}
+
+                        {liveOrUpcomingClass.meetingPasscode && (
+                          <div className="flex items-center justify-between p-3 rounded-2xl border border-border/80 bg-secondary/40 backdrop-blur-md">
+                            <div className="space-y-0.5">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                                Passcode
+                              </span>
+                              <span className="text-sm font-mono font-bold text-brand-teal">
+                                {liveOrUpcomingClass.meetingPasscode}
+                              </span>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                navigator.clipboard.writeText(liveOrUpcomingClass.meetingPasscode || "")
+                                setCopiedPasscode(true)
+                                toast.success("Passcode copied to clipboard!")
+                                setTimeout(() => setCopiedPasscode(false), 2000)
+                              }}
+                              className="h-8 px-2 text-xs"
+                            >
+                              {copiedPasscode ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-500" />
+                              ) : (
+                                <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+                              )}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Countdown Clock (when upcoming) */}
                     {!liveOrUpcomingClass.isLiveNow && (
@@ -616,7 +712,9 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
                           rel="noopener noreferrer"
                         >
                           <Video className="w-5 h-5 mr-2" />
-                          <span>Join Live Class (Google Meet)</span>
+                          <span>
+                            Join Live Class ({liveOrUpcomingClass.platform === "ZOOM" ? "Zoom" : liveOrUpcomingClass.platform === "GOOGLE_MEET" ? "Google Meet" : "Live Room"})
+                          </span>
                           <ExternalLink className="w-4 h-4 ml-2" />
                         </a>
                       </Button>
@@ -634,9 +732,24 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
                         ) : (
                           <>
                             <Copy className="w-4 h-4 mr-2" />
-                            <span>Copy Google Meet Link</span>
+                            <span>Copy Meeting Link</span>
                           </>
                         )}
+                      </Button>
+
+                      <Button
+                        asChild
+                        variant="outline"
+                        className="h-12 px-5 rounded-2xl text-xs font-semibold"
+                      >
+                        <a
+                          href={getGoogleCalendarUrl()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Calendar className="w-4 h-4 mr-2 text-brand-teal" />
+                          <span>Add to Google Calendar</span>
+                        </a>
                       </Button>
                     </div>
 
@@ -644,9 +757,13 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
                     <div className="p-4 rounded-2xl border border-border/60 bg-muted/20 text-xs text-muted-foreground space-y-1">
                       <p className="font-semibold text-foreground">💡 Class Guidelines:</p>
                       <ul className="list-disc list-inside space-y-0.5 text-[11px]">
-                        <li>Please join 5 minutes early to test your audio & video.</li>
+                        <li>Please join 5 minutes early to test your audio & video setup.</li>
                         <li>Keep your microphone muted while the instructor is presenting.</li>
-                        <li>Post any immediate questions in the Google Meet chat or raise your hand during Q&A.</li>
+                        <li>
+                          {liveOrUpcomingClass.platform === "ZOOM"
+                            ? "You can join directly via the Zoom web browser or the Zoom Desktop/Mobile app."
+                            : "You can join directly with your Google account in any browser."}
+                        </li>
                       </ul>
                     </div>
                   </div>
@@ -740,14 +857,27 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
                               </span>
                             </div>
 
-                            <Link
-                              href={`/student/learn/${rec.id}`}
-                              className="absolute inset-0 flex items-center justify-center group-hover:scale-110 transition-transform"
-                            >
-                              <div className="w-14 h-14 rounded-full bg-brand-teal text-brand-charcoal flex items-center justify-center shadow-xl shadow-brand-teal/30">
-                                <PlayCircle className="w-7 h-7 fill-current" />
-                              </div>
-                            </Link>
+                            {rec.videoUrl?.startsWith("http") ? (
+                              <a
+                                href={rec.videoUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="absolute inset-0 flex items-center justify-center group-hover:scale-110 transition-transform"
+                              >
+                                <div className="w-14 h-14 rounded-full bg-brand-teal text-brand-charcoal flex items-center justify-center shadow-xl shadow-brand-teal/30">
+                                  <PlayCircle className="w-7 h-7 fill-current" />
+                                </div>
+                              </a>
+                            ) : (
+                              <Link
+                                href={`/student/learn/${rec.id}`}
+                                className="absolute inset-0 flex items-center justify-center group-hover:scale-110 transition-transform"
+                              >
+                                <div className="w-14 h-14 rounded-full bg-brand-teal text-brand-charcoal flex items-center justify-center shadow-xl shadow-brand-teal/30">
+                                  <PlayCircle className="w-7 h-7 fill-current" />
+                                </div>
+                              </Link>
+                            )}
                           </div>
 
                           <div className="p-5 space-y-2">
@@ -776,16 +906,29 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
                             {rec.resourcesCount > 0 ? `📁 ${rec.resourcesCount} Files Attached` : "HD Recording"}
                           </span>
 
-                          <Button
-                            asChild
-                            size="sm"
-                            className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold rounded-xl text-xs"
-                          >
-                            <Link href={`/student/learn/${rec.id}`}>
-                              <span>Watch Recording</span>
-                              <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                            </Link>
-                          </Button>
+                          {rec.videoUrl?.startsWith("http") ? (
+                            <Button
+                              asChild
+                              size="sm"
+                              className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold rounded-xl text-xs"
+                            >
+                              <a href={rec.videoUrl} target="_blank" rel="noopener noreferrer">
+                                <span>Watch Recording</span>
+                                <ExternalLink className="w-3.5 h-3.5 ml-1" />
+                              </a>
+                            </Button>
+                          ) : (
+                            <Button
+                              asChild
+                              size="sm"
+                              className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold rounded-xl text-xs"
+                            >
+                              <Link href={`/student/learn/${rec.id}`}>
+                                <span>Watch Recording</span>
+                                <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                              </Link>
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))}

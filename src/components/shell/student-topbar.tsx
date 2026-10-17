@@ -51,10 +51,56 @@ export function StudentTopbar({ user, onToggleMobileSidebar }: StudentTopbarProp
       title: string
       message: string
       time: string
+      href: string
       type: "live" | "grade" | "cert"
       unread: boolean
     }[]
   >([])
+
+  React.useEffect(() => {
+    let active = true
+    const fetchNotifications = async () => {
+      try {
+        const res = await fetch("/api/student/notifications")
+        if (!res.ok) return
+        const data = await res.json()
+        if (active && Array.isArray(data.notifications)) {
+          setNotifications(
+            data.notifications.map((n: any) => {
+              const isLive = n.title.includes("Live Class") || n.message.includes("Live")
+              const isGrade = n.title.includes("Grade") || n.title.includes("Assignment")
+              const createdDate = new Date(n.createdAt)
+              const timeStr = createdDate.toLocaleTimeString("en-IN", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              })
+
+              return {
+                id: n.id,
+                title: n.title,
+                message: n.message,
+                href: n.href || "/student/dashboard",
+                time: timeStr,
+                type: isLive ? "live" : isGrade ? "grade" : "cert",
+                unread: Boolean(n.unread),
+              }
+            })
+          )
+        }
+      } catch (err) {
+        console.error("Failed to fetch notifications:", err)
+      }
+    }
+
+    fetchNotifications()
+    const timer = setInterval(fetchNotifications, 15000)
+    return () => {
+      active = false
+      clearInterval(timer)
+    }
+  }, [])
+
   const unreadCount = notifications.filter((n) => n.unread).length
 
   const userName = user?.name || "Student User"
@@ -79,8 +125,13 @@ export function StudentTopbar({ user, onToggleMobileSidebar }: StudentTopbarProp
       return { raw: seg, formatted }
     })
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })))
+    await fetch("/api/student/notifications", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ markAll: true }),
+    }).catch(() => {})
   }
 
   return (
@@ -179,9 +230,10 @@ export function StudentTopbar({ user, onToggleMobileSidebar }: StudentTopbarProp
                   </div>
                 ) : (
                   notifications.map((item) => (
-                    <div
+                    <Link
                       key={item.id}
-                      className={`p-3 text-xs flex gap-3 transition-colors ${
+                      href={item.href}
+                      className={`p-3 text-xs flex gap-3 transition-colors block ${
                         item.unread ? "bg-brand-teal/5 dark:bg-brand-teal/10" : "hover:bg-muted/40"
                       }`}
                     >
@@ -211,7 +263,7 @@ export function StudentTopbar({ user, onToggleMobileSidebar }: StudentTopbarProp
                           {item.time}
                         </span>
                       </div>
-                    </div>
+                    </Link>
                   ))
                 )}
               </div>
