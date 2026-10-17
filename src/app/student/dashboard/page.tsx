@@ -38,9 +38,14 @@ export default async function StudentDashboardPage() {
   })
 
   // 3. Fetch Upcoming Live Classes
+  const enrolledCourseIds = enrollments
+    .filter((e) => e.status === "ACTIVE")
+    .map((e) => e.courseId)
+
   const upcomingLiveClasses = await db.liveClass.findMany({
     where: {
       status: { in: ["SCHEDULED", "LIVE"] },
+      courseId: { in: enrolledCourseIds },
     },
     include: {
       course: true,

@@ -35,6 +35,7 @@ import {
   HelpCircle,
   Clock,
   BookOpen,
+  ImageIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -95,17 +96,22 @@ export default function NewCourseWizardPage() {
 
   // Step 1: Identity & Catalog
   const [title, setTitle] = React.useState("")
-  const [code, setCode] = React.useState("TG-CS" + Math.floor(100 + Math.random() * 899))
+  const [code, setCode] = React.useState("TG-CS599")
   const [category, setCategory] = React.useState("Cloud Engineering")
   const [level, setLevel] = React.useState("ALL_LEVELS")
   const [format, setFormat] = React.useState("HYBRID")
   const [subtitle, setSubtitle] = React.useState("")
   const [description, setDescription] = React.useState("")
 
+  React.useEffect(() => {
+    // Generate randomized course code on client after hydration to avoid SSR mismatch
+    const prefixes = ["TG-CS", "TG-AI", "TG-DEV", "TG-SEC", "TG-SYS"]
+    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)]
+    setCode(`${prefix}${Math.floor(100 + Math.random() * 899)}`)
+  }, [])
+
   // Step 2: Media Assets & Cloudinary
-  const [thumbnailUrl, setThumbnailUrl] = React.useState(
-    "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1280&auto=format&fit=crop"
-  )
+  const [thumbnailUrl, setThumbnailUrl] = React.useState("/brand/AI.png")
   const [promoVideoUrl, setPromoVideoUrl] = React.useState("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
   const [durationHours, setDurationHours] = React.useState(24)
 
@@ -396,6 +402,31 @@ export default function NewCourseWizardPage() {
                     value={subtitle}
                     onChange={(e) => setSubtitle(e.target.value)}
                     className="text-xs h-10 rounded-xl"
+                  />
+                </div>
+
+                {/* Course Cover Image (Cloudinary CDN Uploader) */}
+                <div className="space-y-2 pt-2 border-t border-border/60">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                        <ImageIcon className="w-3.5 h-3.5 text-brand-teal" />
+                        <span>Course Cover Image</span>
+                        <span className="text-[10px] font-normal text-muted-foreground">(Cloudinary CDN)</span>
+                      </Label>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        Upload custom 16:9 banner or select an official TechGration cover.
+                      </p>
+                    </div>
+                    <span className="text-[11px] text-brand-teal font-medium hidden sm:inline-block">
+                      Auto-WebP 1280x720
+                    </span>
+                  </div>
+
+                  <CourseThumbnailUploader
+                    value={thumbnailUrl}
+                    onChange={(url) => setThumbnailUrl(url)}
+                    courseTitle={title}
                   />
                 </div>
 
@@ -892,6 +923,8 @@ export default function NewCourseWizardPage() {
             thumbnailUrl={thumbnailUrl}
             durationHours={durationHours}
             instructorName="Faculty Instructor"
+            onThumbnailChange={(url) => setThumbnailUrl(url)}
+            courseTitle={title}
           />
         </div>
       </div>

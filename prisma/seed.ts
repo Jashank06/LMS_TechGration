@@ -42,7 +42,7 @@ async function main() {
   console.log("✨ All fake/seeded data completely removed!")
 
   // Password hashes
-  const adminPasswordHash = bcrypt.hashSync("Admin@123", 10)
+  const adminPasswordHash = bcrypt.hashSync("Techgration.live", 10)
   const teacherPasswordHash = bcrypt.hashSync("Teacher@123", 10)
   const studentPasswordHash = bcrypt.hashSync("Student@123", 10)
 

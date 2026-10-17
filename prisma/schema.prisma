@@ -213,7 +213,13 @@ model Course {
   instructor      User?                @relation("CourseInstructor", fields: [instructorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdById     String?              @db.ObjectId
   createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
+  timetableUrl       String?
+  timetableTitle     String?
+  timetableFileName  String?
+  timetableFileSize  String?
+  timetableFileType  String?
+  timetableUpdatedAt DateTime?
+  updatedAt          DateTime             @updatedAt
 
   modules      Module[]
   enrollments  Enrollment[]

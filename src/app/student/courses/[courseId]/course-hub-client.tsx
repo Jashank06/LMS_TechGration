@@ -113,6 +113,12 @@ export interface CourseHubData {
     hasPassed: boolean
     totalAttempts: number
   }>
+  timetableUrl?: string | null
+  timetableTitle?: string | null
+  timetableFileName?: string | null
+  timetableFileSize?: string | null
+  timetableFileType?: string | null
+  timetableUpdatedAt?: string | null
 }
 
 interface CourseHubClientProps {
@@ -153,30 +159,34 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
     )
   }
 
-  // Identify Active or Next Upcoming Live Class
+  // Identify Active or Next Upcoming Live Class (Strictly non-cancelled)
+  const activeLiveClasses = React.useMemo(() => {
+    return course.liveClasses.filter((lc) => lc.status !== "CANCELLED")
+  }, [course.liveClasses])
+
   const liveOrUpcomingClass = React.useMemo(() => {
     const now = new Date()
-    // 1. First look for an explicitly LIVE class or one happening right now
-    const currentlyLive = course.liveClasses.find((lc) => {
+    // 1. First look for an explicitly LIVE class or one happening right now (never cancelled)
+    const currentlyLive = activeLiveClasses.find((lc) => {
       const start = new Date(lc.startsAt)
       const end = new Date(lc.endsAt)
-      return lc.status === "LIVE" || (now >= start && now <= end)
+      return lc.status === "LIVE" || (lc.status === "SCHEDULED" && now >= start && now <= end)
     })
     if (currentlyLive) return { ...currentlyLive, isLiveNow: true }
 
     // 2. Otherwise look for the next upcoming scheduled class
-    const upcoming = course.liveClasses
+    const upcoming = activeLiveClasses
       .filter((lc) => new Date(lc.startsAt) > now && lc.status === "SCHEDULED")
       .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0]
 
     if (upcoming) return { ...upcoming, isLiveNow: false }
 
     // Fallback to any scheduled class if any
-    const anyScheduled = course.liveClasses.find((lc) => lc.status === "SCHEDULED")
+    const anyScheduled = activeLiveClasses.find((lc) => lc.status === "SCHEDULED")
     if (anyScheduled) return { ...anyScheduled, isLiveNow: false }
 
     return null
-  }, [course.liveClasses])
+  }, [activeLiveClasses])
 
   // Live Countdown Timer Hook
   const [timeLeft, setTimeLeft] = React.useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
@@ -962,7 +972,177 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
               transition={{ duration: 0.2 }}
               className="space-y-6"
             >
-              {course.liveClasses.length > 0 ? (
+              {course.timetableUrl ? (
+                <div className="space-y-6">
+                  {/* Official Timetable Document Header Card */}
+                  <div className="p-6 sm:p-7 rounded-3xl border border-brand-teal/30 bg-gradient-to-br from-card via-card to-brand-teal/5 backdrop-blur-xl shadow-xs">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+                      <div className="flex items-start gap-4">
+                        <div className="w-14 h-14 rounded-2xl bg-brand-teal/15 text-brand-teal border border-brand-teal/30 flex items-center justify-center shrink-0 shadow-xs">
+                          {course.timetableFileType === "PDF" || course.timetableUrl.toLowerCase().includes(".pdf") ? (
+                            <FileText className="w-7 h-7" />
+                          ) : (
+                            <FileCode className="w-7 h-7" />
+                          )}
+                        </div>
+
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-base sm:text-xl font-extrabold text-foreground tracking-tight">
+                              {course.timetableTitle || "Official Course Batch Timetable"}
+                            </h3>
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-brand-teal/20 text-brand-teal uppercase tracking-wider">
+                              {course.timetableFileType || "Document"}
+                            </span>
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-500 uppercase tracking-wider flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>Official Schedule</span>
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-muted-foreground">
+                            Uploaded by <strong className="text-foreground">{course.instructorName || "Course Instructor"}</strong>
+                            {course.timetableFileName && ` • ${course.timetableFileName}`}
+                            {course.timetableFileSize && ` • ${course.timetableFileSize}`}
+                            {course.timetableUpdatedAt && ` • Last updated ${new Date(course.timetableUpdatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
+                          </p>
+
+                          <p className="text-[11px] text-muted-foreground pt-0.5">
+                            This is your official curriculum timetable for lectures, live labs, and mentoring milestones.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Download & Fullscreen Actions */}
+                      <div className="flex items-center gap-2.5 shrink-0 self-start md:self-center">
+                        <Button
+                          asChild
+                          className="font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal h-11 px-5 rounded-2xl shadow-lg shadow-brand-teal/20 text-xs transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        >
+                          <a
+                            href={course.timetableUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download={course.timetableFileName || "course-timetable"}
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            <span>Download Timetable</span>
+                          </a>
+                        </Button>
+
+                        <Button
+                          asChild
+                          variant="outline"
+                          className="h-11 px-4 rounded-2xl border-border/80 text-xs font-semibold"
+                        >
+                          <a href={course.timetableUrl} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="w-4 h-4 mr-1.5" />
+                            <span>Open Fullscreen</span>
+                          </a>
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* In-Browser Document Preview */}
+                    <div className="mt-6 pt-6 border-t border-border/60 space-y-3">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground font-semibold">
+                        <span>Interactive Timetable Viewer</span>
+                        <span>Scroll or zoom to view all weeks</span>
+                      </div>
+
+                      {course.timetableFileType === "PDF" || course.timetableUrl.toLowerCase().includes(".pdf") ? (
+                        <div className="rounded-2xl overflow-hidden border border-border/80 bg-background/50 shadow-inner">
+                          <iframe
+                            src={`${course.timetableUrl}#view=FitH`}
+                            title="Official Course Timetable"
+                            className="w-full h-[650px] border-none"
+                          />
+                        </div>
+                      ) : ["PNG", "JPG", "JPEG", "WEBP"].includes(course.timetableFileType || "") || course.timetableUrl.match(/\.(png|jpg|jpeg|webp)$/i) ? (
+                        <div className="rounded-2xl overflow-hidden border border-border/80 bg-black/40 p-3 flex items-center justify-center">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={course.timetableUrl}
+                            alt="Official Course Timetable"
+                            className="max-h-[650px] w-auto max-w-full object-contain rounded-xl shadow-lg"
+                          />
+                        </div>
+                      ) : (
+                        <div className="p-8 rounded-2xl bg-secondary/30 border border-border/60 text-center space-y-3">
+                          <FileText className="w-10 h-10 text-brand-teal mx-auto" />
+                          <p className="text-sm font-bold text-foreground">{course.timetableFileName}</p>
+                          <Button asChild size="sm" className="bg-brand-teal text-brand-charcoal font-bold rounded-xl text-xs">
+                            <a href={course.timetableUrl} target="_blank" rel="noopener noreferrer" download>
+                              <Download className="w-3.5 h-3.5 mr-1" />
+                              <span>Download Timetable Document</span>
+                            </a>
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Upcoming Individual Class Meetings (if any scheduled) */}
+                  {activeLiveClasses.length > 0 && (
+                    <div className="space-y-4 pt-4">
+                      <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                        <Radio className="w-4 h-4 text-brand-teal animate-pulse" />
+                        <span>Upcoming Live Meeting Dates</span>
+                      </h4>
+
+                      <div className="space-y-3">
+                        {activeLiveClasses.map((session, idx) => {
+                          const dateObj = new Date(session.startsAt)
+                          const dayName = dateObj.toLocaleDateString("en-US", { weekday: "long" })
+                          const dateFormatted = dateObj.toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })
+                          const timeFormatted = dateObj.toLocaleTimeString("en-US", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+
+                          return (
+                            <div
+                              key={session.id}
+                              className="p-4 rounded-2xl border border-border/80 bg-card/60 backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center font-bold text-xs text-brand-teal shrink-0">
+                                  #{idx + 1}
+                                </div>
+                                <div>
+                                  <div className="text-sm font-bold text-foreground">{session.title}</div>
+                                  <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
+                                    <span>{dayName}, {dateFormatted}</span>
+                                    <span>•</span>
+                                    <span className="font-mono text-foreground">{timeFormatted} IST</span>
+                                    <span>•</span>
+                                    <span className="text-brand-teal">{session.platform}</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <Button
+                                asChild
+                                size="sm"
+                                className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold rounded-xl text-xs shrink-0"
+                              >
+                                <a href={session.meetingUrl || defaultMeetUrl} target="_blank" rel="noopener noreferrer">
+                                  <Video className="w-3.5 h-3.5 mr-1" />
+                                  <span>Join Room</span>
+                                </a>
+                              </Button>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : activeLiveClasses.length > 0 ? (
                 <>
                   <div className="p-5 rounded-2xl border border-border/80 bg-gradient-to-r from-card via-card to-brand-teal/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
@@ -971,7 +1151,7 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
                         <span>Live Class Schedule</span>
                       </h3>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Classes are held via Google Meet. Ensure you join 5 minutes prior to the scheduled time.
+                        Classes are held via Google Meet / Zoom. Ensure you join 5 minutes prior to the scheduled time.
                       </p>
                     </div>
 
@@ -989,7 +1169,7 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
                   </div>
 
                   <div className="space-y-4">
-                    {course.liveClasses.map((session, idx) => {
+                    {activeLiveClasses.map((session, idx) => {
                       const dateObj = new Date(session.startsAt)
                       const dayName = dateObj.toLocaleDateString("en-US", { weekday: "long" })
                       const dateFormatted = dateObj.toLocaleDateString("en-US", {
@@ -1084,9 +1264,9 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
                     <Calendar className="w-7 h-7" />
                   </div>
                   <div className="space-y-1">
-                    <h3 className="text-lg font-bold text-foreground">Batch Schedule To Be Announced</h3>
+                    <h3 className="text-lg font-bold text-foreground">Timetable Not Uploaded Yet</h3>
                     <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
-                      The live class schedule is currently being finalized. You will be notified once the session dates and timings are confirmed by your instructor.
+                      Your course instructor has not uploaded the official batch timetable yet. Once uploaded, you will be able to view and download the official schedule document right here.
                     </p>
                   </div>
                 </div>

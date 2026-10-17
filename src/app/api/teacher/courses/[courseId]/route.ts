@@ -65,6 +65,7 @@ export async function GET(
             resources: l.resources || [],
           })),
         })),
+        timetableUpdatedAt: course.timetableUpdatedAt ? course.timetableUpdatedAt.toISOString() : null,
       },
     })
   } catch (error) {

@@ -13,7 +13,22 @@ export const metadata: Metadata = {
 export default async function LiveClassesPage() {
   const user = await requireStudent()
 
+  // Only get classes for courses the student is actively enrolled in
+  const enrollments = await db.enrollment.findMany({
+    where: {
+      userId: user.id,
+      status: "ACTIVE",
+    },
+    select: { courseId: true },
+  })
+
+  const enrolledCourseIds = enrollments.map((e) => e.courseId)
+
   const liveClasses = await db.liveClass.findMany({
+    where: {
+      status: { not: "CANCELLED" },
+      courseId: { in: enrolledCourseIds },
+    },
     include: {
       course: true,
       attendances: {

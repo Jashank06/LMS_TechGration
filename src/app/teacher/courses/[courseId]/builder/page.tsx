@@ -21,6 +21,7 @@ import {
   ExternalLink,
   Copy,
   Check,
+  Download,
   Clock,
   Sparkles,
   Users,
@@ -143,6 +144,12 @@ export interface CourseData {
   liveClasses: LiveClassItem[]
   materials: MaterialItem[]
   modules?: any[]
+  timetableUrl?: string | null
+  timetableTitle?: string | null
+  timetableFileName?: string | null
+  timetableFileSize?: string | null
+  timetableFileType?: string | null
+  timetableUpdatedAt?: string | null
 }
 
 export default function TeacherCourseHubPage() {
@@ -223,8 +230,14 @@ export default function TeacherCourseHubPage() {
     notifyStudents: true,
   })
 
-  // Timetable Generator State
-  const [isGeneratingTimetable, setIsGeneratingTimetable] = React.useState(false)
+  // Timetable Upload & Management State
+  const timetableInputRef = React.useRef<HTMLInputElement | null>(null)
+  const replaceTimetableInputRef = React.useRef<HTMLInputElement | null>(null)
+  const [timetableFile, setTimetableFile] = React.useState<File | null>(null)
+  const [timetableTitleInput, setTimetableTitleInput] = React.useState("")
+  const [isUploadingTimetable, setIsUploadingTimetable] = React.useState(false)
+  const [isDeletingTimetable, setIsDeletingTimetable] = React.useState(false)
+  const [isDraggingTimetable, setIsDraggingTimetable] = React.useState(false)
 
   // Material Upload Modal State
   const [showUploadModal, setShowUploadModal] = React.useState(false)
@@ -541,25 +554,62 @@ export default function TeacherCourseHubPage() {
     }
   }
 
-  // Handle Generate Weekly Schedule
-  const handleGenerateWeeklyTimetable = async () => {
-    setIsGeneratingTimetable(true)
+  // Handle Upload Official Course Timetable (PDF / Image / Doc)
+  const handleUploadTimetable = async (fileToUpload?: File) => {
+    const file = fileToUpload || timetableFile
+    if (!file) {
+      toast.error("Please select a timetable file (PDF, Image, or Document)")
+      return
+    }
+    setIsUploadingTimetable(true)
     try {
-      const res = await fetch(`/api/teacher/courses/${courseId}/timetable/generate`, {
+      const formData = new FormData()
+      formData.append("file", file)
+      if (timetableTitleInput.trim()) {
+        formData.append("title", timetableTitleInput.trim())
+      }
+
+      const res = await fetch(`/api/teacher/courses/${courseId}/timetable/upload`, {
         method: "POST",
+        body: formData,
       })
       const data = await res.json()
-      if (res.ok) {
+      if (res.ok && data.success) {
         triggerBrandCelebration()
-        toast.success(data.message || "Weekly class schedule generated!")
+        toast.success("Course timetable uploaded and published to students!")
+        setTimetableFile(null)
+        setTimetableTitleInput("")
         await fetchCourseData()
       } else {
-        toast.error(data.error || "Failed to generate timetable")
+        toast.error(data.error || "Failed to upload timetable")
+      }
+    } catch (err) {
+      console.error("Timetable upload error:", err)
+      toast.error("Network error while uploading timetable")
+    } finally {
+      setIsUploadingTimetable(false)
+    }
+  }
+
+  // Handle Remove Course Timetable
+  const handleDeleteTimetable = async () => {
+    if (!confirm("Are you sure you want to remove the course timetable? Students will no longer see it.")) return
+    setIsDeletingTimetable(true)
+    try {
+      const res = await fetch(`/api/teacher/courses/${courseId}/timetable`, {
+        method: "DELETE",
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        toast.success("Course timetable removed.")
+        await fetchCourseData()
+      } else {
+        toast.error(data.error || "Failed to remove timetable")
       }
     } catch {
-      toast.error("Failed to generate timetable")
+      toast.error("Network error while removing timetable")
     } finally {
-      setIsGeneratingTimetable(false)
+      setIsDeletingTimetable(false)
     }
   }
 
@@ -841,8 +891,20 @@ export default function TeacherCourseHubPage() {
             <span className="text-xs font-medium">Batch Timetable</span>
             <Calendar className="w-4 h-4 text-cyan-500" />
           </div>
-          <div className="text-2xl font-black text-foreground">Tue / Thu / Sat</div>
-          <div className="text-[11px] text-muted-foreground">8:00 PM – 9:30 PM IST</div>
+          {course.timetableUrl ? (
+            <>
+              <div className="text-xl font-black text-emerald-500 truncate flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span className="truncate">{course.timetableFileType || "Uploaded"}</span>
+              </div>
+              <div className="text-[11px] text-muted-foreground truncate">{course.timetableFileName || "Official Timetable Active"}</div>
+            </>
+          ) : (
+            <>
+              <div className="text-xl font-bold text-muted-foreground">Not Uploaded</div>
+              <div className="text-[11px] text-amber-500 font-medium">Upload in Timetable Tab</div>
+            </>
+          )}
         </div>
 
         <div className="p-4 rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl shadow-xs space-y-1">
@@ -1370,87 +1432,304 @@ export default function TeacherCourseHubPage() {
                 <div>
                   <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-brand-teal" />
-                    <span>Class Time Table & Weekly Schedule</span>
+                    <span>Official Course Timetable Document</span>
                   </h2>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Configure recurring class time slots and live session agendas for students.
+                    Upload the official batch timetable (PDF, Image, or Document). Students enrolled in this course will immediately see and be able to download this timetable in their Student Portal.
                   </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    onClick={handleGenerateWeeklyTimetable}
-                    disabled={isGeneratingTimetable}
-                    variant="outline"
-                    className="text-xs font-bold gap-1.5 border-brand-teal/40 hover:bg-brand-teal/10"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isGeneratingTimetable ? "animate-spin" : ""}`} />
-                    <span>Generate Weekly Schedule (Tue / Thu / Sat 8:00 PM IST)</span>
-                  </Button>
+                  {course.timetableUrl ? (
+                    <Badge variant="outline" className="text-xs py-1 px-3 bg-emerald-500/10 text-emerald-500 border-emerald-500/30 font-semibold gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Published to Students</span>
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-xs py-1 px-3 bg-secondary text-muted-foreground border-border font-medium">
+                      Not Uploaded Yet
+                    </Badge>
+                  )}
 
                   <Button
                     onClick={() => setShowScheduleModal(true)}
                     className="font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal text-xs shadow-teal-glow gap-1.5"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Add Custom Session</span>
+                    <span>Schedule Live Class</span>
                   </Button>
                 </div>
               </div>
 
-              {/* Weekly Recurring Time Table Layout */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-5 rounded-2xl border border-brand-teal/30 bg-card/80 backdrop-blur-xl space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black uppercase tracking-wider text-brand-teal">Every Tuesday</span>
-                    <Badge variant="outline" className="text-[10px] bg-brand-teal/10 text-brand-teal border-brand-teal/20">
-                      Live Lecture
-                    </Badge>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-base font-bold text-foreground">Theory, Math & Foundations</div>
-                    <div className="text-xs text-muted-foreground">8:00 PM – 9:30 PM IST (90 Mins)</div>
-                  </div>
-                  <div className="pt-2 border-t border-border/60 text-[11px] text-muted-foreground flex items-center gap-1.5">
-                    <Video className="w-3.5 h-3.5 text-brand-teal" />
-                    <span>Google Meet Live Class</span>
-                  </div>
-                </div>
+              {/* TIMETABLE UPLOAD & MANAGEMENT CONSOLE */}
+              {course.timetableUrl ? (
+                <div className="space-y-4">
+                  <div className="p-6 rounded-3xl border border-brand-teal/30 bg-gradient-to-br from-card via-card to-brand-teal/5 backdrop-blur-xl shadow-xs">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                      <div className="flex items-start gap-4">
+                        <div className="w-14 h-14 rounded-2xl bg-brand-teal/15 text-brand-teal border border-brand-teal/30 flex items-center justify-center shrink-0 shadow-xs">
+                          {course.timetableFileType === "PDF" ? (
+                            <FileText className="w-7 h-7" />
+                          ) : ["PNG", "JPG", "JPEG", "WEBP"].includes(course.timetableFileType || "") ? (
+                            <FileCode className="w-7 h-7" />
+                          ) : (
+                            <FolderArchive className="w-7 h-7" />
+                          )}
+                        </div>
 
-                <div className="p-5 rounded-2xl border border-cyan-500/30 bg-card/80 backdrop-blur-xl space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black uppercase tracking-wider text-cyan-500">Every Thursday</span>
-                    <Badge variant="outline" className="text-[10px] bg-cyan-500/10 text-cyan-500 border-cyan-500/20">
-                      Hands-on Lab
-                    </Badge>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-base font-bold text-foreground">Code Mechanics & PyTorch</div>
-                    <div className="text-xs text-muted-foreground">8:00 PM – 9:30 PM IST (90 Mins)</div>
-                  </div>
-                  <div className="pt-2 border-t border-border/60 text-[11px] text-muted-foreground flex items-center gap-1.5">
-                    <FileCode className="w-3.5 h-3.5 text-cyan-500" />
-                    <span>Jupyter Notebooks & Live Coding</span>
-                  </div>
-                </div>
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-base sm:text-lg font-bold text-foreground">
+                              {course.timetableTitle || "Official Course Batch Timetable"}
+                            </h3>
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-brand-teal/20 text-brand-teal uppercase tracking-wider">
+                              {course.timetableFileType || "Document"}
+                            </span>
+                          </div>
 
-                <div className="p-5 rounded-2xl border border-purple-500/30 bg-card/80 backdrop-blur-xl space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black uppercase tracking-wider text-purple-400">Every Saturday</span>
-                    <Badge variant="outline" className="text-[10px] bg-purple-500/10 text-purple-400 border-purple-500/20">
-                      Production Review
-                    </Badge>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-base font-bold text-foreground">Deployments & Capstone QA</div>
-                    <div className="text-xs text-muted-foreground">8:00 PM – 9:30 PM IST (90 Mins)</div>
-                  </div>
-                  <div className="pt-2 border-t border-border/60 text-[11px] text-muted-foreground flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                    <span>Student Code Review & Guidance</span>
+                          <p className="text-xs text-muted-foreground">
+                            File: <strong className="text-foreground">{course.timetableFileName || "Timetable Document"}</strong>
+                            {course.timetableFileSize && ` • Size: ${course.timetableFileSize}`}
+                            {course.timetableUpdatedAt && ` • Last Updated: ${new Date(course.timetableUpdatedAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}`}
+                          </p>
+
+                          <p className="text-[11px] text-emerald-500 font-medium flex items-center gap-1 mt-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Active & visible to all {course.enrolledCount} enrolled student{course.enrolledCount === 1 ? "" : "s"} under their Time Table tab</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-start md:self-center">
+                        <Button
+                          asChild
+                          size="sm"
+                          className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold rounded-xl text-xs shadow-xs"
+                        >
+                          <a href={course.timetableUrl} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                            <span>View Fullscreen</span>
+                          </a>
+                        </Button>
+
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="outline"
+                          className="rounded-xl text-xs font-semibold border-border/80"
+                        >
+                          <a href={course.timetableUrl} target="_blank" rel="noopener noreferrer" download={course.timetableFileName || "timetable"}>
+                            <Download className="w-3.5 h-3.5 mr-1.5" />
+                            <span>Download</span>
+                          </a>
+                        </Button>
+
+                        <Button
+                          onClick={() => replaceTimetableInputRef.current?.click()}
+                          size="sm"
+                          variant="outline"
+                          disabled={isUploadingTimetable}
+                          className="rounded-xl text-xs font-semibold border-border/80"
+                        >
+                          <FileUp className="w-3.5 h-3.5 mr-1.5" />
+                          <span>Replace File</span>
+                        </Button>
+
+                        <Button
+                          onClick={handleDeleteTimetable}
+                          size="sm"
+                          variant="ghost"
+                          disabled={isDeletingTimetable}
+                          className="rounded-xl text-xs font-semibold text-rose-500 hover:text-rose-600 hover:bg-rose-500/10"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                          <span>Remove</span>
+                        </Button>
+
+                        <input
+                          ref={replaceTimetableInputRef}
+                          type="file"
+                          accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) handleUploadTimetable(file)
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* In-Browser Document Preview */}
+                    <div className="mt-6 pt-6 border-t border-border/60">
+                      <div className="flex items-center justify-between mb-3 text-xs text-muted-foreground font-semibold">
+                        <span>Document Live Preview</span>
+                        <span>What students see in student portal</span>
+                      </div>
+
+                      {course.timetableFileType === "PDF" || course.timetableUrl.toLowerCase().includes(".pdf") ? (
+                        <div className="rounded-2xl overflow-hidden border border-border/80 bg-background/50 shadow-inner">
+                          <iframe
+                            src={`${course.timetableUrl}#view=FitH`}
+                            title="Timetable Preview"
+                            className="w-full h-[600px] border-none"
+                          />
+                        </div>
+                      ) : ["PNG", "JPG", "JPEG", "WEBP"].includes(course.timetableFileType || "") || course.timetableUrl.match(/\.(png|jpg|jpeg|webp)$/i) ? (
+                        <div className="rounded-2xl overflow-hidden border border-border/80 bg-black/40 p-3 flex items-center justify-center">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={course.timetableUrl}
+                            alt="Course Timetable"
+                            className="max-h-[600px] w-auto max-w-full object-contain rounded-xl shadow-lg"
+                          />
+                        </div>
+                      ) : (
+                        <div className="p-6 rounded-2xl bg-secondary/30 border border-border/60 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <FileText className="w-6 h-6 text-brand-teal" />
+                            <div>
+                              <p className="text-xs font-bold text-foreground">{course.timetableFileName}</p>
+                              <p className="text-[11px] text-muted-foreground">Document ready for student download</p>
+                            </div>
+                          </div>
+                          <Button asChild size="sm" variant="outline" className="text-xs rounded-xl">
+                            <a href={course.timetableUrl} target="_blank" rel="noopener noreferrer" download>
+                              <Download className="w-3.5 h-3.5 mr-1" />
+                              <span>Download Document</span>
+                            </a>
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                /* DRAG AND DROP FILE UPLOADER */
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    setIsDraggingTimetable(true)
+                  }}
+                  onDragLeave={() => setIsDraggingTimetable(false)}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    setIsDraggingTimetable(false)
+                    const dropped = e.dataTransfer.files?.[0]
+                    if (dropped) {
+                      setTimetableFile(dropped)
+                      if (!timetableTitleInput) {
+                        setTimetableTitleInput(dropped.name.replace(/\.[^/.]+$/, ""))
+                      }
+                    }
+                  }}
+                  className={`p-8 sm:p-12 rounded-3xl border-2 border-dashed transition-all text-center space-y-6 ${
+                    isDraggingTimetable
+                      ? "border-brand-teal bg-brand-teal/10 scale-[1.01]"
+                      : "border-border/80 bg-card/60 backdrop-blur-xl hover:border-brand-teal/50"
+                  }`}
+                >
+                  <div className="w-16 h-16 rounded-2xl bg-brand-teal/15 text-brand-teal border border-brand-teal/30 flex items-center justify-center mx-auto shadow-md">
+                    <UploadCloud className="w-8 h-8" />
+                  </div>
+
+                  <div className="space-y-1.5 max-w-md mx-auto">
+                    <h3 className="text-lg font-bold text-foreground">
+                      Upload Official Course Timetable
+                    </h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Drag & drop your official batch timetable PDF, Image (PNG/JPG), or Document here, or browse from your computer. Students will see and download this exact file.
+                    </p>
+                  </div>
+
+                  {/* Optional Title Input */}
+                  <div className="max-w-md mx-auto space-y-1.5 text-left">
+                    <label className="text-xs font-semibold text-foreground">
+                      Timetable Title <span className="text-muted-foreground font-normal">(Optional)</span>
+                    </label>
+                    <Input
+                      placeholder="e.g. Batch 2026 Official Lecture & Lab Timetable"
+                      value={timetableTitleInput}
+                      onChange={(e) => setTimetableTitleInput(e.target.value)}
+                      className="h-10 text-xs rounded-xl bg-background/80"
+                    />
+                  </div>
+
+                  {timetableFile ? (
+                    <div className="max-w-md mx-auto p-4 rounded-2xl bg-brand-teal/10 border border-brand-teal/30 flex items-center justify-between gap-3 text-left">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <FileText className="w-6 h-6 text-brand-teal shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-foreground truncate">{timetableFile.name}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {(timetableFile.size / (1024 * 1024)).toFixed(2)} MB • Ready to upload
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          onClick={() => handleUploadTimetable()}
+                          disabled={isUploadingTimetable}
+                          size="sm"
+                          className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold rounded-xl text-xs shadow-xs"
+                        >
+                          {isUploadingTimetable ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 mr-1 animate-spin" />
+                              <span>Uploading...</span>
+                            </>
+                          ) : (
+                            <>
+                              <UploadCloud className="w-3.5 h-3.5 mr-1" />
+                              <span>Upload & Publish</span>
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          onClick={() => setTimetableFile(null)}
+                          size="sm"
+                          variant="ghost"
+                          className="text-xs rounded-xl h-8 px-2 text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                      <Button
+                        type="button"
+                        onClick={() => timetableInputRef.current?.click()}
+                        className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold text-xs h-10 px-6 rounded-xl shadow-xs"
+                      >
+                        <FileUp className="w-4 h-4 mr-1.5" />
+                        <span>Choose Timetable File (PDF / Image)</span>
+                      </Button>
+
+                      <input
+                        ref={timetableInputRef}
+                        type="file"
+                        accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) {
+                            setTimetableFile(file)
+                            if (!timetableTitleInput) {
+                              setTimetableTitleInput(file.name.replace(/\.[^/.]+$/, ""))
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <p className="text-[11px] text-muted-foreground">
+                    Supported file formats: PDF, PNG, JPG, JPEG, WebP, Word/Excel (Maximum 40MB).
+                  </p>
+                </div>
+              )}
 
               {/* Chronological Scheduled Timetable Sessions */}
               <div className="space-y-3">

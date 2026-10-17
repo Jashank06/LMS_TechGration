@@ -31,16 +31,34 @@ export interface Recipient {
 }
 
 export async function getClassRecipients(courseId: string): Promise<Recipient[]> {
+  if (!courseId) return []
   const enrollments = await db.enrollment.findMany({
-    where: { courseId, status: "ACTIVE", user: { status: "ACTIVE" } },
+    where: {
+      courseId,
+      status: "ACTIVE",
+      user: {
+        status: "ACTIVE",
+        role: "STUDENT",
+      },
+    },
     include: { user: { include: { profile: true } } },
   })
-  return enrollments.map((e) => ({
-    id: e.user.id,
-    name: e.user.name,
-    email: e.user.email,
-    timezone: e.user.profile?.timezone || "Asia/Kolkata",
-  }))
+
+  // Deduplicate by user email to ensure each enrolled student receives exactly one email
+  const seen = new Set<string>()
+  const list: Recipient[] = []
+  for (const e of enrollments) {
+    const email = e.user.email?.toLowerCase().trim()
+    if (!email || seen.has(email)) continue
+    seen.add(email)
+    list.push({
+      id: e.user.id,
+      name: e.user.name,
+      email: e.user.email,
+      timezone: e.user.profile?.timezone || "Asia/Kolkata",
+    })
+  }
+  return list
 }
 
 export async function loadClass(classId: string) {
@@ -78,10 +96,12 @@ export async function sendClassMails(input: SendClassMailsInput) {
   if (!loaded) return { recipients: 0, sent: 0, failed: 0 }
   const { cls, teacher } = loaded
 
+  // Strictly enrolled students in this specific course
   const students = await getClassRecipients(cls.courseId)
   const targets: Recipient[] = [...students]
 
-  if (input.includeTeacherCopy && teacher) {
+  // Teacher copy only on initial schedule or reschedule if requested, NEVER on student reminders
+  if (input.includeTeacherCopy && teacher && input.kind !== "REMINDER") {
     targets.push({
       id: teacher.id,
       name: teacher.name,
@@ -111,7 +131,7 @@ export async function sendClassMails(input: SendClassMailsInput) {
     ? buildIcs({
         uid: cls.id,
         title: `${cls.title} — ${cls.course.title}`,
-        description: `Live class by ${cls.instructorName}. Join: ${APP_URL}/join/${cls.id}`,
+        description: `Live class by ${cls.instructorName}. Meeting Link: ${cls.meetingUrl}`,
         startsAt: cls.startsAt,
         endsAt: cls.endsAt,
         url: cls.meetingUrl,

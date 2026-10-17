@@ -13,7 +13,7 @@ export async function GET(
       where: { id: classId },
     })
 
-    if (!liveClass) {
+    if (!liveClass || liveClass.status === "CANCELLED") {
       return NextResponse.redirect(new URL("/student/dashboard", _request.url))
     }
 
@@ -45,8 +45,8 @@ export async function GET(
     }
 
     // Redirect to the actual meeting URL (Zoom, Google Meet, or WebRTC Classroom)
-    const targetUrl = liveClass.meetingUrl || "https://us06web.zoom.us"
-    return NextResponse.redirect(new URL(targetUrl))
+    const targetUrl = liveClass.meetingUrl?.trim() || "https://us06web.zoom.us"
+    return NextResponse.redirect(targetUrl, 307)
   } catch (err) {
     console.error("Join gateway error:", err)
     return NextResponse.redirect(new URL("/student/dashboard", _request.url))

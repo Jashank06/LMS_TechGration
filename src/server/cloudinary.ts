@@ -137,3 +137,31 @@ export async function uploadDocumentToCloudinary(
   })
 }
 
+/**
+ * Uploads an official course timetable document or image to Cloudinary.
+ */
+export async function uploadTimetableToCloudinary(
+  buffer: Buffer,
+  fileName: string,
+  courseId: string
+): Promise<UploadApiResponse> {
+  const cleanName = fileName.toLowerCase().replace(/[^a-z0-9_.-]+/g, "_")
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: `techgration_lms/courses/${courseId}/timetable`,
+        public_id: `timetable_${Date.now()}_${cleanName}`,
+        resource_type: "auto",
+        use_filename: true,
+      },
+      (error, result) => {
+        if (error) return reject(error)
+        if (!result) return reject(new Error("No response received from Cloudinary."))
+        resolve(result)
+      }
+    )
+    uploadStream.end(buffer)
+  })
+}
+
+

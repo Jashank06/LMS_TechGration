@@ -43,6 +43,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
         where: { userId: user.id },
       },
       liveClasses: {
+        where: { status: { not: "CANCELLED" } },
         orderBy: { startsAt: "asc" },
       },
       materials: {
@@ -178,8 +179,10 @@ export default async function CourseDetailPage({ params }: PageProps) {
       }
     })
 
-  // Map live classes
-  const liveClasses = course.liveClasses.map((lc) => ({
+  // Map live classes (strictly non-cancelled)
+  const liveClasses = course.liveClasses
+    .filter((lc) => lc.status !== "CANCELLED")
+    .map((lc) => ({
     id: lc.id,
     title: lc.title,
     description: lc.description,
@@ -216,6 +219,12 @@ export default async function CourseDetailPage({ params }: PageProps) {
     studyMaterials,
     assignments,
     quizzes,
+    timetableUrl: course.timetableUrl,
+    timetableTitle: course.timetableTitle,
+    timetableFileName: course.timetableFileName,
+    timetableFileSize: course.timetableFileSize,
+    timetableFileType: course.timetableFileType,
+    timetableUpdatedAt: course.timetableUpdatedAt ? course.timetableUpdatedAt.toISOString() : null,
   }
 
   return <CourseHubClient course={courseHubData} />

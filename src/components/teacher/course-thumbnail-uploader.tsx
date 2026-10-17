@@ -26,6 +26,18 @@ interface CourseThumbnailUploaderProps {
 
 const PRESET_COVERS = [
   {
+    name: "TechGration AI Special",
+    category: "Official AI",
+    url: "/brand/AI.png",
+    color: "from-brand-teal/30 to-blue-600/40",
+  },
+  {
+    name: "TechGration Campus",
+    category: "Platform Brand",
+    url: "/brand/og-image.png",
+    color: "from-teal-500/30 to-emerald-600/40",
+  },
+  {
     name: "Cloud & DevOps",
     category: "Cloud",
     url: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1280&auto=format&fit=crop",

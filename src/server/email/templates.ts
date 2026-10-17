@@ -206,13 +206,12 @@ function classCard(d: LiveClassMailData, accent: string): string {
 }
 
 function joinBlock(d: LiveClassMailData, accent: string): string {
-  const gateway = `${APP_URL}/join/${d.classId}`
+  const meetingUrl = d.meetingUrl?.trim() || `${APP_URL}/join/${d.classId}`
   return (
-    button("Join Now", gateway, accent) +
+    button("Join Now", meetingUrl, accent) +
     `<div style="text-align:center;font-size:12px;color:#64748B;margin-top:10px;line-height:1.7;">
-      Join Now signs you in and marks your attendance automatically.<br/>
       Or open the meeting link directly:<br/>
-      <a href="${esc(d.meetingUrl)}" style="color:${accent};word-break:break-all;">${esc(d.meetingUrl)}</a>
+      <a href="${esc(meetingUrl)}" style="color:${accent};word-break:break-all;">${esc(meetingUrl)}</a>
     </div>`
   )
 }
@@ -222,7 +221,7 @@ export function classScheduledEmail(d: LiveClassMailData): RenderedMail {
   const when = formatWhen(d.startsAt, d.timezone)
   return {
     subject: `📅 Class scheduled: ${d.title} — ${when}`,
-    text: `Hi ${d.recipientName}, "${d.title}" (${d.courseTitle}) by ${d.teacherName} is scheduled for ${when}.\nPlatform: ${PLATFORM_LABEL[d.platform]}\nJoin: ${APP_URL}/join/${d.classId}\nMeeting link: ${d.meetingUrl}`,
+    text: `Hi ${d.recipientName}, "${d.title}" (${d.courseTitle}) by ${d.teacherName} is scheduled for ${when}.\nPlatform: ${PLATFORM_LABEL[d.platform]}\nMeeting link: ${d.meetingUrl}`,
     html: layout({
       accent,
       eyebrow: "Live Class Scheduled",
@@ -242,7 +241,7 @@ export function classReminderEmail(d: LiveClassMailData): RenderedMail {
   const when = formatWhen(d.startsAt, d.timezone)
   return {
     subject: `⏰ ${offset} min left — ${d.title} starts ${when}`,
-    text: `Hi ${d.recipientName}, "${d.title}" starts in ${offset} minutes (${when}).\nJoin: ${APP_URL}/join/${d.classId}\nMeeting link: ${d.meetingUrl}`,
+    text: `Hi ${d.recipientName}, "${d.title}" starts in ${offset} minutes (${when}).\nMeeting link: ${d.meetingUrl}`,
     html: layout({
       accent,
       eyebrow: `Starts in ${offset} minutes`,
@@ -261,7 +260,7 @@ export function classRescheduledEmail(d: LiveClassMailData): RenderedMail {
   const when = formatWhen(d.startsAt, tz)
   return {
     subject: `🔁 Rescheduled: ${d.title} — now ${when}`,
-    text: `Hi ${d.recipientName}, "${d.title}" has been rescheduled to ${when}.${d.oldStartsAt ? ` (Earlier: ${formatWhen(d.oldStartsAt, tz)})` : ""}\nJoin: ${APP_URL}/join/${d.classId}\nMeeting link: ${d.meetingUrl}`,
+    text: `Hi ${d.recipientName}, "${d.title}" has been rescheduled to ${when}.${d.oldStartsAt ? ` (Earlier: ${formatWhen(d.oldStartsAt, tz)})` : ""}\nMeeting link: ${d.meetingUrl}`,
     html: layout({
       accent,
       eyebrow: "Class Rescheduled",
