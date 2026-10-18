@@ -111,23 +111,23 @@ export default async function AssignmentsPage() {
                 </div>
 
                 {/* Right Status & Action */}
-                <div className="shrink-0 flex items-center md:flex-col items-end gap-3 justify-between">
+                <div className="w-full md:w-auto shrink-0 flex flex-col sm:flex-row md:flex-col items-stretch sm:items-center md:items-end gap-3 justify-between">
                   <div>
                     {isGraded ? (
-                      <div className="text-right">
-                        <span className="px-3 py-1 rounded-xl text-xs font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 shadow-xs">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
+                      <div>
+                        <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center sm:justify-start gap-1.5 shadow-xs">
+                          <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                           <span>Score: {submission.marksAwarded}/{asgn.maxMarks} pts</span>
                         </span>
                       </div>
                     ) : isSubmitted ? (
-                      <span className="px-3 py-1 rounded-xl text-xs font-bold bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30 flex items-center gap-1.5 shadow-xs">
-                        <Clock className="w-3.5 h-3.5" />
+                      <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30 flex items-center justify-center sm:justify-start gap-1.5 shadow-xs">
+                        <Clock className="w-3.5 h-3.5 shrink-0" />
                         <span>In Faculty Review</span>
                       </span>
                     ) : (
-                      <span className="px-3 py-1 rounded-xl text-xs font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1.5 shadow-xs">
-                        <Sparkles className="w-3.5 h-3.5" />
+                      <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center sm:justify-start gap-1.5 shadow-xs">
+                        <Sparkles className="w-3.5 h-3.5 shrink-0" />
                         <span>Pending Submission</span>
                       </span>
                     )}
@@ -136,9 +136,9 @@ export default async function AssignmentsPage() {
                   <Button
                     asChild
                     size="sm"
-                    className="font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal text-xs h-10 px-5 rounded-xl shadow-md shadow-brand-teal/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    className="w-full sm:w-auto font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal text-xs h-11 sm:h-10 px-5 rounded-xl shadow-md shadow-brand-teal/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                   >
-                    <Link href={`/student/assignments/${asgn.id}`}>
+                    <Link href={`/student/assignments/${asgn.id}`} className="justify-center">
                       <span>{isGraded ? "View Feedback" : isSubmitted ? "View Submission" : "Submit Assignment"}</span>
                       <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
                     </Link>

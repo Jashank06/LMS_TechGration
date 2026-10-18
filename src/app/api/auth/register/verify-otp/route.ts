@@ -117,6 +117,7 @@ export async function POST(req: Request) {
         passwordHash,
         role: Role.STUDENT,
         status: UserStatus.ACTIVE,
+        invitedById: metadata.invitedById || null,
         profile: {
           create: {
             headline: "Student at TechGration LMS",
@@ -167,10 +168,11 @@ export async function POST(req: Request) {
     })
 
     // 10. Automatically establish authenticated session & write cookie
-    await createSession(newUser.id, req)
+    const { token } = await createSession(newUser.id, req)
 
     return NextResponse.json({
       success: true,
+      token,
       message: "Account verified and created successfully!",
       user: {
         id: newUser.id,

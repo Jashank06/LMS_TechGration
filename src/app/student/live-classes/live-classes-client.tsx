@@ -46,33 +46,36 @@ export function LiveClassesClient({
   return (
     <div className="space-y-6">
       {/* Tab toggle */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex rounded-2xl border border-border/80 bg-card/60 backdrop-blur-md p-1.5 text-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="grid grid-cols-2 sm:flex rounded-2xl border border-border/80 bg-card/60 backdrop-blur-md p-1.5 text-xs w-full sm:w-auto">
           <button
             onClick={() => setActiveTab("UPCOMING")}
-            className={`px-4 py-2 rounded-xl font-bold transition-all ${
+            className={`min-h-[44px] px-3 sm:px-4 py-2 rounded-xl font-bold transition-all text-center flex items-center justify-center ${
               activeTab === "UPCOMING"
                 ? "bg-brand-teal text-brand-charcoal shadow-md shadow-brand-teal/20"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground active:bg-muted/50"
             }`}
           >
-            Upcoming Live Classes ({upcomingClasses.length})
+            Upcoming ({upcomingClasses.length})
           </button>
           <button
             onClick={() => setActiveTab("PAST")}
-            className={`px-4 py-2 rounded-xl font-bold transition-all ${
+            className={`min-h-[44px] px-3 sm:px-4 py-2 rounded-xl font-bold transition-all text-center flex items-center justify-center ${
               activeTab === "PAST"
                 ? "bg-brand-teal text-brand-charcoal shadow-md shadow-brand-teal/20"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground active:bg-muted/50"
             }`}
           >
-            Past Sessions & Recordings ({pastClasses.length})
+            Recordings ({pastClasses.length})
           </button>
         </div>
 
-        <div className="text-xs text-muted-foreground flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm self-start sm:self-auto">
-          <Clock className="w-3.5 h-3.5 text-brand-teal" />
-          <span>Timezone: <strong className="text-foreground font-semibold">{timezone}</strong></span>
+        <div className="text-xs text-muted-foreground flex items-center justify-between sm:justify-start gap-1.5 px-3 py-2 rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm w-full sm:w-auto">
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5 text-brand-teal shrink-0" />
+            <span>Timezone:</span>
+          </div>
+          <strong className="text-foreground font-semibold truncate">{timezone}</strong>
         </div>
       </div>
 
@@ -153,7 +156,7 @@ export function LiveClassesClient({
                     </div>
                   </div>
 
-                  <div className="shrink-0 flex flex-col sm:flex-row md:flex-col items-center gap-2">
+                  <div className="w-full md:w-auto shrink-0 flex flex-col items-stretch sm:items-center md:items-center gap-2">
                     <Button
                       asChild
                       className="w-full sm:w-auto font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal h-11 px-6 rounded-xl shadow-md shadow-brand-teal/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
@@ -178,7 +181,7 @@ export function LiveClassesClient({
         /* Past Classes & Recordings */
         <div className="space-y-4">
           {pastClasses.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-border/80 p-12 text-center bg-card/60 backdrop-blur-md space-y-3 max-w-md mx-auto">
+            <div className="rounded-3xl border border-dashed border-border/80 p-8 sm:p-12 text-center bg-card/60 backdrop-blur-md space-y-3 max-w-md mx-auto">
               <div className="w-14 h-14 rounded-2xl bg-brand-teal/15 border border-brand-teal/30 flex items-center justify-center text-brand-teal mx-auto shadow-md">
                 <PlayCircle className="w-7 h-7" />
               </div>
@@ -193,10 +196,10 @@ export function LiveClassesClient({
             pastClasses.map((cls) => (
               <div
                 key={cls.id}
-                className="p-5 sm:p-6 rounded-3xl border border-border/80 bg-card/80 backdrop-blur-xl shadow-xs flex items-center justify-between gap-4 hover:border-brand-teal/40 transition-all"
+                className="p-4 sm:p-6 rounded-3xl border border-border/80 bg-card/80 backdrop-blur-xl shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 hover:border-brand-teal/40 transition-all"
               >
                 <div className="space-y-1.5 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                       Attendance: {cls.attendanceStatus || "Attended"}
                     </span>
@@ -207,7 +210,7 @@ export function LiveClassesClient({
                   <h4 className="text-sm sm:text-base font-bold text-foreground">{cls.title}</h4>
                 </div>
 
-                <Button variant="outline" size="sm" className="h-9 px-4 text-xs font-semibold rounded-xl border-border/80 shrink-0 hover:bg-brand-teal hover:text-brand-charcoal transition-all">
+                <Button variant="outline" size="sm" className="h-10 px-4 text-xs font-semibold rounded-xl border-border/80 w-full sm:w-auto shrink-0 hover:bg-brand-teal hover:text-brand-charcoal transition-all">
                   <PlayCircle className="w-3.5 h-3.5 mr-1.5 text-brand-teal" />
                   <span>Watch Recording</span>
                 </Button>

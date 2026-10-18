@@ -225,13 +225,13 @@ export function SettingsClient({ user, sessions }: SettingsClientProps) {
   return (
     <div className="space-y-6">
       {/* Settings Navigation Tabs */}
-      <div className="flex rounded-2xl border border-border/80 bg-card/60 backdrop-blur-md p-1.5 text-xs overflow-x-auto shadow-xs">
+      <div className="flex items-center gap-1.5 rounded-2xl border border-border/80 bg-card/60 backdrop-blur-md p-1.5 text-xs overflow-x-auto no-scrollbar touch-pan-x scroll-smooth shadow-xs">
         <button
           onClick={() => setActiveTab("profile")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold transition-all whitespace-nowrap ${
+          className={`flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl font-semibold transition-all whitespace-nowrap shrink-0 ${
             activeTab === "profile"
               ? "bg-brand-teal text-brand-charcoal shadow-sm shadow-brand-teal/20"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/50 active:bg-muted"
           }`}
         >
           <User className="w-3.5 h-3.5" />
@@ -240,10 +240,10 @@ export function SettingsClient({ user, sessions }: SettingsClientProps) {
 
         <button
           onClick={() => setActiveTab("security")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold transition-all whitespace-nowrap ${
+          className={`flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl font-semibold transition-all whitespace-nowrap shrink-0 ${
             activeTab === "security"
               ? "bg-brand-teal text-brand-charcoal shadow-sm shadow-brand-teal/20"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/50 active:bg-muted"
           }`}
         >
           <Shield className="w-3.5 h-3.5" />
@@ -252,10 +252,10 @@ export function SettingsClient({ user, sessions }: SettingsClientProps) {
 
         <button
           onClick={() => setActiveTab("sessions")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold transition-all whitespace-nowrap ${
+          className={`flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl font-semibold transition-all whitespace-nowrap shrink-0 ${
             activeTab === "sessions"
               ? "bg-brand-teal text-brand-charcoal shadow-sm shadow-brand-teal/20"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/50 active:bg-muted"
           }`}
         >
           <Laptop className="w-3.5 h-3.5" />
@@ -264,10 +264,10 @@ export function SettingsClient({ user, sessions }: SettingsClientProps) {
 
         <button
           onClick={() => setActiveTab("notifications")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold transition-all whitespace-nowrap ${
+          className={`flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl font-semibold transition-all whitespace-nowrap shrink-0 ${
             activeTab === "notifications"
               ? "bg-brand-teal text-brand-charcoal shadow-sm shadow-brand-teal/20"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/50 active:bg-muted"
           }`}
         >
           <Bell className="w-3.5 h-3.5" />
@@ -352,7 +352,7 @@ export function SettingsClient({ user, sessions }: SettingsClientProps) {
                   </p>
 
                   {/* Upload & Remove Action Buttons */}
-                  <div className="pt-2 flex flex-wrap items-center gap-2.5">
+                  <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
                     <input
                       type="file"
                       ref={fileInputRef}
@@ -367,7 +367,7 @@ export function SettingsClient({ user, sessions }: SettingsClientProps) {
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isUploadingAvatar}
                       size="sm"
-                      className="h-9 px-4 rounded-xl text-xs font-semibold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal shadow-sm shadow-brand-teal/20 transition-all"
+                      className="h-11 sm:h-9 px-4 rounded-xl text-xs font-semibold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal shadow-sm shadow-brand-teal/20 transition-all w-full sm:w-auto justify-center"
                     >
                       {isUploadingAvatar ? (
                         <>
@@ -389,7 +389,7 @@ export function SettingsClient({ user, sessions }: SettingsClientProps) {
                         disabled={isDeletingAvatar || isUploadingAvatar}
                         variant="outline"
                         size="sm"
-                        className="h-9 px-3 rounded-xl text-xs font-semibold text-destructive hover:bg-destructive/10 hover:border-destructive/30 transition-colors"
+                        className="h-11 sm:h-9 px-3 rounded-xl text-xs font-semibold text-destructive hover:bg-destructive/10 hover:border-destructive/30 transition-colors w-full sm:w-auto justify-center"
                       >
                         {isDeletingAvatar ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -573,7 +573,7 @@ export function SettingsClient({ user, sessions }: SettingsClientProps) {
             </div>
 
             {/* Bottom Actions Bar */}
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
               <p className="text-[11px] text-muted-foreground">
                 All changes reflect across your student profile and live courses immediately.
               </p>
@@ -581,7 +581,7 @@ export function SettingsClient({ user, sessions }: SettingsClientProps) {
               <Button
                 type="submit"
                 disabled={isProfilePending}
-                className="font-semibold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal h-10 px-6 rounded-xl shadow-md shadow-brand-teal/20 transition-all"
+                className="w-full sm:w-auto font-semibold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal h-11 sm:h-10 px-6 rounded-xl shadow-md shadow-brand-teal/20 transition-all justify-center"
               >
                 {isProfilePending ? (
                   <>
@@ -602,7 +602,7 @@ export function SettingsClient({ user, sessions }: SettingsClientProps) {
 
       {/* Tab 2: Security & Password */}
       {activeTab === "security" && (
-        <form onSubmit={handlePasswordSubmit} className="p-6 sm:p-7 rounded-3xl border border-border/80 bg-card/80 backdrop-blur-sm space-y-6 max-w-xl shadow-xs">
+        <form onSubmit={handlePasswordSubmit} className="p-5 sm:p-7 rounded-3xl border border-border/80 bg-card/80 backdrop-blur-sm space-y-6 max-w-xl shadow-xs">
           <div className="border-b border-border/60 pb-3 flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-brand-teal/10 text-brand-ink dark:text-brand-teal">
               <Shield className="w-4 h-4" />
@@ -637,7 +637,7 @@ export function SettingsClient({ user, sessions }: SettingsClientProps) {
               name="currentPassword"
               type="password"
               required
-              className="h-10 text-xs rounded-xl focus-visible:ring-brand-teal"
+              className="h-11 sm:h-10 text-base sm:text-xs rounded-xl focus-visible:ring-brand-teal"
             />
           </div>
 
@@ -650,14 +650,14 @@ export function SettingsClient({ user, sessions }: SettingsClientProps) {
               name="newPassword"
               type="password"
               required
-              className="h-10 text-xs rounded-xl focus-visible:ring-brand-teal"
+              className="h-11 sm:h-10 text-base sm:text-xs rounded-xl focus-visible:ring-brand-teal"
             />
           </div>
 
           <Button
             type="submit"
             disabled={isPasswordPending}
-            className="font-semibold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal h-10 px-6 rounded-xl shadow-md shadow-brand-teal/20"
+            className="w-full sm:w-auto font-semibold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal h-11 sm:h-10 px-6 rounded-xl shadow-md shadow-brand-teal/20 justify-center"
           >
             {isPasswordPending ? (
               <Loader2 className="w-4 h-4 animate-spin" />

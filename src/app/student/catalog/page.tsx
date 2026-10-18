@@ -158,14 +158,14 @@ export default async function CourseCatalogPage() {
                 </div>
 
                 {/* Action buttons */}
-                <div className="p-6 pt-0 flex items-center gap-3">
+                <div className="p-5 sm:p-6 pt-0 flex flex-col xs:flex-row items-stretch xs:items-center gap-2.5">
                   <Button
                     asChild
                     variant="outline"
                     size="sm"
-                    className="flex-1 text-xs font-semibold rounded-xl border-border/80 h-10 hover:bg-secondary transition-all"
+                    className="w-full xs:w-auto flex-1 text-xs font-semibold rounded-xl border-border/80 h-11 sm:h-10 hover:bg-secondary transition-all justify-center"
                   >
-                    <Link href={`/student/courses/${course.id}`}>
+                    <Link href={`/student/courses/${course.id}`} className="justify-center">
                       <span>View Syllabus</span>
                     </Link>
                   </Button>
@@ -174,9 +174,9 @@ export default async function CourseCatalogPage() {
                     <Button
                       asChild
                       size="sm"
-                      className="flex-1 text-xs font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal rounded-xl h-10 shadow-md shadow-brand-teal/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                      className="w-full xs:w-auto flex-1 text-xs font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal rounded-xl h-11 sm:h-10 shadow-md shadow-brand-teal/20 transition-all hover:scale-[1.02] active:scale-[0.98] justify-center"
                     >
-                      <Link href={`/student/learn/${firstLessonId}`}>
+                      <Link href={`/student/learn/${firstLessonId}`} className="justify-center">
                         <span>Continue</span>
                         <ArrowRight className="w-3.5 h-3.5 ml-1" />
                       </Link>
@@ -184,12 +184,12 @@ export default async function CourseCatalogPage() {
                   ) : (
                     <form
                       action={enrollCourseAction.bind(null, course.id)}
-                      className="flex-1"
+                      className="w-full xs:w-auto flex-1"
                     >
                       <Button
                         type="submit"
                         size="sm"
-                        className="w-full text-xs font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal rounded-xl h-10 shadow-md shadow-brand-teal/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        className="w-full text-xs font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal rounded-xl h-11 sm:h-10 shadow-md shadow-brand-teal/20 transition-all hover:scale-[1.02] active:scale-[0.98] justify-center"
                       >
                         <Sparkles className="w-3.5 h-3.5 mr-1" />
                         <span>Enroll Free</span>

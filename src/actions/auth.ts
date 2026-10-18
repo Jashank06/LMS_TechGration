@@ -14,6 +14,7 @@ const registerSchema = z.object({
   name: z.string().min(2, "Full name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  referralCode: z.string().optional(),
 })
 
 function isRedirectError(error: unknown): boolean {
@@ -63,8 +64,9 @@ export async function registerAction(formData: FormData) {
     const name = formData.get("name") as string
     const email = formData.get("email") as string
     const password = formData.get("password") as string
+    const referralCode = (formData.get("referralCode") as string) || undefined
 
-    const validation = registerSchema.safeParse({ name, email, password })
+    const validation = registerSchema.safeParse({ name, email, password, referralCode })
     if (!validation.success) {
       return {
         success: false,

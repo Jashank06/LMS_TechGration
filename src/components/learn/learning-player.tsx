@@ -255,11 +255,11 @@ export function LearningPlayer({ lesson }: { lesson: LearnLessonData }) {
       {/* Main Video & Content Column */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         {/* Navigation & Status Header */}
-        <div className="px-4 py-3 border-b border-border bg-card/60 flex items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 truncate">
+        <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-border bg-card/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+          <div className="flex items-center gap-1.5 sm:gap-2 truncate w-full sm:w-auto">
             <Link
               href={`/student/courses/${lesson.courseId}`}
-              className="text-muted-foreground hover:text-foreground truncate transition-colors"
+              className="text-muted-foreground hover:text-foreground truncate transition-colors font-medium"
             >
               {lesson.courseTitle}
             </Link>
@@ -267,12 +267,12 @@ export function LearningPlayer({ lesson }: { lesson: LearnLessonData }) {
             <span className="text-foreground font-semibold truncate">{lesson.title}</span>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto shrink-0">
             {lesson.prevLessonId && (
-              <Button asChild variant="outline" size="sm" className="h-7 text-xs">
+              <Button asChild variant="outline" size="sm" className="h-8 sm:h-7 text-xs font-semibold px-2.5 sm:px-3">
                 <Link href={`/student/learn/${lesson.prevLessonId}`}>
                   <ChevronLeft className="w-3.5 h-3.5 mr-1" />
-                  <span>Previous</span>
+                  <span>Prev</span>
                 </Link>
               </Button>
             )}
@@ -280,18 +280,18 @@ export function LearningPlayer({ lesson }: { lesson: LearnLessonData }) {
             <Button
               onClick={handleMarkComplete}
               size="sm"
-              className={`h-7 text-xs font-semibold transition-all ${
+              className={`h-8 sm:h-7 text-xs font-semibold transition-all px-3 ${
                 isCompleted
                   ? "bg-emerald-600 hover:bg-emerald-700 text-white"
                   : "bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal"
               }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-              <span>{isCompleted ? "Completed ✓" : "Mark as Complete"}</span>
+              <span>{isCompleted ? "Completed ✓" : "Complete"}</span>
             </Button>
 
             {lesson.nextLessonId && (
-              <Button asChild variant="outline" size="sm" className="h-7 text-xs">
+              <Button asChild variant="outline" size="sm" className="h-8 sm:h-7 text-xs font-semibold px-2.5 sm:px-3">
                 <Link href={`/student/learn/${lesson.nextLessonId}`}>
                   <span>Next</span>
                   <ChevronRight className="w-3.5 h-3.5 ml-1" />
@@ -388,17 +388,17 @@ export function LearningPlayer({ lesson }: { lesson: LearnLessonData }) {
         {/* Tabbed Learning Workspace */}
         <div className="p-4 sm:p-6 flex-1">
           <Tabs defaultValue="overview" className="w-full space-y-4">
-            <TabsList className="bg-muted/60 p-1 border border-border">
-              <TabsTrigger value="overview" className="text-xs">
+            <TabsList className="bg-muted/60 p-1 border border-border flex items-center overflow-x-auto no-scrollbar touch-pan-x w-full justify-start sm:justify-center">
+              <TabsTrigger value="overview" className="text-xs whitespace-nowrap shrink-0 min-h-[40px] px-3 sm:px-4">
                 Overview & Architecture
               </TabsTrigger>
-              <TabsTrigger value="notes" className="text-xs">
+              <TabsTrigger value="notes" className="text-xs whitespace-nowrap shrink-0 min-h-[40px] px-3 sm:px-4">
                 My Notes ({notes.length})
               </TabsTrigger>
-              <TabsTrigger value="discussions" className="text-xs">
+              <TabsTrigger value="discussions" className="text-xs whitespace-nowrap shrink-0 min-h-[40px] px-3 sm:px-4">
                 Q&A Discussions ({discussions.length})
               </TabsTrigger>
-              <TabsTrigger value="resources" className="text-xs">
+              <TabsTrigger value="resources" className="text-xs whitespace-nowrap shrink-0 min-h-[40px] px-3 sm:px-4">
                 Resources & Code
               </TabsTrigger>
             </TabsList>

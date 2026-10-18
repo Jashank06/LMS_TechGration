@@ -128,54 +128,57 @@ export function CertificatesClient({
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
       {/* Top Segmented Switcher & Recipient Info */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-2">
-        <div className="flex items-center gap-2 p-1.5 bg-secondary/60 rounded-2xl border border-border/70 backdrop-blur-md shadow-xs">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-2">
+        <div className="grid grid-cols-2 sm:flex items-center gap-2 p-1.5 bg-secondary/60 rounded-2xl border border-border/70 backdrop-blur-md shadow-xs w-full sm:w-auto">
           <button
             onClick={() => setActiveTab("in_progress")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            className={`min-h-[44px] px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
               activeTab === "in_progress"
                 ? "bg-card text-foreground shadow-sm border border-border/80"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground active:bg-muted/50"
             }`}
           >
-            <Lock className="w-3.5 h-3.5 text-amber-500" />
-            <span>Course Progress ({inProgressList.length})</span>
+            <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <span>Progress ({inProgressList.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab("earned")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            className={`min-h-[44px] px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
               activeTab === "earned"
                 ? "bg-card text-foreground shadow-sm border border-border/80"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground active:bg-muted/50"
             }`}
           >
-            <Award className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Earned Credentials ({earnedList.length})</span>
+            <Award className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+            <span>Earned ({earnedList.length})</span>
           </button>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-muted-foreground px-3.5 py-1.5 rounded-full bg-card/60 border border-border/60 backdrop-blur-md">
-          <GraduationCap className="w-4 h-4 text-brand-teal" />
-          <span>Verified Recipient: <strong className="text-foreground">{studentName}</strong></span>
+        <div className="flex items-center justify-between sm:justify-start gap-2 text-xs text-muted-foreground px-3.5 py-2 rounded-2xl sm:rounded-full bg-card/60 border border-border/60 backdrop-blur-md w-full sm:w-auto">
+          <div className="flex items-center gap-2">
+            <GraduationCap className="w-4 h-4 text-brand-teal shrink-0" />
+            <span>Recipient:</span>
+          </div>
+          <strong className="text-foreground truncate">{studentName}</strong>
         </div>
       </div>
 
       {/* MULTIPLE COURSES SELECTOR TABS (If student is enrolled in > 1 course) */}
       {activeTab === "in_progress" && inProgressList.length > 1 && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar touch-pan-x scroll-smooth pb-2">
           {inProgressList.map((course, idx) => (
             <button
               key={course.id}
               onClick={() => setSelectedCourseIndex(idx)}
-              className={`shrink-0 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border flex items-center gap-2.5 ${
+              className={`shrink-0 min-h-[44px] px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border flex items-center gap-2.5 ${
                 selectedCourseIndex === idx
                   ? "bg-brand-teal/15 text-brand-teal border-brand-teal/40 shadow-xs"
-                  : "bg-card/70 text-muted-foreground border-border/70 hover:text-foreground hover:border-border"
+                  : "bg-card/70 text-muted-foreground border-border/70 hover:text-foreground hover:border-border active:bg-muted"
               }`}
             >
               <BookOpen className="w-3.5 h-3.5" />
-              <span className="max-w-[200px] truncate">{course.courseTitle}</span>
+              <span className="max-w-[180px] truncate">{course.courseTitle}</span>
               <span className="px-2 py-0.5 rounded-full text-[10px] bg-secondary/80 text-foreground font-mono">
                 {course.progressPct}%
               </span>
@@ -197,7 +200,7 @@ export function CertificatesClient({
                 <div className="pointer-events-none absolute -inset-2 bg-gradient-to-r from-brand-teal/20 via-cyan-500/10 to-brand-teal/20 rounded-[2.5rem] blur-2xl opacity-60 group-hover:opacity-80 transition-opacity" />
 
                 {/* Outer High-Tech Bezel */}
-                <div className="relative rounded-[2rem] border-2 border-brand-teal/30 bg-gradient-to-b from-card/95 via-card to-background p-6 sm:p-10 shadow-2xl backdrop-blur-2xl overflow-hidden">
+                <div className="relative rounded-[2rem] border-2 border-brand-teal/30 bg-gradient-to-b from-card/95 via-card to-background p-4 sm:p-10 shadow-2xl backdrop-blur-2xl overflow-hidden">
                   
                   {/* Cyber Precision Corner Brackets */}
                   <div className="pointer-events-none absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 border-brand-teal/50 rounded-tl-lg" />
@@ -209,10 +212,10 @@ export function CertificatesClient({
                   <div className="pointer-events-none absolute inset-0 opacity-[0.03] bg-[radial-gradient(#00D6D6_1px,transparent_1px)] [background-size:16px_16px]" />
 
                   {/* CERTIFICATE INNER CANVAS */}
-                  <div className="relative z-10 border border-brand-teal/20 rounded-2xl p-6 sm:p-12 text-center space-y-6 bg-gradient-to-b from-background/40 via-card/30 to-background/60 shadow-inner">
+                  <div className="relative z-10 border border-brand-teal/20 rounded-2xl p-4 sm:p-12 text-center space-y-5 sm:space-y-6 bg-gradient-to-b from-background/40 via-card/30 to-background/60 shadow-inner">
                     
                     {/* Official TechGration Crest */}
-                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto drop-shadow-[0_10px_25px_rgba(0,214,214,0.3)]">
+                    <div className="relative w-16 h-16 sm:w-24 sm:h-24 mx-auto drop-shadow-[0_10px_25px_rgba(0,214,214,0.3)]">
                       <Image
                         src="/brand/tg-mark.png"
                         alt="TechGration Official Seal"
@@ -224,11 +227,11 @@ export function CertificatesClient({
 
                     {/* Authority Header */}
                     <div className="space-y-1.5">
-                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-mono tracking-widest uppercase font-extrabold text-brand-teal bg-brand-teal/10 border border-brand-teal/25">
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-mono tracking-widest uppercase font-extrabold text-brand-teal bg-brand-teal/10 border border-brand-teal/25">
                         <Binary className="w-3 h-3" />
                         <span>TECHGRATION TECHNOLOGIES • FACULTY OF AI & COMPUTING</span>
                       </div>
-                      <h2 className="text-xl sm:text-3xl font-extrabold tracking-tight text-foreground font-serif uppercase">
+                      <h2 className="text-lg sm:text-3xl font-extrabold tracking-tight text-foreground font-serif uppercase">
                         Certificate of Architectural Mastery
                       </h2>
                     </div>
@@ -239,7 +242,7 @@ export function CertificatesClient({
 
                     {/* Recipient Spotlight */}
                     <div className="py-1">
-                      <span className="text-3xl sm:text-5xl font-black tracking-tight text-foreground underline decoration-brand-teal decoration-4 underline-offset-8 drop-shadow-sm">
+                      <span className="text-2xl sm:text-5xl font-black tracking-tight text-foreground underline decoration-brand-teal decoration-4 underline-offset-8 drop-shadow-sm break-words">
                         {studentName}
                       </span>
                     </div>
@@ -250,7 +253,7 @@ export function CertificatesClient({
 
                     {/* Course Title Spotlight */}
                     <div className="py-1">
-                      <h3 className="text-lg sm:text-2xl font-black text-brand-teal tracking-tight max-w-2xl mx-auto">
+                      <h3 className="text-base sm:text-2xl font-black text-brand-teal tracking-tight max-w-2xl mx-auto">
                         {activeCourse.courseTitle}
                       </h3>
                       <p className="text-[11px] text-muted-foreground mt-1 font-medium">
@@ -393,14 +396,14 @@ export function CertificatesClient({
                     </div>
 
                     {/* Primary Action Button directly on HUD */}
-                    <div className="mt-6 flex items-center justify-center">
+                    <div className="mt-6 flex items-center justify-center w-full px-2">
                       {activeCourse.progressPct >= 100 ? (
                         <Button
                           onClick={() => handleClaimCertificate(activeCourse.courseId)}
                           disabled={claimingCourseId === activeCourse.courseId}
-                          className="h-12 px-8 rounded-2xl font-extrabold bg-gradient-to-r from-emerald-500 to-brand-teal hover:opacity-95 text-brand-charcoal text-sm shadow-xl shadow-brand-teal/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                          className="w-full sm:w-auto h-12 px-6 sm:px-8 rounded-2xl font-extrabold bg-gradient-to-r from-emerald-500 to-brand-teal hover:opacity-95 text-brand-charcoal text-xs sm:text-sm shadow-xl shadow-brand-teal/25 transition-all hover:scale-[1.02] active:scale-[0.98] justify-center"
                         >
-                          <Sparkles className="w-4 h-4 mr-2" />
+                          <Sparkles className="w-4 h-4 mr-2 shrink-0" />
                           <span>
                             {claimingCourseId === activeCourse.courseId
                               ? "Issuing Official Credential..."
@@ -410,11 +413,11 @@ export function CertificatesClient({
                       ) : (
                         <Button
                           asChild
-                          className="h-12 px-8 rounded-2xl font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal text-sm shadow-xl shadow-brand-teal/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                          className="w-full sm:w-auto h-12 px-6 sm:px-8 rounded-2xl font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal text-xs sm:text-sm shadow-xl shadow-brand-teal/20 transition-all hover:scale-[1.02] active:scale-[0.98] justify-center text-center"
                         >
-                          <Link href={`/student/courses/${activeCourse.courseId}`}>
-                            <span>Continue Learning to Unlock Certificate</span>
-                            <ArrowRight className="w-4 h-4 ml-2" />
+                          <Link href={`/student/courses/${activeCourse.courseId}`} className="justify-center">
+                            <span>Continue Learning to Unlock</span>
+                            <ArrowRight className="w-4 h-4 ml-2 shrink-0" />
                           </Link>
                         </Button>
                       )}
@@ -639,13 +642,16 @@ export function CertificatesClient({
       {/* ========================================================================= */}
       {/* 3. OFFICIAL ISSUED CERTIFICATE MODAL                                      */}
       {/* ========================================================================= */}
+      {/* ========================================================================= */}
+      {/* 3. OFFICIAL ISSUED CERTIFICATE MODAL                                      */}
+      {/* ========================================================================= */}
       <Dialog open={Boolean(selectedCert)} onOpenChange={(open) => !open && setSelectedCert(null)}>
-        <DialogContent className="max-w-2xl p-0 overflow-hidden border-border/80 bg-card rounded-3xl">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl max-h-[90dvh] overflow-y-auto overscroll-contain p-0 border-border/80 bg-card rounded-3xl">
           <DialogTitle className="sr-only">Certificate of Completion</DialogTitle>
           {selectedCert && (
-            <div className="p-6 sm:p-8 space-y-6 select-none bg-gradient-to-b from-card via-card to-brand-teal/5">
-              <div className="relative border-4 border-brand-teal/30 rounded-3xl p-6 sm:p-8 text-center space-y-4 bg-background/50 shadow-inner">
-                <div className="relative w-16 h-16 mx-auto">
+            <div className="p-4 sm:p-8 space-y-6 select-none bg-gradient-to-b from-card via-card to-brand-teal/5">
+              <div className="relative border-2 sm:border-4 border-brand-teal/30 rounded-2xl sm:rounded-3xl p-4 sm:p-8 text-center space-y-4 bg-background/50 shadow-inner">
+                <div className="relative w-14 h-14 sm:w-16 sm:h-16 mx-auto">
                   <Image
                     src="/brand/tg-mark.png"
                     alt="TechGration Seal"
@@ -656,10 +662,10 @@ export function CertificatesClient({
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-[10px] tracking-widest uppercase font-bold text-brand-teal">
+                  <span className="text-[9px] sm:text-[10px] tracking-widest uppercase font-bold text-brand-teal block">
                     TechGration Technologies Private Limited
                   </span>
-                  <h2 className="text-xl sm:text-2xl font-extrabold text-foreground tracking-tight">
+                  <h2 className="text-lg sm:text-2xl font-extrabold text-foreground tracking-tight">
                     CERTIFICATE OF COMPLETION
                   </h2>
                 </div>
@@ -668,7 +674,7 @@ export function CertificatesClient({
                   This certifies that
                 </p>
 
-                <p className="text-2xl font-bold tracking-tight text-foreground underline decoration-brand-teal decoration-2 underline-offset-4">
+                <p className="text-xl sm:text-2xl font-bold tracking-tight text-foreground underline decoration-brand-teal decoration-2 underline-offset-4 break-words">
                   {selectedCert.studentName}
                 </p>
 
@@ -676,31 +682,31 @@ export function CertificatesClient({
                   has successfully fulfilled all curriculum, live masterclasses, hands-on architectural labs, and assessment requirements for
                 </p>
 
-                <h3 className="text-base sm:text-lg font-bold text-foreground">
+                <h3 className="text-sm sm:text-lg font-bold text-foreground">
                   {selectedCert.courseTitle}
                 </h3>
 
                 <div className="pt-6 border-t border-border/60 flex items-center justify-between text-xs text-muted-foreground">
                   <div className="text-left">
-                    <p className="font-bold text-foreground">{selectedCert.teacherName}</p>
+                    <p className="font-bold text-foreground text-xs">{selectedCert.teacherName}</p>
                     <p className="text-[10px]">Lead Course Architect</p>
                   </div>
 
                   <div className="text-right">
-                    <p className="font-mono text-foreground font-bold">ID: {selectedCert.code}</p>
+                    <p className="font-mono text-foreground font-bold text-xs">ID: {selectedCert.code}</p>
                     <p className="text-[10px]">techgration.live/verify</p>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
                 <Button
                   asChild
                   variant="outline"
                   size="sm"
-                  className="text-xs border-border/80 rounded-xl h-10 px-4 font-semibold"
+                  className="w-full sm:w-auto text-xs border-border/80 rounded-xl h-11 sm:h-10 px-4 font-semibold justify-center"
                 >
-                  <Link href={`/verify/${selectedCert.code}`} target="_blank">
+                  <Link href={`/verify/${selectedCert.code}`} target="_blank" className="justify-center">
                     <ShieldCheck className="w-3.5 h-3.5 mr-1.5 text-emerald-500" />
                     <span>Public Verification Link</span>
                     <ExternalLink className="w-3 h-3 ml-1.5 opacity-70" />
@@ -710,7 +716,7 @@ export function CertificatesClient({
                 <Button
                   onClick={handlePrint}
                   size="sm"
-                  className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold text-xs h-10 px-5 rounded-xl shadow-md shadow-brand-teal/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-full sm:w-auto bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold text-xs h-11 sm:h-10 px-5 rounded-xl shadow-md shadow-brand-teal/20 transition-all hover:scale-[1.02] active:scale-[0.98] justify-center"
                 >
                   <Printer className="w-3.5 h-3.5 mr-1.5" />
                   <span>Print / Save PDF</span>
@@ -726,7 +732,7 @@ export function CertificatesClient({
       {/* 5. TAMPER-PROOF SECURITY SPECS MODAL                                      */}
       {/* ========================================================================= */}
       <Dialog open={securityModalOpen} onOpenChange={setSecurityModalOpen}>
-        <DialogContent className="max-w-lg p-6 overflow-hidden border-border/80 bg-card rounded-3xl space-y-5">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-lg max-h-[90dvh] overflow-y-auto overscroll-contain p-5 sm:p-6 border-border/80 bg-card rounded-3xl space-y-5">
           <DialogTitle className="text-lg font-extrabold text-foreground flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-emerald-500" />
             <span>Cryptographic Verification Architecture</span>
@@ -771,7 +777,7 @@ export function CertificatesClient({
           <div className="pt-2 flex justify-end">
             <Button
               onClick={() => setSecurityModalOpen(false)}
-              className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold text-xs h-10 px-6 rounded-xl shadow-md shadow-brand-teal/20"
+              className="w-full sm:w-auto bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold text-xs h-11 sm:h-10 px-6 rounded-xl shadow-md shadow-brand-teal/20 justify-center"
             >
               Got it
             </Button>

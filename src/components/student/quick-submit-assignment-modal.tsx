@@ -81,13 +81,13 @@ export function QuickSubmitAssignmentModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !loading && onClose()}>
-      <DialogContent className="max-w-xl p-6 sm:p-8 rounded-3xl border border-border/80 bg-card/95 backdrop-blur-2xl shadow-2xl">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-xl p-5 sm:p-8 rounded-3xl border border-border/80 bg-card/95 backdrop-blur-2xl shadow-2xl max-h-[90dvh] overflow-y-auto overscroll-contain">
         <DialogHeader className="space-y-2">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500 shadow-xs">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500 shadow-xs shrink-0">
               <FileCheck2 className="w-4 h-4" />
             </div>
-            <DialogTitle className="text-xl font-bold tracking-tight text-foreground truncate">
+            <DialogTitle className="text-lg sm:text-xl font-bold tracking-tight text-foreground truncate">
               {assignment?.title || "Submit Deliverable"}
             </DialogTitle>
           </div>
@@ -107,7 +107,7 @@ export function QuickSubmitAssignmentModal({
               value={fileUrl}
               onChange={(e) => setFileUrl(e.target.value)}
               placeholder="https://github.com/your-username/project-repo"
-              className="rounded-xl h-10 text-xs sm:text-sm bg-background border-border/80 font-mono text-xs"
+              className="rounded-xl h-11 sm:h-10 text-xs sm:text-sm bg-background border-border/80 font-mono text-xs"
             />
           </div>
 
@@ -125,20 +125,20 @@ export function QuickSubmitAssignmentModal({
             />
           </div>
 
-          <DialogFooter className="pt-2 flex items-center justify-end gap-2">
+          <DialogFooter className="pt-2 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
               disabled={loading}
-              className="rounded-xl text-xs h-10 px-4"
+              className="w-full sm:w-auto rounded-xl text-xs h-11 sm:h-10 px-4"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={loading}
-              className="rounded-xl text-xs h-10 px-5 font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/20"
+              className="w-full sm:w-auto rounded-xl text-xs h-11 sm:h-10 px-5 font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/20"
             >
               {loading ? (
                 <>

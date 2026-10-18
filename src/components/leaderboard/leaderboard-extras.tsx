@@ -16,7 +16,7 @@ export function CourseSwitcher({
 }) {
   if (courses.length <= 1) return null
   return (
-    <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1" role="tablist" aria-label="Select course">
+    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar touch-pan-x scroll-smooth pb-1 -mx-1 px-1" role="tablist" aria-label="Select course">
       {courses.map((c) => {
         const active = c.id === activeId
         return (
@@ -26,10 +26,10 @@ export function CourseSwitcher({
             role="tab"
             aria-selected={active}
             scroll={false}
-            className={`whitespace-nowrap text-xs font-bold px-3.5 py-2 rounded-xl border transition-all ${
+            className={`whitespace-nowrap min-h-[44px] flex items-center text-xs font-bold px-4 py-2 rounded-xl border transition-all shrink-0 ${
               active
                 ? "bg-foreground text-background border-foreground shadow-md"
-                : "bg-card/70 text-muted-foreground border-border/70 hover:text-foreground hover:border-foreground/30"
+                : "bg-card/70 text-muted-foreground border-border/70 hover:text-foreground hover:border-foreground/30 active:bg-muted"
             }`}
           >
             {c.title}

@@ -13,7 +13,7 @@ export default async function StudentDashboardPage() {
   const user = await requireStudent()
 
   // 1. Fetch Student Enrollments
-  const enrollments = await db.enrollment.findMany({
+  const rawEnrollments = await db.enrollment.findMany({
     where: { userId: user.id },
     include: {
       course: {
@@ -30,6 +30,21 @@ export default async function StudentDashboardPage() {
       },
     },
     orderBy: { lastAccessedAt: "desc" },
+  })
+
+  // Prioritize "Artificial Intelligence" course in Continue Learning:
+  // If the student is enrolled in multiple courses, Artificial Intelligence must ALWAYS have highest priority.
+  const enrollments = [...rawEnrollments].sort((a, b) => {
+    const isAiA =
+      a.course.id === "6ad283b4e196d0b8fbfb9eae" ||
+      a.course.title.toLowerCase().includes("artificial intelligence")
+    const isAiB =
+      b.course.id === "6ad283b4e196d0b8fbfb9eae" ||
+      b.course.title.toLowerCase().includes("artificial intelligence")
+
+    if (isAiA && !isAiB) return -1
+    if (!isAiA && isAiB) return 1
+    return 0
   })
 
   // 2. Fetch Completed Lessons Count

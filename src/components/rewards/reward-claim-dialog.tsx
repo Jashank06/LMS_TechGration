@@ -172,12 +172,12 @@ export function RewardClaimDialog({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-border/70 bg-card p-6 sm:p-8 shadow-2xl space-y-6"
+          className="relative z-10 w-full max-w-2xl max-h-[90dvh] overscroll-contain overflow-y-auto rounded-3xl border border-border/70 bg-card p-5 sm:p-8 shadow-2xl space-y-6"
         >
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-5 right-5 p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="absolute top-4 sm:top-5 right-4 sm:right-5 p-2.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
           >
             <X className="w-5 h-5" />
           </button>
@@ -191,10 +191,10 @@ export function RewardClaimDialog({
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>#1 Champion Swag Claim Console</span>
                 </div>
-                <h2 className="text-2xl font-black text-foreground">
+                <h2 className="text-xl sm:text-2xl font-black text-foreground">
                   Configure & Claim {item.title}
                 </h2>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground leading-relaxed">
                   Customize your item specifications and enter your dispatch address. All shipping and handling is 100% covered by TechGration.
                 </p>
               </div>
@@ -242,10 +242,10 @@ export function RewardClaimDialog({
                               key={choice}
                               type="button"
                               onClick={() => handleOptionChange(opt.key, choice)}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                              className={`min-h-[44px] px-4 py-2 rounded-xl text-xs font-semibold border transition-all ${
                                 isSelected
                                   ? "border-amber-500 bg-amber-500/15 text-amber-500 shadow-xs"
-                                  : "border-border/60 bg-background hover:bg-muted text-muted-foreground hover:text-foreground"
+                                  : "border-border/60 bg-background hover:bg-muted text-muted-foreground hover:text-foreground active:scale-95"
                               }`}
                             >
                               {choice}
@@ -275,7 +275,7 @@ export function RewardClaimDialog({
                       placeholder="e.g. Arun Kumar"
                       value={shippingName}
                       onChange={(e) => setShippingName(e.target.value)}
-                      className="rounded-xl text-xs"
+                      className="rounded-xl h-11 sm:h-10 text-base sm:text-xs"
                       required
                     />
                   </div>
@@ -289,7 +289,7 @@ export function RewardClaimDialog({
                       placeholder="e.g. 9876543210"
                       value={shippingPhone}
                       onChange={(e) => setShippingPhone(e.target.value)}
-                      className="rounded-xl text-xs"
+                      className="rounded-xl h-11 sm:h-10 text-base sm:text-xs"
                       maxLength={10}
                       required
                     />
@@ -305,19 +305,19 @@ export function RewardClaimDialog({
                     placeholder="e.g. Flat 402, Tech Towers, Cyber City"
                     value={shippingAddress}
                     onChange={(e) => setShippingAddress(e.target.value)}
-                    className="rounded-xl text-xs"
+                    className="rounded-xl h-11 sm:h-10 text-base sm:text-xs"
                     required
                   />
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="space-y-1.5">
                     <Label className="text-xs font-medium text-foreground">City</Label>
                     <Input
                       placeholder="e.g. Bengaluru"
                       value={shippingCity}
                       onChange={(e) => setShippingCity(e.target.value)}
-                      className="rounded-xl text-xs"
+                      className="rounded-xl h-11 sm:h-10 text-base sm:text-xs"
                       required
                     />
                   </div>
@@ -327,7 +327,7 @@ export function RewardClaimDialog({
                       placeholder="e.g. Karnataka"
                       value={shippingState}
                       onChange={(e) => setShippingState(e.target.value)}
-                      className="rounded-xl text-xs"
+                      className="rounded-xl h-11 sm:h-10 text-base sm:text-xs"
                       required
                     />
                   </div>
@@ -337,7 +337,7 @@ export function RewardClaimDialog({
                       placeholder="e.g. 560100"
                       value={shippingPincode}
                       onChange={(e) => setShippingPincode(e.target.value)}
-                      className="rounded-xl text-xs"
+                      className="rounded-xl h-11 sm:h-10 text-base sm:text-xs"
                       maxLength={6}
                       required
                     />
@@ -346,12 +346,12 @@ export function RewardClaimDialog({
               </div>
 
               {/* Submit Button */}
-              <div className="pt-3 border-t border-border/40 flex items-center justify-between gap-4">
+              <div className="pt-3 border-t border-border/40 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={onClose}
-                  className="rounded-xl text-xs"
+                  className="rounded-xl text-xs h-11 sm:h-10 w-full sm:w-auto"
                   disabled={loading}
                 >
                   Cancel
@@ -360,7 +360,7 @@ export function RewardClaimDialog({
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs sm:text-sm px-6 shadow-lg shadow-amber-500/20"
+                  className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs sm:text-sm px-6 h-11 sm:h-10 w-full sm:w-auto shadow-lg shadow-amber-500/20 justify-center"
                 >
                   {loading ? (
                     <>

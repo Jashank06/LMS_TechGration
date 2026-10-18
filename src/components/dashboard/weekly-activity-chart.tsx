@@ -73,9 +73,9 @@ export function WeeklyActivityChart({ data = defaultZeroWeeklyData }: { data?: A
             ticks={yTicks}
             tickLine={false}
             axisLine={false}
-            tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
-            unit="m"
-            width={34}
+            tick={{ fontSize: 10.5, fill: "var(--muted-foreground)", fontWeight: 500 }}
+            tickFormatter={(v) => (v === 0 ? "0" : `${v}m`)}
+            width={32}
           />
           <Tooltip
             cursor={{ fill: "rgba(0, 214, 214, 0.08)", radius: 6 }}

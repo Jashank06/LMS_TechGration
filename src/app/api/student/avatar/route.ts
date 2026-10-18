@@ -15,7 +15,7 @@ const ALLOWED_MIME_TYPES = [
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await getCurrentUser()
+    const user = await getCurrentUser(req)
     if (!user) {
       return NextResponse.json(
         { success: false, error: "Authentication required." },
@@ -72,6 +72,11 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    const updatedUser = await db.user.findUnique({
+      where: { id: user.id },
+      include: { profile: true },
+    })
+
     // Revalidate relevant pages
     revalidatePath("/student/settings")
     revalidatePath("/student/dashboard")
@@ -82,6 +87,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       avatarUrl: uploadResult.secure_url,
+      user: {
+        id: updatedUser?.id,
+        name: updatedUser?.name,
+        email: updatedUser?.email,
+        role: updatedUser?.role,
+        avatarUrl: uploadResult.secure_url,
+        profile: updatedUser?.profile
+          ? {
+              headline: updatedUser.profile.headline,
+              bio: updatedUser.profile.bio,
+              phone: updatedUser.profile.phone,
+              avatarUrl: uploadResult.secure_url,
+              timezone: updatedUser.profile.timezone,
+            }
+          : null,
+      },
       message: "Profile picture uploaded successfully.",
     })
   } catch (error: any) {
@@ -96,9 +117,9 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(req: NextRequest) {
   try {
-    const user = await getCurrentUser()
+    const user = await getCurrentUser(req)
     if (!user) {
       return NextResponse.json(
         { success: false, error: "Authentication required." },

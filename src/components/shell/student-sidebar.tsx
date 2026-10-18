@@ -38,6 +38,7 @@ interface AppleNavItem {
   countKey?: keyof StudentNavCountsProp
   isNew?: boolean
   isLocked?: boolean
+  badgeText?: string
 }
 
 const mainNavItems: AppleNavItem[] = [
@@ -94,7 +95,13 @@ const academicNavItems: AppleNavItem[] = [
     href: "/student/rewards",
     icon: Gift,
     iconGradient: "from-amber-400 via-orange-500 to-rose-500",
-    isNew: true,
+  },
+  {
+    title: "Refer & Earn",
+    href: "/student/refer",
+    icon: Sparkles,
+    iconGradient: "from-emerald-400 via-teal-500 to-cyan-500",
+    badgeText: "₹500",
   },
   {
     title: "Certificates",
@@ -162,7 +169,7 @@ export function StudentSidebar({ user, counts, onCloseMobile }: StudentSidebarPr
 
   const renderNavGroup = (title: string, items: AppleNavItem[]) => (
     <div className="space-y-1 mb-5">
-      <div className="px-3 text-[11px] font-semibold tracking-wider uppercase text-muted-foreground/70">
+      <div className="px-3.5 text-[11.5px] font-bold tracking-wider uppercase text-muted-foreground/80">
         {title}
       </div>
       <div className="space-y-0.5">
@@ -179,16 +186,16 @@ export function StudentSidebar({ user, counts, onCloseMobile }: StudentSidebarPr
               key={item.href}
               href={item.href}
               onClick={onCloseMobile}
-              className={`group flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[13px] font-medium transition-colors ${
+              className={`group flex items-center justify-between px-3 py-2 rounded-xl text-[14px] font-medium transition-all ${
                 isActive
-                  ? "bg-black/[0.08] dark:bg-white/[0.12] text-foreground font-semibold shadow-xs ring-1 ring-inset ring-black/[0.04] dark:ring-white/[0.06]"
-                  : "text-foreground/80 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] hover:text-foreground"
+                  ? "bg-black/[0.07] dark:bg-white/[0.12] text-foreground font-semibold shadow-xs ring-1 ring-inset ring-black/[0.05] dark:ring-white/[0.08]"
+                  : "text-foreground/85 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] hover:text-foreground hover:translate-x-0.5"
               }`}
             >
-              <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex items-center gap-3 min-w-0">
                 {/* Apple SF Symbols-style colorful rounded squircle */}
                 <div
-                  className={`w-7 h-7 rounded-lg bg-gradient-to-br ${item.iconGradient} flex items-center justify-center text-white shrink-0 shadow-xs`}
+                  className={`w-8 h-8 rounded-xl bg-gradient-to-br ${item.iconGradient} flex items-center justify-center text-white shrink-0 shadow-xs border border-white/10 dark:border-white/15`}
                 >
                   <Icon className="w-4 h-4" />
                 </div>
@@ -198,7 +205,7 @@ export function StudentSidebar({ user, counts, onCloseMobile }: StudentSidebarPr
               <div className="flex items-center gap-1.5 shrink-0">
                 {count > 0 && (
                   <span
-                    className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full transition-all ${
+                    className={`px-1.5 py-0.5 text-[10.5px] font-bold rounded-full transition-all ${
                       isActive
                         ? "bg-foreground/15 text-foreground"
                         : item.countKey === "pendingAssignments"
@@ -214,8 +221,13 @@ export function StudentSidebar({ user, counts, onCloseMobile }: StudentSidebarPr
                     NEW
                   </span>
                 )}
+                {item.badgeText && (
+                  <span className="px-1.5 py-0.5 text-[9px] font-extrabold tracking-wider rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm">
+                    {item.badgeText}
+                  </span>
+                )}
                 {item.isLocked && (
-                  <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1 font-mono">
+                  <span className="px-1.5 py-0.5 text-[10.5px] font-bold rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1 font-mono">
                     <Lock className="w-2.5 h-2.5" />
                     <span>Locked</span>
                   </span>
@@ -232,7 +244,7 @@ export function StudentSidebar({ user, counts, onCloseMobile }: StudentSidebarPr
   )
 
   return (
-    <aside className="w-64 h-full flex flex-col justify-between bg-[#F8F9FA]/80 dark:bg-[#111518]/80 backdrop-blur-2xl border-r border-black/[0.06] dark:border-white/[0.08] select-none overflow-y-auto">
+    <aside className="w-[264px] h-full flex flex-col justify-between bg-[#F8F9FA]/80 dark:bg-[#111518]/80 backdrop-blur-2xl border-r border-black/[0.06] dark:border-white/[0.08] select-none overflow-y-auto">
       {/* Top Header & Brand */}
       <div>
         <div className="p-4 border-b border-black/[0.05] dark:border-white/[0.06]">
@@ -249,11 +261,11 @@ export function StudentSidebar({ user, counts, onCloseMobile }: StudentSidebarPr
 
       {/* Bottom User Card & Actions (Apple ID / Account Card Style) */}
       <div className="p-3 border-t border-black/[0.05] dark:border-white/[0.06] space-y-2">
-        <div className="px-2 flex items-center justify-between text-[11px] text-muted-foreground">
-          <span className="font-medium">Student Portal</span>
+        <div className="px-2 flex items-center justify-between text-[11.5px] text-muted-foreground">
+          <span className="font-semibold tracking-wide">Student Portal</span>
           <Link
             href="/login"
-            className="flex items-center gap-1 hover:text-foreground text-brand-ink dark:text-brand-teal font-medium"
+            className="flex items-center gap-1 hover:text-foreground text-brand-ink dark:text-brand-teal font-semibold"
             title="Switch account"
           >
             <span>Switch</span>
@@ -262,14 +274,14 @@ export function StudentSidebar({ user, counts, onCloseMobile }: StudentSidebarPr
         </div>
 
         {/* User profile row */}
-        <div className="flex items-center justify-between p-2 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.08] shadow-xs hover:bg-black/[0.05] dark:hover:bg-white/[0.07] transition-all">
+        <div className="flex items-center justify-between p-2.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.08] shadow-xs hover:bg-black/[0.05] dark:hover:bg-white/[0.07] transition-all">
           <Link
             href="/student/settings"
             onClick={onCloseMobile}
             className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-90 transition-opacity"
           >
             <div className="relative">
-              <Avatar className="h-8 w-8 rounded-full border border-brand-teal/30 ring-1 ring-brand-teal/20">
+              <Avatar className="h-8.5 w-8.5 rounded-full border border-brand-teal/30 ring-1 ring-brand-teal/20">
                 {user?.avatarUrl && (
                   <AvatarImage src={user.avatarUrl} alt={userName} className="object-cover" />
                 )}
@@ -280,7 +292,7 @@ export function StudentSidebar({ user, counts, onCloseMobile }: StudentSidebarPr
               <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-card" />
             </div>
             <div className="min-w-0 flex-1 text-left">
-              <p className="text-[13px] font-semibold text-foreground truncate leading-tight">{userName}</p>
+              <p className="text-[13.5px] font-semibold text-foreground truncate leading-tight">{userName}</p>
               <p className="text-[11px] text-muted-foreground truncate">{userEmail}</p>
             </div>
           </Link>

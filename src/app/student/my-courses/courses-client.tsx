@@ -79,7 +79,7 @@ export function CoursesClient({ courses }: CoursesClientProps) {
   return (
     <div className="space-y-6">
       {/* Controls Bar (Glassmorphic Container) */}
-      <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between p-3 rounded-2xl border border-border/80 bg-card/60 backdrop-blur-md">
+      <div className="flex flex-col md:flex-row gap-3 sm:gap-4 items-stretch md:items-center justify-between p-3 rounded-2xl border border-border/80 bg-card/60 backdrop-blur-md">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -92,12 +92,12 @@ export function CoursesClient({ courses }: CoursesClientProps) {
         </div>
 
         {/* Filters and View toggles */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center justify-between sm:justify-start gap-2 overflow-x-auto no-scrollbar touch-pan-x">
           {/* Status filter buttons */}
-          <div className="flex rounded-xl border border-border/70 bg-background/50 p-1 text-xs">
+          <div className="flex rounded-xl border border-border/70 bg-background/50 p-1 text-xs shrink-0">
             <button
               onClick={() => setStatusFilter("ALL")}
-              className={`px-3 py-1 rounded-lg font-semibold transition-all ${
+              className={`px-3 py-1 rounded-lg font-semibold transition-all whitespace-nowrap ${
                 statusFilter === "ALL"
                   ? "bg-brand-teal/15 text-brand-teal shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
@@ -107,7 +107,7 @@ export function CoursesClient({ courses }: CoursesClientProps) {
             </button>
             <button
               onClick={() => setStatusFilter("IN_PROGRESS")}
-              className={`px-3 py-1 rounded-lg font-semibold transition-all ${
+              className={`px-3 py-1 rounded-lg font-semibold transition-all whitespace-nowrap ${
                 statusFilter === "IN_PROGRESS"
                   ? "bg-brand-teal/15 text-brand-teal shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
@@ -117,7 +117,7 @@ export function CoursesClient({ courses }: CoursesClientProps) {
             </button>
             <button
               onClick={() => setStatusFilter("COMPLETED")}
-              className={`px-3 py-1 rounded-lg font-semibold transition-all ${
+              className={`px-3 py-1 rounded-lg font-semibold transition-all whitespace-nowrap ${
                 statusFilter === "COMPLETED"
                   ? "bg-brand-teal/15 text-brand-teal shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
@@ -128,10 +128,10 @@ export function CoursesClient({ courses }: CoursesClientProps) {
           </div>
 
           {/* Grid vs List view */}
-          <div className="flex rounded-xl border border-border/70 bg-background/50 p-1 text-xs">
+          <div className="flex rounded-xl border border-border/70 bg-background/50 p-1 text-xs shrink-0">
             <button
               onClick={() => setViewMode("grid")}
-              className={`p-1.5 rounded-lg transition-all ${
+              className={`p-1.5 rounded-lg transition-all min-h-[32px] min-w-[32px] flex items-center justify-center ${
                 viewMode === "grid"
                   ? "bg-secondary text-foreground"
                   : "text-muted-foreground hover:text-foreground"
@@ -142,7 +142,7 @@ export function CoursesClient({ courses }: CoursesClientProps) {
             </button>
             <button
               onClick={() => setViewMode("list")}
-              className={`p-1.5 rounded-lg transition-all ${
+              className={`p-1.5 rounded-lg transition-all min-h-[32px] min-w-[32px] flex items-center justify-center ${
                 viewMode === "list"
                   ? "bg-secondary text-foreground"
                   : "text-muted-foreground hover:text-foreground"
@@ -157,7 +157,7 @@ export function CoursesClient({ courses }: CoursesClientProps) {
 
       {/* Category Pills */}
       {categories.length > 2 && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar touch-pan-x pb-1 text-xs">
           <span className="text-muted-foreground font-semibold shrink-0 flex items-center gap-1.5 pl-1">
             <Filter className="w-3.5 h-3.5 text-brand-teal" />
             <span>Filter:</span>
@@ -166,7 +166,7 @@ export function CoursesClient({ courses }: CoursesClientProps) {
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
-              className={`px-3.5 py-1.5 rounded-full border text-xs font-semibold whitespace-nowrap transition-all ${
+              className={`px-3.5 py-1.5 rounded-full border text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
                 categoryFilter === cat
                   ? "bg-brand-teal/15 text-brand-teal border-brand-teal/40 shadow-xs"
                   : "bg-card/70 text-muted-foreground border-border/70 hover:border-foreground/30"
@@ -304,19 +304,19 @@ export function CoursesClient({ courses }: CoursesClientProps) {
             return (
               <div
                 key={course.id}
-                className="p-5 rounded-3xl border border-border/80 bg-card/80 backdrop-blur-xl shadow-xs hover:border-brand-teal/50 hover:shadow-[0_8px_25px_-5px_rgba(0,214,214,0.15)] transition-all flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-5 group"
+                className="p-4 sm:p-5 rounded-3xl border border-border/80 bg-card/80 backdrop-blur-xl shadow-xs hover:border-brand-teal/50 hover:shadow-[0_8px_25px_-5px_rgba(0,214,214,0.15)] transition-all flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 sm:gap-5 group"
               >
-                <div className="flex items-center gap-4 min-w-0">
-                  <Link href={courseHubHref} className="block relative w-32 aspect-video rounded-xl overflow-hidden shrink-0 bg-muted border border-border/60">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3.5 sm:gap-4 min-w-0 flex-1">
+                  <Link href={courseHubHref} className="block relative w-full sm:w-36 aspect-video rounded-xl overflow-hidden shrink-0 bg-muted border border-border/60">
                     <Image
                       src={course.thumbnailUrl}
                       alt={course.title}
                       fill
-                      sizes="128px"
+                      sizes="(max-width: 640px) 100vw, 144px"
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   </Link>
-                  <div className="min-w-0 space-y-1">
+                  <div className="min-w-0 space-y-1 w-full">
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-brand-teal">
                         {course.category}
@@ -337,8 +337,8 @@ export function CoursesClient({ courses }: CoursesClientProps) {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-6 shrink-0 justify-between sm:justify-end">
-                  <div className="w-36 space-y-1.5">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-6 shrink-0 justify-between sm:justify-end pt-3 sm:pt-0 border-t sm:border-t-0 border-border/60">
+                  <div className="w-full sm:w-36 space-y-1.5">
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground text-[11px] font-medium">Progress</span>
                       <span className="font-extrabold text-brand-teal">
@@ -356,7 +356,7 @@ export function CoursesClient({ courses }: CoursesClientProps) {
                   <Button
                     asChild
                     size="sm"
-                    className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold text-xs h-10 px-5 rounded-xl shadow-md shadow-brand-teal/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    className="w-full sm:w-auto bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold text-xs h-11 sm:h-10 px-5 rounded-xl shadow-md shadow-brand-teal/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                   >
                     <Link href={courseHubHref}>
                       <Video className="w-3.5 h-3.5 mr-1.5" />

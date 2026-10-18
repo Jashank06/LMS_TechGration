@@ -143,7 +143,7 @@ export function StudentTopbar({ user, onToggleMobileSidebar }: StudentTopbarProp
             variant="ghost"
             size="sm"
             onClick={onToggleMobileSidebar}
-            className="lg:hidden p-2 text-muted-foreground hover:text-foreground"
+            className="lg:hidden min-h-[44px] min-w-[44px] p-2 text-muted-foreground hover:text-foreground flex items-center justify-center rounded-xl"
             aria-label="Open sidebar menu"
           >
             <Menu className="w-5 h-5" />
@@ -178,11 +178,12 @@ export function StudentTopbar({ user, onToggleMobileSidebar }: StudentTopbarProp
           {/* Cmd+K Search Button */}
           <button
             onClick={() => setCommandOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground text-xs transition-all shadow-2xs group"
+            className="flex items-center gap-2 p-2 sm:px-3 sm:py-1.5 rounded-xl border border-border bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground text-xs transition-all shadow-2xs group min-h-[40px] sm:min-h-0"
+            aria-label="Search courses, labs & schedule"
           >
-            <Search className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
+            <Search className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
             <span className="hidden md:inline">Search courses, labs & schedule...</span>
-            <span className="md:hidden">Search</span>
+            <span className="hidden sm:inline md:hidden">Search</span>
             <kbd className="hidden sm:inline-flex h-4 items-center gap-0.5 rounded border border-border bg-background px-1 font-mono text-[10px] font-medium text-muted-foreground">
               ⌘K
             </kbd>
@@ -191,15 +192,15 @@ export function StudentTopbar({ user, onToggleMobileSidebar }: StudentTopbarProp
           {/* Notifications Popover */}
           <Popover>
             <PopoverTrigger
-              className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+              className="relative min-h-[40px] min-w-[40px] flex items-center justify-center p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors cursor-pointer"
               aria-label="View notifications"
             >
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brand-teal ring-2 ring-card animate-pulse" />
+                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-brand-teal ring-2 ring-card animate-pulse" />
               )}
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-80 p-0 border-border bg-card shadow-xl">
+            <PopoverContent align="end" className="w-[calc(100vw-2rem)] max-w-xs sm:w-80 p-0 border-border bg-card shadow-xl rounded-2xl overflow-hidden">
               <div className="p-3 border-b border-border flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-foreground">Notifications</span>
@@ -300,7 +301,7 @@ export function StudentTopbar({ user, onToggleMobileSidebar }: StudentTopbarProp
                 {userName.split(" ")[0]}
               </span>
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-64 p-2 border-border/80 bg-card/95 backdrop-blur-xl shadow-xl rounded-2xl">
+            <PopoverContent align="end" className="w-[calc(100vw-2rem)] max-w-xs sm:w-64 p-2 border-border/80 bg-card/95 backdrop-blur-xl shadow-xl rounded-2xl overscroll-contain">
               <div className="p-2.5 border-b border-border/60 flex items-center gap-3">
                 <Avatar className="h-10 w-10 rounded-xl border border-brand-teal/30 ring-2 ring-brand-teal/10">
                   {user?.avatarUrl && (

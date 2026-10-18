@@ -101,10 +101,10 @@ export default async function AssessmentsPage() {
                   </div>
                 </div>
 
-                <div className="pt-6 flex items-center justify-between gap-3">
+                <div className="pt-6 flex flex-col xs:flex-row xs:items-center justify-between gap-3">
                   {bestAttempt ? (
                     <span
-                      className={`px-3 py-1 rounded-xl text-xs font-bold border flex items-center gap-1.5 shadow-xs ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 shadow-xs w-full xs:w-auto ${
                         isPassed
                           ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
                           : "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
@@ -120,9 +120,9 @@ export default async function AssessmentsPage() {
                   <Button
                     asChild
                     size="sm"
-                    className="font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal text-xs h-10 px-5 rounded-xl shadow-md shadow-brand-teal/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    className="font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal text-xs h-10 px-5 rounded-xl shadow-md shadow-brand-teal/20 transition-all hover:scale-[1.02] active:scale-[0.98] w-full xs:w-auto"
                   >
-                    <Link href={`/student/assessments/${quiz.id}`}>
+                    <Link href={`/student/assessments/${quiz.id}`} className="justify-center">
                       <span>{bestAttempt ? "Retake Quiz" : "Start Quiz"}</span>
                       <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
                     </Link>

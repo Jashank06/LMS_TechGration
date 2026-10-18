@@ -264,24 +264,24 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8 max-w-7xl mx-auto">
       {/* 1. Header Navigation Bar */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <Link
           href="/student/my-courses"
-          className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-brand-teal transition-colors"
+          className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-brand-teal transition-colors min-h-[36px]"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to My Enrolled Courses</span>
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             href={`/student/leaderboard?courseId=${course.id}`}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25 border border-amber-500/30 transition-all shadow-xs"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25 border border-amber-500/30 transition-all shadow-xs min-h-[36px]"
           >
             <Trophy className="w-3.5 h-3.5 text-amber-500" />
             <span>Course Leaderboard</span>
           </Link>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-brand-teal/15 text-brand-teal border border-brand-teal/30">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-brand-teal/15 text-brand-teal border border-brand-teal/30 min-h-[36px]">
             <Radio className="w-3 h-3 text-brand-teal animate-pulse" />
             <span>Live Interactive Course</span>
           </span>
@@ -443,10 +443,10 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
 
       {/* 3. The 4 Core Sections — Pure English Tab Navigation Bar */}
       <div className="space-y-6">
-        <div className="flex rounded-2xl border border-border/80 bg-card/70 backdrop-blur-xl p-1.5 text-xs sm:text-sm overflow-x-auto shadow-xs gap-1.5">
+        <div className="flex rounded-2xl border border-border/80 bg-card/70 backdrop-blur-xl p-1.5 text-xs sm:text-sm overflow-x-auto no-scrollbar scroll-smooth touch-pan-x shadow-xs gap-1.5">
           <button
             onClick={() => setActiveTab("live")}
-            className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${
+            className={`flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 min-h-[44px] rounded-xl font-bold transition-all whitespace-nowrap ${
               activeTab === "live"
                 ? "bg-brand-teal text-brand-charcoal shadow-md shadow-brand-teal/20"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -463,7 +463,7 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
 
           <button
             onClick={() => setActiveTab("recordings")}
-            className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${
+            className={`flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 min-h-[44px] rounded-xl font-bold transition-all whitespace-nowrap ${
               activeTab === "recordings"
                 ? "bg-brand-teal text-brand-charcoal shadow-md shadow-brand-teal/20"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -480,7 +480,7 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
 
           <button
             onClick={() => setActiveTab("timetable")}
-            className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${
+            className={`flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 min-h-[44px] rounded-xl font-bold transition-all whitespace-nowrap ${
               activeTab === "timetable"
                 ? "bg-brand-teal text-brand-charcoal shadow-md shadow-brand-teal/20"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -492,7 +492,7 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
 
           <button
             onClick={() => setActiveTab("materials")}
-            className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${
+            className={`flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 min-h-[44px] rounded-xl font-bold transition-all whitespace-nowrap ${
               activeTab === "materials"
                 ? "bg-brand-teal text-brand-charcoal shadow-md shadow-brand-teal/20"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -509,7 +509,7 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
 
           <button
             onClick={() => setActiveTab("assignments")}
-            className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${
+            className={`flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 min-h-[44px] rounded-xl font-bold transition-all whitespace-nowrap ${
               activeTab === "assignments"
                 ? "bg-amber-500 text-white shadow-md shadow-amber-500/20"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -532,7 +532,7 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
 
           <button
             onClick={() => setActiveTab("quizzes")}
-            className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${
+            className={`flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 min-h-[44px] rounded-xl font-bold transition-all whitespace-nowrap ${
               activeTab === "quizzes"
                 ? "bg-purple-600 text-white shadow-md shadow-purple-600/20"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -687,7 +687,7 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
                         <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">
                           Live Session Commences In:
                         </p>
-                        <div className="grid grid-cols-4 gap-3 max-w-md">
+                        <div className="grid grid-cols-4 gap-2 sm:gap-3 max-w-md">
                           {[
                             { label: "Days", val: timeLeft.days },
                             { label: "Hours", val: timeLeft.hours },
@@ -696,12 +696,12 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
                           ].map((item) => (
                             <div
                               key={item.label}
-                              className="rounded-2xl border border-border/80 bg-secondary/40 backdrop-blur-md p-3 text-center"
+                              className="rounded-2xl border border-border/80 bg-secondary/40 backdrop-blur-md p-2 sm:p-3 text-center"
                             >
-                              <span className="block text-2xl sm:text-3xl font-black font-mono text-brand-teal">
+                              <span className="block text-xl sm:text-2xl lg:text-3xl font-black font-mono text-brand-teal tabular-nums">
                                 {String(item.val).padStart(2, "0")}
                               </span>
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                                 {item.label}
                               </span>
                             </div>
@@ -711,28 +711,29 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
                     )}
 
                     {/* Joining Link & Action Controls */}
-                    <div className="pt-4 border-t border-border/60 flex flex-wrap items-center gap-4">
+                    <div className="pt-4 border-t border-border/60 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                       <Button
                         asChild
-                        className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold h-12 px-8 rounded-2xl shadow-lg shadow-brand-teal/25 text-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        className="w-full sm:w-auto bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold h-12 px-6 sm:px-8 rounded-2xl shadow-lg shadow-brand-teal/25 text-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
                       >
                         <a
                           href={liveOrUpcomingClass.meetingUrl || defaultMeetUrl}
                           target="_blank"
                           rel="noopener noreferrer"
+                          className="flex items-center justify-center"
                         >
-                          <Video className="w-5 h-5 mr-2" />
-                          <span>
+                          <Video className="w-5 h-5 mr-2 shrink-0" />
+                          <span className="truncate">
                             Join Live Class ({liveOrUpcomingClass.platform === "ZOOM" ? "Zoom" : liveOrUpcomingClass.platform === "GOOGLE_MEET" ? "Google Meet" : "Live Room"})
                           </span>
-                          <ExternalLink className="w-4 h-4 ml-2" />
+                          <ExternalLink className="w-4 h-4 ml-2 shrink-0" />
                         </a>
                       </Button>
 
                       <Button
                         onClick={handleCopyMeetLink}
                         variant="outline"
-                        className="h-12 px-5 rounded-2xl text-xs font-semibold"
+                        className="w-full sm:w-auto h-12 px-5 rounded-2xl text-xs font-semibold justify-center"
                       >
                         {copiedLink ? (
                           <>
@@ -750,15 +751,16 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
                       <Button
                         asChild
                         variant="outline"
-                        className="h-12 px-5 rounded-2xl text-xs font-semibold"
+                        className="w-full sm:w-auto h-12 px-5 rounded-2xl text-xs font-semibold justify-center"
                       >
                         <a
                           href={getGoogleCalendarUrl()}
                           target="_blank"
                           rel="noopener noreferrer"
+                          className="flex items-center justify-center"
                         >
-                          <Calendar className="w-4 h-4 mr-2 text-brand-teal" />
-                          <span>Add to Google Calendar</span>
+                          <Calendar className="w-4 h-4 mr-2 text-brand-teal shrink-0" />
+                          <span>Add to Calendar</span>
                         </a>
                       </Button>
                     </div>

@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "motion/react"
 import confetti from "canvas-confetti"
 import { toast } from "sonner"
@@ -25,10 +25,12 @@ import {
   Sparkles,
   User,
   Lock,
+  Gift,
 } from "lucide-react"
 
 export function RegisterForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   // Form step: 1 = Details, 2 = Email OTP Verification, 3 = Success Launch
   const [step, setStep] = React.useState<1 | 2 | 3>(1)
@@ -38,7 +40,15 @@ export function RegisterForm() {
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
   const [showPassword, setShowPassword] = React.useState(false)
+  const [referralCode, setReferralCode] = React.useState("")
   const [termsAccepted, setTermsAccepted] = React.useState(true)
+
+  React.useEffect(() => {
+    const refParam = searchParams.get("ref")
+    if (refParam) {
+      setReferralCode(refParam.toUpperCase())
+    }
+  }, [searchParams])
 
   // OTP State
   const [otpCode, setOtpCode] = React.useState("")
@@ -103,7 +113,12 @@ export function RegisterForm() {
       const res = await fetch("/api/auth/register/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          referralCode: referralCode.trim() || undefined,
+        }),
       })
 
       const data = await res.json()
@@ -136,7 +151,12 @@ export function RegisterForm() {
       const res = await fetch("/api/auth/register/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          referralCode: referralCode.trim() || undefined,
+        }),
       })
 
       const data = await res.json()
@@ -375,6 +395,39 @@ export function RegisterForm() {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Referral Code (Optional) */}
+            <div className="space-y-1.5 group">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="referralCode" className="text-xs font-semibold text-foreground/90">
+                  Referral Code (Optional)
+                </Label>
+                {referralCode && (
+                  <span className="text-[11px] font-bold text-amber-500 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" />
+                    Referral Applied
+                  </span>
+                )}
+              </div>
+              <div className="relative">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-brand-teal transition-colors pointer-events-none">
+                  <Gift className="w-4 h-4 text-amber-500" />
+                </div>
+                <Input
+                  id="referralCode"
+                  name="referralCode"
+                  type="text"
+                  value={referralCode}
+                  onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                  placeholder="e.g. TG-7C53FF"
+                  disabled={isLoading}
+                  className="h-11 sm:h-12 pl-10 pr-4 text-sm font-mono uppercase tracking-wider rounded-xl border border-border/80 dark:border-white/10 bg-background/60 dark:bg-black/30 placeholder:normal-case placeholder:font-sans placeholder:tracking-normal placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-brand-teal/40 focus-visible:border-brand-teal transition-all shadow-inner"
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground/80 pl-1">
+                Enter your friend’s Refer ID to earn them up to ₹500 cashback upon enrollment.
+              </p>
             </div>
 
             {/* Terms checkbox */}

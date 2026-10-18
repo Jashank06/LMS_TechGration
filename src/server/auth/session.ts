@@ -1,4 +1,4 @@
-import { cookies } from "next/headers"
+import { cookies, headers } from "next/headers"
 import crypto from "node:crypto"
 import { db } from "@/server/db"
 import { Role, UserStatus, type User } from "@prisma/client"
@@ -13,6 +13,17 @@ export interface SessionUser {
   role: Role
   status: UserStatus
   avatarUrl?: string | null
+  phone?: string | null
+  headline?: string | null
+  bio?: string | null
+  profile?: {
+    avatarUrl?: string | null
+    headline?: string | null
+    bio?: string | null
+    phone?: string | null
+    timezone?: string | null
+    learningGoals?: string | null
+  } | null
 }
 
 export async function createSession(userId: string, req?: Request): Promise<{ token: string; expiresAt: Date }> {
@@ -37,14 +48,18 @@ export async function createSession(userId: string, req?: Request): Promise<{ to
     },
   })
 
-  const cookieStore = await cookies()
-  cookieStore.set(SESSION_COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    expires: expiresAt,
-  })
+  try {
+    const cookieStore = await cookies()
+    cookieStore.set(SESSION_COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      expires: expiresAt,
+    })
+  } catch {
+    // Outside request context (e.g. scripts, CLI, tests)
+  }
 
   return { token, expiresAt }
 }
@@ -64,10 +79,41 @@ export async function destroySession(): Promise<void> {
   cookieStore.delete(SESSION_COOKIE_NAME)
 }
 
-export async function getCurrentUser(): Promise<SessionUser | null> {
+export async function getCurrentUser(req?: Request): Promise<SessionUser | null> {
   try {
-    const cookieStore = await cookies()
-    const token = cookieStore.get(SESSION_COOKIE_NAME)?.value
+    let token: string | undefined
+
+    // 1. Try to read from cookie
+    try {
+      const cookieStore = await cookies()
+      token = cookieStore.get(SESSION_COOKIE_NAME)?.value
+    } catch {
+      // Ignore if called in context without cookies()
+    }
+
+    // 2. If not found in cookie, check Authorization / x-session-token headers
+    if (!token) {
+      if (req) {
+        const auth = req.headers.get("authorization") || req.headers.get("x-session-token")
+        if (auth?.startsWith("Bearer ")) {
+          token = auth.substring(7).trim()
+        } else if (auth) {
+          token = auth.trim()
+        }
+      } else {
+        try {
+          const headerStore = await headers()
+          const auth = headerStore.get("authorization") || headerStore.get("x-session-token")
+          if (auth?.startsWith("Bearer ")) {
+            token = auth.substring(7).trim()
+          } else if (auth) {
+            token = auth.trim()
+          }
+        } catch {
+          // Ignore if called in context without headers()
+        }
+      }
+    }
 
     if (!token) return null
 
@@ -99,7 +145,20 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
       name: session.user.name,
       role: session.user.role,
       status: session.user.status,
-      avatarUrl: session.user.profile?.avatarUrl,
+      avatarUrl: session.user.profile?.avatarUrl ?? null,
+      phone: session.user.profile?.phone ?? null,
+      headline: session.user.profile?.headline ?? null,
+      bio: session.user.profile?.bio ?? null,
+      profile: session.user.profile
+        ? {
+            avatarUrl: session.user.profile.avatarUrl,
+            headline: session.user.profile.headline,
+            bio: session.user.profile.bio,
+            phone: session.user.profile.phone,
+            timezone: session.user.profile.timezone,
+            learningGoals: session.user.profile.learningGoals,
+          }
+        : null,
     }
   } catch (err) {
     console.error("getCurrentUser error:", err)

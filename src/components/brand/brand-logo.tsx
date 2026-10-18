@@ -26,7 +26,7 @@ export function BrandLogo({
           <div className={`relative flex flex-col items-center select-none ${className}`}>
             <div className="relative w-full max-w-[540px] aspect-[1774/887] rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-[#0A0E11]">
               <Image
-                src="/brand/techgration-logo.webp"
+                src="/Logo.png"
                 alt="TechGration LMS — Learning. Technology. Growth."
                 fill
                 priority={priority}
@@ -47,14 +47,14 @@ export function BrandLogo({
             className={`relative flex items-center justify-center w-10 h-10 rounded-xl bg-[#0E1418] border border-white/10 shadow-sm overflow-hidden group-hover:border-brand-teal/50 transition-colors select-none ${className}`}
             title="TechGration LMS"
           >
-            <div className="relative w-7 h-7">
+            <div className="relative w-full h-full">
               <Image
-                src="/brand/tg-mark.png"
+                src="/Logo.png"
                 alt="TechGration"
                 fill
                 priority={priority}
                 sizes="40px"
-                className="object-contain"
+                className="object-cover"
               />
             </div>
           </div>
@@ -78,17 +78,15 @@ export function BrandLogo({
         return (
           <div className={`flex items-center gap-3 select-none ${className}`}>
             {/* Apple-style squircle brand emblem */}
-            <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-[#141A1E] to-[#0A0D10] border border-border/80 shadow-xs shrink-0">
-              <div className="relative w-5 h-5">
-                <Image
-                  src="/brand/tg-mark.png"
-                  alt="TechGration Mark"
-                  fill
-                  priority={priority}
-                  sizes="36px"
-                  className="object-contain"
-                />
-              </div>
+            <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-[#141A1E] to-[#0A0D10] border border-border/80 shadow-xs shrink-0 overflow-hidden">
+              <Image
+                src="/Logo.png"
+                alt="TechGration Mark"
+                fill
+                priority={priority}
+                sizes="36px"
+                className="object-cover"
+              />
             </div>
 
             <div className="flex flex-col min-w-0">
@@ -110,17 +108,15 @@ export function BrandLogo({
       default:
         return (
           <div className={`flex items-center gap-2.5 select-none ${className}`}>
-            <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-[#0D1215] border border-white/10 shadow-sm shrink-0">
-              <div className="relative w-7 h-7">
-                <Image
-                  src="/brand/tg-mark.png"
-                  alt="TechGration Mark"
-                  fill
-                  priority={priority}
-                  sizes="40px"
-                  className="object-contain"
-                />
-              </div>
+            <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-[#0D1215] border border-white/10 shadow-sm shrink-0 overflow-hidden">
+              <Image
+                src="/Logo.png"
+                alt="TechGration Mark"
+                fill
+                priority={priority}
+                sizes="40px"
+                className="object-cover"
+              />
             </div>
             <div className="flex flex-col min-w-0">
               <span className="font-bold tracking-tight text-base text-foreground leading-tight">

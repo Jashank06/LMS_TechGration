@@ -47,6 +47,8 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     { title: "My Enrolled Courses", href: "/student/my-courses", icon: BookOpen, category: "Navigation" },
     { title: "Course Catalog", href: "/student/catalog", icon: Compass, category: "Navigation" },
     { title: "Course Leaderboard", href: "/student/leaderboard", icon: Trophy, category: "Performance" },
+    { title: "Champion Rewards & Swag", href: "/student/rewards", icon: Award, category: "Rewards" },
+    { title: "Refer & Earn (₹500 Cashback)", href: "/student/refer", icon: Award, category: "Rewards" },
     { title: "Quizzes & Tests", href: "/student/quizzes", icon: HelpCircle, category: "Assessments" },
     { title: "Assignments Workspace", href: "/student/assignments", icon: FileCheck2, category: "Assessments" },
     { title: "Live Classes Schedule", href: "/student/live-classes", icon: Video, category: "Classes" },

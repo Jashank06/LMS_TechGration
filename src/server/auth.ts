@@ -1,9 +1,10 @@
 import crypto from "crypto"
-import { cookies } from "next/headers"
+import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
 import bcrypt from "bcryptjs"
 import { Role, User, UserProfile, Session, UserStatus } from "@prisma/client"
 import { db } from "@/server/db"
+import { resolveReferrerByCode } from "@/server/services/referrals"
 
 export const SESSION_COOKIE_NAME = "tg_session"
 export const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60 // 30 days
@@ -58,13 +59,44 @@ export async function createSession(userId: string): Promise<Session> {
  * Retrieves the active session and attached user.
  * Cleans up expired sessions if encountered.
  */
-export async function getSession(): Promise<{
+export async function getSession(req?: Request): Promise<{
   session: Session
   user: AuthenticatedUser
 } | null> {
   try {
-    const cookieStore = await cookies()
-    const token = cookieStore.get(SESSION_COOKIE_NAME)?.value
+    let token: string | undefined
+
+    // 1. Check cookies
+    try {
+      const cookieStore = await cookies()
+      token = cookieStore.get(SESSION_COOKIE_NAME)?.value
+    } catch {
+      // In non-cookie context
+    }
+
+    // 2. Check Authorization / x-session-token headers
+    if (!token) {
+      if (req) {
+        const auth = req.headers.get("authorization") || req.headers.get("x-session-token")
+        if (auth?.startsWith("Bearer ")) {
+          token = auth.substring(7).trim()
+        } else if (auth) {
+          token = auth.trim()
+        }
+      } else {
+        try {
+          const headerStore = await headers()
+          const auth = headerStore.get("authorization") || headerStore.get("x-session-token")
+          if (auth?.startsWith("Bearer ")) {
+            token = auth.substring(7).trim()
+          } else if (auth) {
+            token = auth.trim()
+          }
+        } catch {
+          // In non-header context
+        }
+      }
+    }
 
     if (!token) {
       return null
@@ -112,8 +144,8 @@ export async function getSession(): Promise<{
 /**
  * Returns currently authenticated user or null.
  */
-export async function getCurrentUser(): Promise<AuthenticatedUser | null> {
-  const sessionData = await getSession()
+export async function getCurrentUser(req?: Request): Promise<AuthenticatedUser | null> {
+  const sessionData = await getSession(req)
   return sessionData ? sessionData.user : null
 }
 
@@ -232,10 +264,12 @@ export async function registerStudent({
   name,
   email,
   password,
+  referralCode,
 }: {
   name: string
   email: string
   password: string
+  referralCode?: string
 }): Promise<{ success: boolean; error?: string; user?: AuthenticatedUser }> {
   try {
     const normalizedEmail = email.trim().toLowerCase()
@@ -248,6 +282,14 @@ export async function registerStudent({
       return { success: false, error: "An account with this email address already exists" }
     }
 
+    let invitedById: string | null = null
+    if (referralCode) {
+      const referrer = await resolveReferrerByCode(referralCode)
+      if (referrer) {
+        invitedById = referrer.id
+      }
+    }
+
     const passwordHash = await hashPassword(password)
 
     // Create student user with profile
@@ -257,6 +299,7 @@ export async function registerStudent({
         email: normalizedEmail,
         passwordHash,
         role: Role.STUDENT,
+        invitedById,
         profile: {
           create: {
             headline: "Student at TechGration",

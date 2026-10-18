@@ -83,13 +83,13 @@ export function RewardsClient({ eligibility, claims }: RewardsClientProps) {
 
       {/* Navigation Filter Tabs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-4">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar touch-pan-x scroll-smooth pb-1 -mx-1 px-1">
           <button
             onClick={() => setActiveTab("all")}
-            className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-semibold transition-all ${
+            className={`whitespace-nowrap min-h-[44px] px-4 py-2 rounded-2xl text-xs sm:text-sm font-semibold transition-all shrink-0 ${
               activeTab === "all"
                 ? "bg-foreground text-background shadow-md"
-                : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground"
+                : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground active:bg-muted"
             }`}
           >
             All Champion Swag (4)
@@ -97,10 +97,10 @@ export function RewardsClient({ eligibility, claims }: RewardsClientProps) {
 
           <button
             onClick={() => setActiveTab("wearables")}
-            className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 ${
+            className={`whitespace-nowrap min-h-[44px] px-4 py-2 rounded-2xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
               activeTab === "wearables"
                 ? "bg-foreground text-background shadow-md"
-                : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground"
+                : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground active:bg-muted"
             }`}
           >
             <Shirt className="w-3.5 h-3.5" />
@@ -109,10 +109,10 @@ export function RewardsClient({ eligibility, claims }: RewardsClientProps) {
 
           <button
             onClick={() => setActiveTab("tech")}
-            className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 ${
+            className={`whitespace-nowrap min-h-[44px] px-4 py-2 rounded-2xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
               activeTab === "tech"
                 ? "bg-foreground text-background shadow-md"
-                : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground"
+                : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground active:bg-muted"
             }`}
           >
             <Headphones className="w-3.5 h-3.5" />
@@ -121,10 +121,10 @@ export function RewardsClient({ eligibility, claims }: RewardsClientProps) {
 
           <button
             onClick={() => setActiveTab("claims")}
-            className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 ${
+            className={`whitespace-nowrap min-h-[44px] px-4 py-2 rounded-2xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
               activeTab === "claims"
                 ? "bg-amber-500 text-white shadow-md shadow-amber-500/20"
-                : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground"
+                : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground active:bg-muted"
             }`}
           >
             <Package className="w-3.5 h-3.5" />
@@ -132,8 +132,8 @@ export function RewardsClient({ eligibility, claims }: RewardsClientProps) {
           </button>
         </div>
 
-        <div className="text-xs text-muted-foreground flex items-center gap-1.5 self-end sm:self-auto">
-          <Crown className="w-3.5 h-3.5 text-amber-500" />
+        <div className="text-xs text-muted-foreground flex items-center gap-1.5 self-start sm:self-auto">
+          <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0" />
           <span>Exclusive to #1 Leaderboard Champion</span>
         </div>
       </div>

@@ -59,19 +59,19 @@ export function InterviewClient({
     <div className="space-y-8">
       {/* Top Multi-Course Switcher (if enrolled in > 1 course) */}
       {enrolledCourses.length > 1 && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar touch-pan-x scroll-smooth pb-1">
           {enrolledCourses.map((course, idx) => (
             <button
               key={course.id}
               onClick={() => setSelectedCourseIndex(idx)}
-              className={`shrink-0 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border flex items-center gap-2.5 ${
+              className={`shrink-0 min-h-[44px] px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border flex items-center gap-2.5 ${
                 selectedCourseIndex === idx
                   ? "bg-cyan-500/15 text-cyan-500 border-cyan-500/40 shadow-xs"
-                  : "bg-card/70 text-muted-foreground border-border/70 hover:text-foreground hover:border-border"
+                  : "bg-card/70 text-muted-foreground border-border/70 hover:text-foreground hover:border-border active:bg-muted"
               }`}
             >
               <BookOpen className="w-3.5 h-3.5" />
-              <span className="max-w-[200px] truncate">{course.courseTitle}</span>
+              <span className="max-w-[180px] truncate">{course.courseTitle}</span>
               <span className="px-2 py-0.5 rounded-full text-[10px] bg-secondary/80 text-foreground font-mono">
                 {course.progressPct}%
               </span>
@@ -88,7 +88,7 @@ export function InterviewClient({
         <div className="pointer-events-none absolute -inset-2 bg-gradient-to-r from-cyan-500/20 via-blue-600/15 to-purple-600/20 rounded-[2.5rem] blur-2xl opacity-60 group-hover:opacity-80 transition-opacity" />
 
         {/* Outer High-Tech Bezel */}
-        <div className="relative rounded-[2rem] border-2 border-cyan-500/30 bg-gradient-to-b from-card/95 via-card to-background p-6 sm:p-12 shadow-2xl backdrop-blur-2xl overflow-hidden text-center">
+        <div className="relative rounded-[2rem] border-2 border-cyan-500/30 bg-gradient-to-b from-card/95 via-card to-background p-5 sm:p-12 shadow-2xl backdrop-blur-2xl overflow-hidden text-center">
           
           {/* Cyber Precision Corner Brackets */}
           <div className="pointer-events-none absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 border-cyan-500/50 rounded-tl-lg" />
@@ -105,8 +105,8 @@ export function InterviewClient({
             <div className="absolute w-44 h-44 rounded-full border border-amber-500/20 animate-pulse opacity-40" />
 
             {/* Glowing Center Hub */}
-            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-amber-500/15 to-amber-500/5 border-2 border-amber-500/30 flex items-center justify-center text-amber-500 shadow-xl shadow-amber-500/10">
-              <Lock className="w-10 h-10 animate-pulse" />
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-amber-500/15 to-amber-500/5 border-2 border-amber-500/30 flex items-center justify-center text-amber-500 shadow-xl shadow-amber-500/10">
+              <Lock className="w-8 h-8 sm:w-10 sm:h-10 animate-pulse" />
             </div>
           </div>
 
@@ -118,10 +118,10 @@ export function InterviewClient({
 
           {/* Core User-Specified Requirement Headline */}
           <div className="relative z-10 space-y-2 max-w-2xl mx-auto">
-            <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-foreground">
+            <h2 className="text-xl sm:text-4xl font-black tracking-tight text-foreground">
               Complete your course to be eligible for interview
             </h2>
-            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+            <p className="text-xs sm:text-base text-muted-foreground leading-relaxed">
               {activeCourse
                 ? `You are currently enrolled in "${activeCourse.courseTitle}". Achieve 100% course completion and claim your verified certificate to unlock technical interview screenings.`
                 : "Enroll in a course and achieve 100% curriculum completion to unlock faculty mock interviews and AI technical screening."}
@@ -158,12 +158,12 @@ export function InterviewClient({
 
           {/* Primary Action Button */}
           {activeCourse && (
-            <div className="relative z-10 mt-7 flex items-center justify-center gap-3">
+            <div className="relative z-10 mt-7 flex items-center justify-center">
               <Button
                 asChild
-                className="h-12 px-8 rounded-2xl font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal text-sm shadow-xl shadow-brand-teal/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full sm:w-auto h-12 px-6 sm:px-8 rounded-2xl font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal text-xs sm:text-sm shadow-xl shadow-brand-teal/20 transition-all hover:scale-[1.02] active:scale-[0.98] justify-center"
               >
-                <Link href={`/student/courses/${activeCourse.courseId}`}>
+                <Link href={`/student/courses/${activeCourse.courseId}`} className="justify-center">
                   <span>Continue Learning to Unlock Interview</span>
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Link>

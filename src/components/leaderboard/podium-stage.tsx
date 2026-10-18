@@ -188,28 +188,29 @@ export function PodiumStage({ top, courseTitle, compact, intro, onIntroDone }: P
       </div>
 
       {/* Podium */}
-      <div className="relative z-10 flex items-end justify-center gap-2 sm:gap-6 px-4 pb-0 pt-6">
+      <div className="relative z-10 flex items-end justify-center gap-1.5 sm:gap-6 px-2 sm:px-4 pb-0 pt-6">
         {slots.map((entry, idx) => {
           const theme = THEMES[idx]
           const revealed = step >= idx + 1
-          const pillarH = BASE_HEIGHTS[idx] * scale
-          const avatarSize = (idx === 0 ? 92 : 70) * (compact ? 0.78 : 1)
+          const mobileHeights = [135, 105, 85]
+          const pillarH = (compact ? mobileHeights[idx] * 0.8 : BASE_HEIGHTS[idx]) * scale
+          const avatarSize = (idx === 0 ? 80 : 60) * (compact ? 0.72 : 1)
 
           return (
             <div
               key={entry.userId}
-              className={`flex flex-col items-center w-[30%] max-w-[190px] ${orderClass[idx]}`}
+              className={`flex flex-col items-center w-[31%] max-w-[190px] ${orderClass[idx]}`}
             >
               {/* Identity block rides on top of the rising pillar */}
               <motion.div
-                className="relative flex flex-col items-center text-center pb-3"
+                className="relative flex flex-col items-center text-center pb-2 sm:pb-3 w-full"
                 initial={{ opacity: 0, y: 50, scale: 0.7 }}
                 animate={revealed ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 50, scale: 0.7 }}
                 transition={{ type: "spring", stiffness: 140, damping: 16, delay: revealed ? 0.25 : 0 }}
               >
                 {idx === 0 && (
                   <motion.div
-                    className="absolute -top-9 z-10 text-amber-300 drop-shadow-[0_0_12px_rgba(251,191,36,0.9)]"
+                    className="absolute -top-7 sm:-top-9 z-10 text-amber-300 drop-shadow-[0_0_12px_rgba(251,191,36,0.9)]"
                     initial={{ y: -70, opacity: 0, rotate: -18 }}
                     animate={
                       revealed
@@ -222,13 +223,13 @@ export function PodiumStage({ top, courseTitle, compact, intro, onIntroDone }: P
                       animate={revealed ? { y: [0, -4, 0] } : undefined}
                       transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut", delay: 1.6 }}
                     >
-                      <Crown className="w-8 h-8 fill-amber-300" />
+                      <Crown className="w-5 h-5 sm:w-8 sm:h-8 fill-amber-300" />
                     </motion.div>
                   </motion.div>
                 )}
 
                 <div
-                  className={`rounded-full ring-4 ${theme.ring} ring-offset-2 ring-offset-[#0B1220]`}
+                  className={`rounded-full ring-2 sm:ring-4 ${theme.ring} ring-offset-1 sm:ring-offset-2 ring-offset-[#0B1220]`}
                   style={{ boxShadow: revealed ? theme.glow : "none", transition: "box-shadow 0.8s" }}
                 >
                   <RankAvatar
@@ -239,15 +240,15 @@ export function PodiumStage({ top, courseTitle, compact, intro, onIntroDone }: P
                   />
                 </div>
 
-                <p className="mt-2 text-xs sm:text-sm font-bold text-white max-w-[130px] truncate">
+                <p className="mt-1.5 sm:mt-2 text-[11px] sm:text-sm font-bold text-white max-w-[85px] sm:max-w-[130px] truncate">
                   {entry.displayName}
                 </p>
                 {entry.isSelf && (
-                  <span className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-cyan-300 bg-cyan-400/15 border border-cyan-400/30 rounded-full px-1.5 py-px">
+                  <span className="mt-0.5 text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-cyan-300 bg-cyan-400/15 border border-cyan-400/30 rounded-full px-1.5 py-px">
                     You
                   </span>
                 )}
-                <p className={`mt-1 font-black tabular-nums leading-none ${theme.text} ${idx === 0 ? "text-2xl sm:text-3xl" : "text-xl sm:text-2xl"}`}>
+                <p className={`mt-0.5 sm:mt-1 font-black tabular-nums leading-none ${theme.text} ${idx === 0 ? "text-lg sm:text-3xl" : "text-base sm:text-2xl"}`}>
                   <CountUp
                     value={entry.totalMarks}
                     animate={playIntro && revealed}
@@ -255,14 +256,14 @@ export function PodiumStage({ top, courseTitle, compact, intro, onIntroDone }: P
                     duration={1300}
                   />
                 </p>
-                <p className="text-[10px] uppercase tracking-wider text-white/50">
+                <p className="text-[9px] sm:text-[10px] uppercase tracking-wider text-white/50">
                   marks · {entry.accuracyPct}%
                 </p>
               </motion.div>
 
               {/* Pillar */}
               <motion.div
-                className={`relative w-full overflow-hidden rounded-t-2xl bg-gradient-to-b ${theme.pillar} flex items-start justify-center`}
+                className={`relative w-full overflow-hidden rounded-t-xl sm:rounded-t-2xl bg-gradient-to-b ${theme.pillar} flex items-start justify-center`}
                 initial={{ height: 0 }}
                 animate={{ height: revealed ? pillarH : 0 }}
                 transition={
@@ -272,7 +273,7 @@ export function PodiumStage({ top, courseTitle, compact, intro, onIntroDone }: P
                 }
                 style={{ boxShadow: revealed ? theme.glow : "none" }}
               >
-                <span className="mt-2 text-3xl sm:text-5xl font-black text-white/85 drop-shadow-md select-none">
+                <span className="mt-1.5 sm:mt-2 text-2xl sm:text-5xl font-black text-white/85 drop-shadow-md select-none">
                   {entry.rank}
                 </span>
                 {revealed && playIntro && (

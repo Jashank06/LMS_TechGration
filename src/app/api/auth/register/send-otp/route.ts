@@ -4,12 +4,14 @@ import crypto from "crypto"
 import bcrypt from "bcryptjs"
 import { db } from "@/server/db"
 import { sendRegistrationOtpEmail } from "@/server/email/mailer"
+import { resolveReferrerByCode } from "@/server/services/referrals"
 import { OtpPurpose } from "@prisma/client"
 
 const sendOtpSchema = z.object({
   name: z.string().min(2, "Full name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  referralCode: z.string().optional(),
 })
 
 export async function POST(req: Request) {
@@ -73,6 +75,15 @@ export async function POST(req: Request) {
       data: { isUsed: true },
     })
 
+    // 5.5 Resolve referrer if referralCode was provided
+    let invitedById: string | null = null
+    if (validation.data.referralCode) {
+      const referrer = await resolveReferrerByCode(validation.data.referralCode)
+      if (referrer) {
+        invitedById = referrer.id
+      }
+    }
+
     // 6. Store pending OTP in MongoDB
     await db.otpVerification.create({
       data: {
@@ -84,6 +95,7 @@ export async function POST(req: Request) {
           name: name.trim(),
           passwordHash,
           role: "STUDENT",
+          invitedById,
         },
       },
     })

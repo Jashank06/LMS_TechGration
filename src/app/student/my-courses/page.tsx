@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export default async function MyCoursesPage() {
   const user = await requireStudent()
 
-  const enrollments = await db.enrollment.findMany({
+  const rawEnrollments = await db.enrollment.findMany({
     where: { userId: user.id },
     include: {
       course: {
@@ -32,6 +32,20 @@ export default async function MyCoursesPage() {
       },
     },
     orderBy: { lastAccessedAt: "desc" },
+  })
+
+  // Prioritize "Artificial Intelligence" course
+  const enrollments = [...rawEnrollments].sort((a, b) => {
+    const isAiA =
+      a.course.id === "6ad283b4e196d0b8fbfb9eae" ||
+      a.course.title.toLowerCase().includes("artificial intelligence")
+    const isAiB =
+      b.course.id === "6ad283b4e196d0b8fbfb9eae" ||
+      b.course.title.toLowerCase().includes("artificial intelligence")
+
+    if (isAiA && !isAiB) return -1
+    if (!isAiA && isAiB) return 1
+    return 0
   })
 
   // Format into EnrolledCourseItem

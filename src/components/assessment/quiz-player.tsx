@@ -180,16 +180,16 @@ export function QuizPlayer({ assessment }: QuizPlayerProps) {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Top Header with Timer */}
-      <div className="p-4 sm:p-5 rounded-2xl border border-border bg-card flex items-center justify-between shadow-xs">
-        <div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+      <div className="p-4 sm:p-5 rounded-2xl border border-border/80 bg-card/80 backdrop-blur-md flex flex-col xs:flex-row xs:items-center justify-between gap-3 shadow-xs">
+        <div className="min-w-0 flex-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block truncate">
             {assessment.courseTitle}
           </span>
-          <h2 className="text-base font-bold text-foreground">{assessment.title}</h2>
+          <h2 className="text-base sm:text-lg font-bold text-foreground truncate">{assessment.title}</h2>
         </div>
 
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border bg-secondary/50 font-mono text-sm font-bold">
-          <Clock className="w-4 h-4 text-brand-teal" />
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border/80 bg-secondary/50 font-mono text-sm font-bold shrink-0 self-start xs:self-auto">
+          <Clock className="w-4 h-4 text-brand-teal shrink-0" />
           <span className={timeLeftSeconds < 120 ? "text-red-500 animate-pulse" : "text-foreground"}>
             {formatTimer(timeLeftSeconds)}
           </span>
@@ -224,7 +224,7 @@ export function QuizPlayer({ assessment }: QuizPlayerProps) {
               <button
                 key={option.id}
                 onClick={() => handleSelectOption(currentQuestion.id, option.id)}
-                className={`w-full p-4 rounded-xl text-left text-xs sm:text-sm font-medium border transition-all flex items-center gap-3.5 ${
+                className={`w-full min-h-[48px] p-3.5 sm:p-4 rounded-xl text-left text-xs sm:text-sm font-medium border transition-all flex items-center gap-3.5 active:scale-[0.99] ${
                   isSelected
                     ? "bg-brand-teal/15 text-foreground border-brand-teal shadow-xs font-semibold"
                     : "bg-secondary/30 text-muted-foreground border-border hover:border-foreground/30 hover:bg-secondary/60 hover:text-foreground"
@@ -239,20 +239,20 @@ export function QuizPlayer({ assessment }: QuizPlayerProps) {
                 >
                   {isSelected && <div className="w-2 h-2 rounded-full bg-brand-charcoal" />}
                 </div>
-                <span>{option.text}</span>
+                <span className="leading-relaxed">{option.text}</span>
               </button>
             )
           })}
         </div>
 
         {/* Navigation Buttons */}
-        <div className="pt-6 border-t border-border flex items-center justify-between">
+        <div className="pt-6 border-t border-border flex items-center justify-between gap-3">
           <Button
             variant="outline"
             size="sm"
             disabled={currentQuestionIndex === 0}
             onClick={() => setCurrentQuestionIndex((prev) => prev - 1)}
-            className="text-xs"
+            className="h-10 sm:h-9 px-3 sm:px-4 text-xs font-semibold"
           >
             <ChevronLeft className="w-4 h-4 mr-1" />
             <span>Previous</span>
@@ -263,9 +263,9 @@ export function QuizPlayer({ assessment }: QuizPlayerProps) {
               <Button
                 size="sm"
                 onClick={() => setCurrentQuestionIndex((prev) => prev + 1)}
-                className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-semibold text-xs"
+                className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-semibold text-xs h-10 sm:h-9 px-3 sm:px-4"
               >
-                <span>Next Question</span>
+                <span>Next</span>
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             ) : (
@@ -273,12 +273,12 @@ export function QuizPlayer({ assessment }: QuizPlayerProps) {
                 size="sm"
                 disabled={isSubmitting}
                 onClick={handleSubmitQuiz}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-md"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-10 sm:h-9 px-4 shadow-md"
               >
                 {isSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <span>Submit Quiz & Finish</span>
+                  <span>Submit Quiz</span>
                 )}
               </Button>
             )}
@@ -287,7 +287,7 @@ export function QuizPlayer({ assessment }: QuizPlayerProps) {
       </div>
 
       {/* Question Number Pills */}
-      <div className="flex flex-wrap items-center justify-center gap-2">
+      <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 max-w-full px-2">
         {assessment.questions.map((q, idx) => {
           const isAnswered = Boolean(selectedAnswers[q.id])
           const isCurrent = idx === currentQuestionIndex
@@ -295,12 +295,12 @@ export function QuizPlayer({ assessment }: QuizPlayerProps) {
             <button
               key={q.id}
               onClick={() => setCurrentQuestionIndex(idx)}
-              className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all ${
+              className={`min-w-[36px] min-h-[36px] w-9 h-9 sm:w-8 sm:h-8 rounded-xl text-xs font-semibold transition-all flex items-center justify-center ${
                 isCurrent
-                  ? "ring-2 ring-brand-teal bg-brand-teal text-brand-charcoal font-bold"
+                  ? "ring-2 ring-brand-teal bg-brand-teal text-brand-charcoal font-bold shadow-xs"
                   : isAnswered
                   ? "bg-secondary text-foreground border border-brand-teal/40"
-                  : "bg-muted text-muted-foreground hover:bg-secondary"
+                  : "bg-muted text-muted-foreground hover:bg-secondary active:scale-95"
               }`}
             >
               {idx + 1}

@@ -116,7 +116,7 @@ export async function POST(req: Request) {
     }
 
     // Create session in MongoDB and set HTTPOnly cookie
-    await createSession(user.id, req)
+    const { token } = await createSession(user.id, req)
 
     await logAuditEvent({
       actorId: user.id,
@@ -138,12 +138,28 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
+      token,
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
-        avatarUrl: user.profile?.avatarUrl,
+        avatarUrl: user.profile?.avatarUrl ?? null,
+        phone: user.profile?.phone ?? null,
+        headline: user.profile?.headline ?? null,
+        bio: user.profile?.bio ?? null,
+        timezone: user.profile?.timezone ?? "Asia/Kolkata",
+        learningGoals: user.profile?.learningGoals ?? null,
+        profile: user.profile
+          ? {
+              phone: user.profile.phone,
+              headline: user.profile.headline,
+              bio: user.profile.bio,
+              avatarUrl: user.profile.avatarUrl,
+              timezone: user.profile.timezone,
+              learningGoals: user.profile.learningGoals,
+            }
+          : null,
       },
       redirectUrl: defaultRedirect,
     })

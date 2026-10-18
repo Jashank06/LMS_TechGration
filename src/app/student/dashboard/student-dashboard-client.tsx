@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { WeeklyActivityChart } from "@/components/dashboard/weekly-activity-chart"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { AnimatedCounter } from "@/components/ui/animated-counter"
 
 interface StudentDashboardClientProps {
   user: {
@@ -148,56 +149,56 @@ export function StudentDashboardClient({
     {
       title: "Courses",
       value: enrollmentsCount.toString(),
-      subtext: `${activeEnrollmentsCount} in progress`,
       icon: BookOpen,
       color: "text-[#00D6D6]",
       bg: "bg-[#00D6D6]/10",
-      borderHover: "hover:border-[#00D6D6]/40",
+      glowBg: "bg-[#00D6D6]",
+      borderHover: "hover:border-[#00D6D6]/50",
     },
     {
       title: "Completion",
       value: `${avgProgress}%`,
-      subtext: "Average progress",
       icon: TrendingUp,
       color: "text-emerald-500",
       bg: "bg-emerald-500/10",
-      borderHover: "hover:border-emerald-500/40",
+      glowBg: "bg-emerald-500",
+      borderHover: "hover:border-emerald-500/50",
     },
     {
       title: "Lessons",
       value: completedLessonsCount.toString(),
-      subtext: "Completed",
       icon: CheckCircle,
       color: "text-sky-500",
       bg: "bg-sky-500/10",
-      borderHover: "hover:border-sky-500/40",
+      glowBg: "bg-sky-500",
+      borderHover: "hover:border-sky-500/50",
     },
     {
       title: "Study Time",
       value: hoursInvested,
-      subtext: "Hours invested",
       icon: Clock,
       color: "text-amber-500",
       bg: "bg-amber-500/10",
-      borderHover: "hover:border-amber-500/40",
+      glowBg: "bg-amber-500",
+      borderHover: "hover:border-amber-500/50",
     },
     {
       title: "Quizzes",
       value: passedQuizzesCount.toString(),
-      subtext: "Passed",
       icon: Sparkles,
       color: "text-purple-500",
       bg: "bg-purple-500/10",
-      borderHover: "hover:border-purple-500/40",
+      glowBg: "bg-purple-500",
+      borderHover: "hover:border-purple-500/50",
     },
     {
       title: "Certificates",
       value: certificatesCount.toString(),
-      subtext: "Earned",
       icon: Award,
       color: "text-[#00D6D6]",
       bg: "bg-[#00D6D6]/10",
-      borderHover: "hover:border-[#00D6D6]/40",
+      glowBg: "bg-[#00D6D6]",
+      borderHover: "hover:border-[#00D6D6]/50",
     },
   ]
 
@@ -211,47 +212,50 @@ export function StudentDashboardClient({
       {/* 1. Welcome Greeting Banner */}
       <motion.div
         variants={itemVariants}
-        className="relative rounded-3xl overflow-hidden border border-border/80 bg-card/85 backdrop-blur-xl p-6 sm:p-8 shadow-sm transition-all"
+        className="relative rounded-3xl overflow-hidden border border-black/[0.06] dark:border-white/[0.08] bg-card/85 backdrop-blur-2xl p-6 sm:p-8 shadow-sm transition-all"
       >
         <div className="pointer-events-none absolute -top-24 -right-24 w-80 h-80 bg-brand-teal/15 rounded-full blur-3xl opacity-60 dark:opacity-40" />
 
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-5 sm:gap-6">
           <div className="flex items-center gap-4 sm:gap-5 max-w-xl">
             <Link
               href="/student/settings"
               className="relative group shrink-0"
               title="Go to Profile & Settings"
             >
-              <Avatar className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl border-2 border-brand-teal/40 ring-4 ring-brand-teal/15 shadow-md shadow-brand-teal/15 group-hover:ring-brand-teal/30 transition-all">
+              <Avatar className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl border-2 border-brand-teal/40 ring-4 ring-brand-teal/15 shadow-md shadow-brand-teal/15 group-hover:ring-brand-teal/30 group-hover:scale-[1.02] transition-all">
                 {user.avatarUrl && (
                   <AvatarImage src={user.avatarUrl} alt={user.name} className="object-cover" />
                 )}
-                <AvatarFallback className="bg-gradient-to-br from-brand-teal/25 via-cyan-500/20 to-teal-800/30 text-brand-charcoal dark:text-brand-teal text-xl font-extrabold">
+                <AvatarFallback className="bg-gradient-to-br from-brand-teal/25 via-cyan-500/20 to-teal-800/30 text-brand-charcoal dark:text-brand-teal text-xl sm:text-2xl font-extrabold">
                   {userInitials}
                 </AvatarFallback>
               </Avatar>
-              <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-card" />
+              <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-card shadow-xs" />
             </Link>
 
-            <div className="space-y-1 sm:space-y-1.5">
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground leading-tight">
+            <div className="space-y-1.5 min-w-0">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground leading-tight truncate">
                 {greeting},{" "}
                 <span className="bg-gradient-to-r from-brand-teal via-cyan-400 to-purple-400 bg-clip-text text-transparent">
                   {user.name}
                 </span>{" "}
                 👋
               </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                Track your enrolled courses, upcoming live classes, and weekly study progress.
-              </p>
+              <div className="flex items-center gap-2 pt-0.5">
+                <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Enrolled Student • Active Learner
+                </span>
+              </div>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto shrink-0">
             {resumeLesson ? (
               <Button
                 asChild
-                className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold shadow-md shadow-brand-teal/20 px-5 h-11 rounded-xl transition-all"
+                className="w-full sm:w-auto bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold shadow-md shadow-brand-teal/20 px-6 h-11 rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 <Link href={`/student/learn/${resumeLesson.id}`}>
                   <PlayCircle className="w-4 h-4 mr-2" />
@@ -261,7 +265,7 @@ export function StudentDashboardClient({
             ) : activeEnrollment ? (
               <Button
                 asChild
-                className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold shadow-md shadow-brand-teal/20 px-5 h-11 rounded-xl transition-all"
+                className="w-full sm:w-auto bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold shadow-md shadow-brand-teal/20 px-6 h-11 rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 <Link href={`/student/courses/${activeEnrollment.course.id}`}>
                   <PlayCircle className="w-4 h-4 mr-2" />
@@ -271,7 +275,7 @@ export function StudentDashboardClient({
             ) : (
               <Button
                 asChild
-                className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold shadow-md shadow-brand-teal/20 px-5 h-11 rounded-xl transition-all"
+                className="w-full sm:w-auto bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold shadow-md shadow-brand-teal/20 px-6 h-11 rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 <Link href="/student/catalog">
                   <Compass className="w-4 h-4 mr-2" />
@@ -283,7 +287,7 @@ export function StudentDashboardClient({
             <Button
               asChild
               variant="outline"
-              className="h-11 px-5 rounded-xl border-border/80 font-semibold transition-all hover:bg-secondary"
+              className="w-full sm:w-auto h-11 px-6 rounded-2xl border-black/[0.08] dark:border-white/[0.1] font-semibold transition-all hover:bg-secondary/70 hover:scale-[1.02] active:scale-[0.98]"
             >
               <Link href="/student/my-courses">
                 <span>My Courses</span>
@@ -293,35 +297,43 @@ export function StudentDashboardClient({
         </div>
       </motion.div>
 
-      {/* 2. 6 Clean KPI Metric Cards (No text truncation, no overlapping links) */}
+      {/* 2. 6 Clean KPI Metric Cards (Apple SF Pro Typography, Animated Counter, No Subtitle Clutter) */}
       <motion.div
         variants={itemVariants}
-        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5 sm:gap-4"
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4.5"
       >
         {kpis.map((kpi, idx) => {
           const Icon = kpi.icon
           return (
             <motion.div
               key={idx}
-              whileHover={{ y: -3, transition: { duration: 0.15 } }}
-              className={`p-4 rounded-2xl border border-border/80 bg-card/85 backdrop-blur-md shadow-xs transition-all duration-200 ${kpi.borderHover} flex flex-col justify-between`}
+              whileHover={{ y: -4, transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] } }}
+              className={`relative overflow-hidden p-4 sm:p-5 rounded-3xl border border-black/[0.06] dark:border-white/[0.08] bg-card/85 backdrop-blur-xl shadow-xs transition-all duration-300 ${kpi.borderHover} hover:shadow-lg flex flex-col justify-between group`}
             >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold text-muted-foreground tracking-wide">
+              {/* Subtle Ambient Radial Glow on Hover */}
+              <div
+                className={`pointer-events-none absolute -top-10 -right-10 w-24 h-24 rounded-full blur-2xl opacity-0 group-hover:opacity-40 transition-opacity duration-500 ${kpi.bg}`}
+              />
+
+              <div className="flex items-center justify-between mb-3 relative z-10">
+                <span className="text-xs sm:text-[13px] font-bold text-muted-foreground uppercase tracking-wider">
                   {kpi.title}
                 </span>
-                <div className={`p-2 rounded-xl ${kpi.bg} ${kpi.color}`}>
-                  <Icon className="w-4 h-4" />
+                <div
+                  className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl ${kpi.bg} ${kpi.color} flex items-center justify-center border border-white/20 dark:border-white/10 shadow-xs group-hover:scale-105 transition-transform duration-300`}
+                >
+                  <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
               </div>
 
-              <div>
-                <p className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground tabular-nums">
-                  {kpi.value}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1 truncate">
-                  {kpi.subtext}
-                </p>
+              <div className="relative z-10 pt-1">
+                <div className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground font-mono leading-none">
+                  <AnimatedCounter value={kpi.value} />
+                </div>
+                {/* Micro accent glow bar */}
+                <div
+                  className={`mt-3 h-1 w-7 rounded-full ${kpi.bg} group-hover:w-full transition-all duration-300`}
+                />
               </div>
             </motion.div>
           )
@@ -401,7 +413,7 @@ export function StudentDashboardClient({
                   {resumeLesson ? (
                     <Button
                       asChild
-                      className="font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal px-5 rounded-xl h-10 shadow-xs"
+                      className="w-full sm:w-auto font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal px-5 rounded-xl h-11 sm:h-10 text-xs sm:text-sm shadow-xs"
                     >
                       <Link href={`/student/learn/${resumeLesson.id}`}>
                         <PlayCircle className="w-4 h-4 mr-2" />
@@ -411,7 +423,7 @@ export function StudentDashboardClient({
                   ) : (
                     <Button
                       asChild
-                      className="font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal px-5 rounded-xl h-10 shadow-xs"
+                      className="w-full sm:w-auto font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal px-5 rounded-xl h-11 sm:h-10 text-xs sm:text-sm shadow-xs"
                     >
                       <Link href={`/student/courses/${activeEnrollment.course.id}`}>
                         <PlayCircle className="w-4 h-4 mr-2" />
@@ -518,11 +530,11 @@ export function StudentDashboardClient({
               upcomingLiveClasses.map((cls) => (
                 <div
                   key={cls.id}
-                  className="p-4 rounded-2xl border border-border/60 bg-secondary/30 flex items-center justify-between gap-4 hover:border-brand-teal/40 transition-all"
+                  className="p-4 rounded-2xl border border-border/60 bg-secondary/30 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 hover:border-brand-teal/40 transition-all"
                 >
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 shrink-0">
                         {cls.status}
                       </span>
                       <p className="text-xs sm:text-sm font-bold text-foreground truncate">
@@ -537,7 +549,7 @@ export function StudentDashboardClient({
                   <Button
                     asChild
                     size="sm"
-                    className="shrink-0 bg-brand-teal text-brand-charcoal hover:bg-brand-teal/90 font-bold text-xs h-9 px-4 rounded-xl"
+                    className="w-full sm:w-auto shrink-0 bg-brand-teal text-brand-charcoal hover:bg-brand-teal/90 font-bold text-xs h-10 sm:h-9 px-4 rounded-xl"
                   >
                     <Link href="/student/live-classes">Join Live</Link>
                   </Button>
@@ -582,7 +594,7 @@ export function StudentDashboardClient({
                 return (
                   <div
                     key={asgn.id}
-                    className="p-4 rounded-2xl border border-border/60 bg-secondary/30 flex items-center justify-between gap-4 hover:border-brand-teal/40 transition-all"
+                    className="p-4 rounded-2xl border border-border/60 bg-secondary/30 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 hover:border-brand-teal/40 transition-all"
                   >
                     <div className="space-y-1 min-w-0">
                       <p className="text-xs sm:text-sm font-bold text-foreground truncate">
@@ -595,7 +607,7 @@ export function StudentDashboardClient({
                       </div>
                     </div>
 
-                    <div className="shrink-0 text-right">
+                    <div className="shrink-0 flex items-center justify-between sm:justify-end gap-2">
                       {isGraded ? (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
                           {submission.marksAwarded}/{asgn.maxMarks} pts
@@ -609,7 +621,7 @@ export function StudentDashboardClient({
                           asChild
                           variant="outline"
                           size="sm"
-                          className="h-9 px-4 text-xs font-semibold rounded-xl"
+                          className="w-full sm:w-auto h-10 sm:h-9 px-4 text-xs font-semibold rounded-xl"
                         >
                           <Link href={`/student/assignments/${asgn.id}`}>Submit</Link>
                         </Button>

@@ -184,7 +184,7 @@ export default async function AssignmentDetailPage({ params }: PageProps) {
                 name="fileUrl"
                 type="url"
                 placeholder="https://github.com/techgration/aws-vpc-infrastructure"
-                className="h-10 text-xs focus-visible:ring-brand-teal"
+                className="h-11 sm:h-10 text-base sm:text-xs focus-visible:ring-brand-teal"
               />
             </div>
 
@@ -198,13 +198,13 @@ export default async function AssignmentDetailPage({ params }: PageProps) {
                 rows={6}
                 required
                 placeholder="Explain your VPC subnet strategy, NAT Gateway placement, routing tables, and security group rules..."
-                className="w-full text-xs p-3 rounded-lg border border-border bg-background text-foreground focus:outline-brand-teal resize-none"
+                className="w-full text-base sm:text-xs p-3.5 rounded-xl border border-border bg-background text-foreground focus:outline-brand-teal resize-none leading-relaxed"
               />
             </div>
 
             <Button
               type="submit"
-              className="font-semibold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal h-10 px-6 shadow-sm"
+              className="w-full sm:w-auto font-semibold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal h-11 sm:h-10 px-6 shadow-sm justify-center"
             >
               <FileCheck2 className="w-4 h-4 mr-2" />
               <span>Submit Assignment for Review</span>
