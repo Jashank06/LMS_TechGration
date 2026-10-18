@@ -1,4 +1,4 @@
-package live.techgration.techgration_app
+package com.techgration.courses.internship
 
 import io.flutter.embedding.android.FlutterActivity
 
