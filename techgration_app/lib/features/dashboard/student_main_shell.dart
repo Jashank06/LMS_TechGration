@@ -31,6 +31,7 @@ class _StudentMainShellState extends ConsumerState<StudentMainShell> {
     _scaffoldKey.currentState?.openDrawer();
   }
 
+  // ignore: unused_element
   void _onFabPressed() {
     HapticService.mediumImpact();
     showModalBottomSheet(
@@ -193,36 +194,37 @@ class _StudentMainShellState extends ConsumerState<StudentMainShell> {
           const RewardsScreen(),
         ],
       ),
-      floatingActionButton: currentIndex == 0 || currentIndex == 1
-          ? BouncingButton(
-              scaleDown: 0.88,
-              onTap: _onFabPressed,
-              child: Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF00D6D6), Color(0xFF0284C7)],
-                  ),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF00D6D6).withValues(alpha: 0.35),
-                      blurRadius: 14,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.add_rounded,
-                    color: Colors.white,
-                    size: 30,
-                  ),
-                ),
-              ),
-            )
-          : null,
+      // Floating Action Button commented out per user request:
+      // floatingActionButton: currentIndex == 0 || currentIndex == 1
+      //     ? BouncingButton(
+      //         scaleDown: 0.88,
+      //         onTap: _onFabPressed,
+      //         child: Container(
+      //           width: 56,
+      //           height: 56,
+      //           decoration: BoxDecoration(
+      //             gradient: const LinearGradient(
+      //               colors: [Color(0xFF00D6D6), Color(0xFF0284C7)],
+      //             ),
+      //             shape: BoxShape.circle,
+      //             boxShadow: [
+      //               BoxShadow(
+      //                 color: const Color(0xFF00D6D6).withValues(alpha: 0.35),
+      //                 blurRadius: 14,
+      //                 offset: const Offset(0, 5),
+      //               ),
+      //             ],
+      //           ),
+      //           child: const Center(
+      //             child: Icon(
+      //               Icons.add_rounded,
+      //               color: Colors.white,
+      //               size: 30,
+      //             ),
+      //           ),
+      //         ),
+      //       )
+      //     : null,
       bottomNavigationBar: TechGrationBottomNavBar(
         currentIndex: currentIndex,
         pendingAssignmentsCount: ref.watch(studentDashboardProvider).pendingAssignmentsCount,
