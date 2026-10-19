@@ -130,22 +130,7 @@ export async function POST(req: Request) {
       },
     })
 
-    // 7. Auto-enroll in first published course (if any)
-    const starterCourse = await db.course.findFirst({
-      where: { isPublished: true },
-    })
-
-    if (starterCourse) {
-      await db.enrollment.create({
-        data: {
-          userId: newUser.id,
-          courseId: starterCourse.id,
-          progressPct: 0,
-        },
-      }).catch(() => {})
-    }
-
-    // 8. Invalidate OTP
+    // 7. Invalidate OTP
     await db.otpVerification.update({
       where: { id: otpRecord.id },
       data: { isUsed: true },

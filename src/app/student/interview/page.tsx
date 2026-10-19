@@ -3,23 +3,37 @@ import { Metadata } from "next"
 import { requireStudent } from "@/server/auth"
 import { db } from "@/server/db"
 import { InterviewClient, EnrolledCourseInterviewInfo } from "./interview-client"
-import { Sparkles } from "lucide-react"
+import { Briefcase, Building2 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Interview Readiness & Placement — TechGration LMS",
-  description: "AI-driven technical viva, faculty mock interviews, and enterprise hiring partner referrals.",
+  title: "Company Interviews & Placements — TechGration LMS",
+  description: "Apply for direct technical interviews at partner tech companies upon curriculum completion.",
 }
 
 export default async function InterviewPage() {
   const user = await requireStudent()
 
   // 1. Fetch active course enrollments
-  const enrollments = await db.enrollment.findMany({
+  const rawEnrollments = await db.enrollment.findMany({
     where: { userId: user.id },
     include: {
       course: true,
     },
     orderBy: { enrolledAt: "desc" },
+  })
+
+  // Prioritize "Artificial Intelligence" course
+  const enrollments = [...rawEnrollments].sort((a, b) => {
+    const isAiA =
+      a.course.id === "6ad283b4e196d0b8fbfb9eae" ||
+      a.course.title.toLowerCase().includes("artificial intelligence")
+    const isAiB =
+      b.course.id === "6ad283b4e196d0b8fbfb9eae" ||
+      b.course.title.toLowerCase().includes("artificial intelligence")
+
+    if (isAiA && !isAiB) return -1
+    if (!isAiA && isAiB) return 1
+    return 0
   })
 
   // 2. Fetch earned certificates
@@ -48,14 +62,14 @@ export default async function InterviewPage() {
 
         <div className="relative z-10 max-w-2xl space-y-2.5">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 shadow-xs backdrop-blur-md">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span className="tracking-wide">AI & Faculty Technical Screening</span>
+            <Building2 className="w-3.5 h-3.5 text-cyan-500" />
+            <span className="tracking-wide">Direct Company Hiring Drives</span>
           </div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground">
-            Technical & AI Interview Readiness
+            Company Interview & Placement Portal
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            Enterprise technical mock interviews, real-time AI architectural viva, and faculty screenings. Complete your course curriculum to unlock eligibility.
+            Apply for direct technical interviews with top companies, AI labs, and product startups once you achieve 100% course completion.
           </p>
         </div>
       </div>

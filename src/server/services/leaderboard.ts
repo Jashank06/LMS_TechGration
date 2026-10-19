@@ -146,7 +146,7 @@ export async function getCourseLeaderboard(
       isSelf: w.userId === viewer.id,
     })),
     stats: {
-      enrolled: enrollments.length,
+      enrolled: viewer.isStaff ? enrollments.length : 0,
       ranked: entries.length,
       topMarks: entries.length ? entries[0].totalMarks : 0,
       averageMarks: entries.length ? Math.round((totalMarksSum / entries.length) * 10) / 10 : 0,

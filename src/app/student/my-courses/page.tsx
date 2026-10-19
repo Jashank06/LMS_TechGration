@@ -94,12 +94,21 @@ export default async function MyCoursesPage() {
           </p>
         </div>
 
-        <Button asChild variant="outline" className="border-border hover:border-brand-teal/40">
-          <Link href="/student/catalog">
-            <Compass className="w-4 h-4 mr-2 text-brand-teal" />
-            <span>Explore Course Catalog</span>
-          </Link>
-        </Button>
+        {courseItems.length === 0 ? (
+          <Button asChild className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold text-xs h-10 px-5 rounded-xl shadow-sm">
+            <a href="https://techgration.live/" target="_blank" rel="noopener noreferrer">
+              <Compass className="w-4 h-4 mr-2" />
+              <span>Enroll Now</span>
+            </a>
+          </Button>
+        ) : (
+          <Button asChild variant="outline" className="border-border hover:border-brand-teal/40">
+            <Link href="/student/catalog">
+              <Compass className="w-4 h-4 mr-2 text-brand-teal" />
+              <span>Explore Course Catalog</span>
+            </Link>
+          </Button>
+        )}
       </div>
 
       <CoursesClient courses={courseItems} />

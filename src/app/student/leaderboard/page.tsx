@@ -20,10 +20,24 @@ export default async function StudentLeaderboardPage({ searchParams }: PageProps
   const user = await requireStudent()
   const { course: requestedCourseId } = await searchParams
 
-  const enrollments = await db.enrollment.findMany({
+  const rawEnrollments = await db.enrollment.findMany({
     where: { userId: user.id, status: { in: ["ACTIVE", "COMPLETED"] } },
     include: { course: { select: { id: true, title: true } } },
     orderBy: { lastAccessedAt: "desc" },
+  })
+
+  // Prioritize "Artificial Intelligence" course
+  const enrollments = [...rawEnrollments].sort((a, b) => {
+    const isAiA =
+      a.course.id === "6ad283b4e196d0b8fbfb9eae" ||
+      a.course.title.toLowerCase().includes("artificial intelligence")
+    const isAiB =
+      b.course.id === "6ad283b4e196d0b8fbfb9eae" ||
+      b.course.title.toLowerCase().includes("artificial intelligence")
+
+    if (isAiA && !isAiB) return -1
+    if (!isAiA && isAiB) return 1
+    return 0
   })
 
   if (enrollments.length === 0) {

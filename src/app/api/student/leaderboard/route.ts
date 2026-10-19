@@ -14,10 +14,24 @@ export async function GET(req: Request) {
     const requestedCourseId = searchParams.get("courseId")
 
     // Fetch student's active enrollments to get available courses
-    const enrollments = await db.enrollment.findMany({
+    const rawEnrollments = await db.enrollment.findMany({
       where: { userId: user.id, status: { in: ["ACTIVE", "COMPLETED"] } },
       include: { course: { select: { id: true, title: true } } },
       orderBy: { lastAccessedAt: "desc" },
+    })
+
+    // Prioritize "Artificial Intelligence" course
+    const enrollments = [...rawEnrollments].sort((a, b) => {
+      const isAiA =
+        a.course.id === "6ad283b4e196d0b8fbfb9eae" ||
+        a.course.title.toLowerCase().includes("artificial intelligence")
+      const isAiB =
+        b.course.id === "6ad283b4e196d0b8fbfb9eae" ||
+        b.course.title.toLowerCase().includes("artificial intelligence")
+
+      if (isAiA && !isAiB) return -1
+      if (!isAiA && isAiB) return 1
+      return 0
     })
 
     if (enrollments.length === 0) {
@@ -27,7 +41,7 @@ export async function GET(req: Request) {
         activeCourse: null,
         ranked: [],
         waiting: [],
-        stats: { enrolled: 0, ranked: 0, topMarks: 0, averageMarks: 0 },
+        stats: { ranked: 0, topMarks: 0, averageMarks: 0 },
       })
     }
 
@@ -46,7 +60,13 @@ export async function GET(req: Request) {
       activeCourse: data?.course || courses[0],
       ranked: data?.ranked || [],
       waiting: data?.waiting || [],
-      stats: data?.stats || { enrolled: 0, ranked: 0, topMarks: 0, averageMarks: 0 },
+      stats: data?.stats
+        ? {
+            ranked: data.stats.ranked,
+            topMarks: data.stats.topMarks,
+            averageMarks: data.stats.averageMarks,
+          }
+        : { ranked: 0, topMarks: 0, averageMarks: 0 },
     })
   } catch (error: any) {
     console.error("Student leaderboard API error:", error)

@@ -79,7 +79,7 @@ export function LeaderboardClient({ data, courses, variant, basePath, anonymousS
   }
 
   const stats = [
-    { label: "Enrolled", value: data.stats.enrolled, icon: Users, tone: "text-sky-500" },
+    ...(staff ? [{ label: "Enrolled", value: data.stats.enrolled, icon: Users, tone: "text-sky-500" }] : []),
     { label: "On the board", value: data.stats.ranked, icon: Trophy, tone: "text-amber-500" },
     { label: "Top marks", value: data.stats.topMarks, icon: Target, tone: "text-emerald-500" },
     { label: "Average", value: data.stats.averageMarks, icon: BarChart3, tone: "text-purple-500" },
@@ -156,16 +156,20 @@ export function LeaderboardClient({ data, courses, variant, basePath, anonymousS
       <CourseSwitcher courses={courses} activeId={data.course.id} basePath={basePath} />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div
+        className={`grid gap-3 ${
+          staff ? "grid-cols-2 md:grid-cols-4" : "grid-cols-3"
+        }`}
+      >
         {stats.map((s) => {
           const Icon = s.icon
           return (
-            <div key={s.label} className="rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-4">
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span className="text-[11px] font-semibold uppercase tracking-wider">{s.label}</span>
-                <Icon className={`w-4 h-4 ${s.tone}`} />
+            <div key={s.label} className="rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-3 sm:p-4">
+              <div className="flex items-center justify-between text-muted-foreground gap-1">
+                <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider truncate">{s.label}</span>
+                <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${s.tone}`} />
               </div>
-              <p className="mt-1 text-2xl font-black tabular-nums text-foreground">{s.value}</p>
+              <p className="mt-1 text-xl sm:text-2xl font-black tabular-nums text-foreground">{s.value}</p>
             </div>
           )
         })}

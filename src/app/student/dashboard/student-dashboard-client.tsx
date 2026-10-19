@@ -245,7 +245,7 @@ export function StudentDashboardClient({
               <div className="flex items-center gap-2 pt-0.5">
                 <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-xs">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Enrolled Student • Active Learner
+                  {enrollmentsCount > 0 ? "Enrolled Student • Active Learner" : "Registered Student • Welcome"}
                 </span>
               </div>
             </div>
@@ -277,10 +277,10 @@ export function StudentDashboardClient({
                 asChild
                 className="w-full sm:w-auto bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold shadow-md shadow-brand-teal/20 px-6 h-11 rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
-                <Link href="/student/catalog">
+                <a href="https://techgration.live/" target="_blank" rel="noopener noreferrer">
                   <Compass className="w-4 h-4 mr-2" />
-                  <span>Explore Courses</span>
-                </Link>
+                  <span>Enroll Now</span>
+                </a>
               </Button>
             )}
 
@@ -451,10 +451,10 @@ export function StudentDashboardClient({
                   asChild
                   className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold text-xs h-9 px-5 rounded-xl shadow-xs"
                 >
-                  <Link href="/student/catalog">
+                  <a href="https://techgration.live/" target="_blank" rel="noopener noreferrer">
                     <Compass className="w-3.5 h-3.5 mr-1.5" />
-                    <span>Browse Courses</span>
-                  </Link>
+                    <span>Enroll Now</span>
+                  </a>
                 </Button>
               </div>
             )}

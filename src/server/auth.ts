@@ -312,21 +312,6 @@ export async function registerStudent({
       },
     })
 
-    // Auto-enroll in the first available active course
-    const firstCourse = await db.course.findFirst({
-      where: { isPublished: true },
-    })
-
-    if (firstCourse) {
-      await db.enrollment.create({
-        data: {
-          userId: user.id,
-          courseId: firstCourse.id,
-          progressPct: 0,
-        },
-      }).catch(() => {})
-    }
-
     await createSession(user.id)
     return { success: true, user }
   } catch (error) {

@@ -22,6 +22,7 @@ import {
   Lock,
   Sparkles,
   Gift,
+  Briefcase,
 } from "lucide-react"
 
 export interface StudentNavCountsProp {
@@ -110,9 +111,9 @@ const academicNavItems: AppleNavItem[] = [
     iconGradient: "from-yellow-400 to-amber-500",
   },
   {
-    title: "Interview Prep",
+    title: "Company Interviews",
     href: "/student/interview",
-    icon: Sparkles,
+    icon: Briefcase,
     iconGradient: "from-cyan-400 to-blue-600",
     isLocked: true,
   },

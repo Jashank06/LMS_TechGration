@@ -76,6 +76,61 @@ export function CoursesClient({ courses }: CoursesClientProps) {
       })
   }, [courses, search, statusFilter, categoryFilter, sortBy])
 
+  // If the user has 0 courses enrolled, render the dedicated "Enroll Now" hero showcase.
+  // Jiske me 1 bhi course enrolled hai, use ye nahi dikhega.
+  if (courses.length === 0) {
+    return (
+      <div className="relative group max-w-2xl mx-auto my-6 sm:my-10">
+        {/* Ambient Lighting */}
+        <div className="pointer-events-none absolute -inset-2 bg-gradient-to-r from-brand-teal/20 via-cyan-500/20 to-emerald-500/20 rounded-[2.5rem] blur-2xl opacity-70 group-hover:opacity-90 transition-opacity" />
+
+        {/* Outer High-Tech Bezel Card */}
+        <div className="relative rounded-[2rem] border-2 border-brand-teal/30 bg-gradient-to-b from-card/95 via-card to-background p-8 sm:p-14 shadow-2xl backdrop-blur-2xl text-center space-y-6 overflow-hidden">
+          {/* Cyber Corner Brackets */}
+          <div className="pointer-events-none absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 border-brand-teal/50 rounded-tl-lg" />
+          <div className="pointer-events-none absolute top-4 right-4 w-6 h-6 border-t-2 border-r-2 border-brand-teal/50 rounded-tr-lg" />
+          <div className="pointer-events-none absolute bottom-4 left-4 w-6 h-6 border-b-2 border-l-2 border-brand-teal/50 rounded-bl-lg" />
+          <div className="pointer-events-none absolute bottom-4 right-4 w-6 h-6 border-b-2 border-r-2 border-brand-teal/50 rounded-br-lg" />
+
+          {/* Micro Grid Background */}
+          <div className="pointer-events-none absolute inset-0 opacity-[0.03] bg-[radial-gradient(#00D6D6_1px,transparent_1px)] [background-size:16px_16px]" />
+
+          {/* Icon Badge */}
+          <div className="relative z-10 w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-brand-teal/15 border-2 border-brand-teal/30 flex items-center justify-center text-brand-teal mx-auto shadow-xl shadow-brand-teal/10">
+            <Sparkles className="w-10 h-10 sm:w-12 sm:h-12 animate-pulse" />
+          </div>
+
+          {/* Big Big Headline & Minimal Description */}
+          <div className="relative z-10 space-y-2.5">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-brand-teal/10 text-brand-teal border border-brand-teal/30">
+              <GraduationCap className="w-3.5 h-3.5" />
+              <span>Get Started</span>
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-foreground">
+              Enroll Now
+            </h2>
+            <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto pt-1 leading-relaxed">
+              Explore our live enterprise curriculums and start your learning journey with TechGration.
+            </p>
+          </div>
+
+          {/* Big High-Impact CTA Button */}
+          <div className="relative z-10 pt-2 flex items-center justify-center">
+            <Button
+              asChild
+              className="w-full sm:w-auto h-13 px-8 sm:px-10 rounded-2xl font-black text-sm sm:text-base bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal shadow-xl shadow-brand-teal/25 transition-all hover:scale-[1.03] active:scale-[0.98]"
+            >
+              <a href="https://techgration.live/" target="_blank" rel="noopener noreferrer">
+                <span>Enroll Now</span>
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </a>
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Controls Bar (Glassmorphic Container) */}
