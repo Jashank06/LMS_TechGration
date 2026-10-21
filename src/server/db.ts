@@ -16,7 +16,8 @@ const globalForPrisma = globalThis as unknown as {
 const cachedClient = globalForPrisma.prisma
 const isStale =
   Boolean(cachedClient) &&
-  (!Boolean((cachedClient as unknown as { codingProblem?: unknown })?.codingProblem) ||
+  (!Boolean((cachedClient as unknown as { codingDuel?: unknown })?.codingDuel) ||
+    !Boolean((cachedClient as unknown as { codingProblem?: unknown })?.codingProblem) ||
     !(cachedClient as unknown as { _runtimeDataModel?: { models?: { CodingProgress?: { fields?: Array<{ name: string }> } } } })
       ?._runtimeDataModel?.models?.CodingProgress?.fields?.some((f) => f.name === "lastCode"))
 

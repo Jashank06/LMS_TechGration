@@ -16,6 +16,9 @@ import {
   ExternalLink,
   MessageSquare,
   Clock,
+  AlertTriangle,
+  Lock,
+  BookOpen,
 } from "lucide-react"
 
 interface PageProps {
@@ -52,9 +55,65 @@ export default async function AssignmentDetailPage({ params }: PageProps) {
     notFound()
   }
 
+  // Verify enrollment
+  const enrollment = await db.enrollment.findUnique({
+    where: {
+      userId_courseId: {
+        userId: user.id,
+        courseId: assignment.courseId,
+      },
+    },
+    select: { status: true },
+  })
+
+  const isEnrolled = enrollment && (enrollment.status === "ACTIVE" || enrollment.status === "COMPLETED")
+
+  if (!isEnrolled) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-3xl mx-auto">
+        <div>
+          <Link
+            href="/student/assignments"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Assignments Workspace</span>
+          </Link>
+        </div>
+
+        <div className="rounded-3xl border border-border/80 bg-card p-8 sm:p-12 text-center space-y-5 shadow-xs">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500 mx-auto shadow-sm">
+            <Lock className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2 max-w-md mx-auto">
+            <h2 className="text-xl font-bold text-foreground">Course Enrollment Required</h2>
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+              This assignment is part of{" "}
+              <span className="font-semibold text-foreground">{assignment.course.title}</span>. You must have an active enrollment in this course to access instructions and submit deliverables.
+            </p>
+          </div>
+
+          <div className="pt-2">
+            <Link href={`/student/courses/${assignment.courseId}`}>
+              <Button className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-semibold">
+                <BookOpen className="w-4 h-4 mr-2" />
+                <span>View Course Details</span>
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const submission = assignment.submissions[0]
+  const hasSubmission = Boolean(submission)
   const isGraded = submission?.status === "GRADED"
-  const isSubmitted = submission?.status === "SUBMITTED"
+  const isUnderReview = submission?.status === "IN_REVIEW"
+  const isLate =
+    submission?.status === "LATE" ||
+    (Boolean(submission?.submittedAt) && submission!.submittedAt > assignment.dueAt)
 
   const dueDate = new Date(assignment.dueAt)
   const formattedDue = dueDate.toLocaleDateString("en-US", {
@@ -130,18 +189,48 @@ export default async function AssignmentDetailPage({ params }: PageProps) {
         </div>
       )}
 
-      {/* Submission Form / Review */}
+      {/* Submission Deliverables or Form */}
       <div className="rounded-2xl border border-border bg-card p-6 space-y-6">
-        <div>
-          <h2 className="text-base font-bold text-foreground">
-            {isSubmitted || isGraded ? "Your Submitted Deliverables" : "Submit Your Assignment"}
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Provide your GitHub repository link or architectural text summary.
-          </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-bold text-foreground">
+              {hasSubmission ? "Your Submitted Deliverables" : "Submit Your Assignment"}
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {hasSubmission
+                ? isGraded
+                  ? "Your deliverables have been evaluated and locked."
+                  : isUnderReview
+                  ? "Your submission is currently under review by faculty."
+                  : "Deliverables submitted for faculty evaluation."
+                : "Provide your GitHub repository link or architectural text summary."}
+            </p>
+          </div>
+
+          {hasSubmission && (
+            <div className="flex items-center gap-2">
+              {isGraded ? (
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                  Graded
+                </span>
+              ) : isUnderReview ? (
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30">
+                  Under Review
+                </span>
+              ) : isLate ? (
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                  Submitted Late
+                </span>
+              ) : (
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30">
+                  Submitted
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
-        {isSubmitted || isGraded ? (
+        {hasSubmission ? (
           <div className="space-y-4">
             {submission.fileUrl && (
               <div className="space-y-1">
@@ -174,7 +263,13 @@ export default async function AssignmentDetailPage({ params }: PageProps) {
             </div>
           </div>
         ) : (
-          <form action={async (formData: FormData) => { "use server"; await submitAssignmentAction(assignment.id, formData) }} className="space-y-4">
+          <form
+            action={async (formData: FormData) => {
+              "use server"
+              await submitAssignmentAction(assignment.id, formData)
+            }}
+            className="space-y-4"
+          >
             <div className="space-y-2">
               <Label htmlFor="fileUrl" className="text-xs font-medium">
                 GitHub Repository or Pull Request Link

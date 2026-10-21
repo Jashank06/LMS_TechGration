@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 import { getCurrentUser } from "@/server/auth"
 import { db } from "@/server/db"
-import { SubmissionStatus } from "@prisma/client"
+import { validateAssignmentSubmission } from "@/actions/assignments"
 
 export async function POST(
   req: Request,
@@ -17,7 +18,14 @@ export async function POST(
     const body = await req.json()
     const { studentNotes, fileUrl, fileName, githubUrl } = body
 
+    const validation = await validateAssignmentSubmission(assignmentId, user.id)
+    if (!validation.allowed) {
+      return NextResponse.json({ error: validation.error }, { status: 400 })
+    }
+
+    const { assignment, targetStatus } = validation
     const notes = studentNotes || (githubUrl ? `GitHub Repo: ${githubUrl}` : "Mobile Submission")
+    const resolvedFileUrl = fileUrl || githubUrl || null
 
     // Upsert submission in MongoDB
     const submission = await db.assignmentSubmission.upsert({
@@ -31,19 +39,30 @@ export async function POST(
         assignmentId,
         userId: user.id,
         studentNotes: notes,
-        fileUrl: fileUrl || githubUrl || null,
+        fileUrl: resolvedFileUrl,
         fileName: fileName || "submission.zip",
-        status: SubmissionStatus.SUBMITTED,
+        status: targetStatus,
         submittedAt: new Date(),
       },
       update: {
         studentNotes: notes,
-        fileUrl: fileUrl || githubUrl || null,
+        fileUrl: resolvedFileUrl,
         fileName: fileName || "submission.zip",
-        status: SubmissionStatus.SUBMITTED,
+        status: targetStatus,
         submittedAt: new Date(),
       },
     })
+
+    revalidatePath(`/student/assignments/${assignmentId}`)
+    revalidatePath("/student/assignments")
+    revalidatePath("/student/dashboard")
+    revalidatePath("/student/leaderboard")
+    revalidatePath("/student/rewards")
+    if (assignment.courseId) {
+      revalidatePath(`/student/courses/${assignment.courseId}`)
+    }
+    revalidatePath("/teacher/assignments")
+    revalidatePath(`/teacher/assignments/${assignmentId}/grade`)
 
     return NextResponse.json({
       success: true,
@@ -56,6 +75,9 @@ export async function POST(
     })
   } catch (error: any) {
     console.error("Assignment submission error:", error)
-    return NextResponse.json({ error: error.message || "Failed to submit assignment" }, { status: 500 })
+    return NextResponse.json(
+      { error: error.message || "Failed to submit assignment" },
+      { status: 500 }
+    )
   }
 }

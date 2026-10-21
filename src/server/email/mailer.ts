@@ -4,7 +4,7 @@ const SMTP_USER = process.env.OTP_GMAIL_USER || "welcome@jashank.me"
 // Remove any accidental extra spaces from the password if passed raw or with spaces
 const SMTP_PASS = (process.env.OTP_GMAIL_PASSWORD || "qvrf ycyv kljs nnxd").replace(/\s+/g, " ")
 
-const transporter = nodemailer.createTransport({
+export const transporter = nodemailer.createTransport({
   service: "gmail",
   host: "smtp.gmail.com",
   port: 465,

@@ -1,5 +1,5 @@
 import { LANGUAGE_MAP, JUDGE0_STATUS_MAP } from "@/lib/arena-constants"
-import { spawnSync } from "child_process"
+import { spawn } from "child_process"
 import fs from "fs"
 import path from "path"
 import os from "os"
@@ -78,25 +78,129 @@ export async function executeCode(params: {
       return await executeJudge0(params)
     } catch (err) {
       console.warn("Judge0 cloud execution failed, falling back to local runner:", err)
-      return executeLocally({ sourceCode, language, testCases, timeLimitSec })
+      return await executeLocally({ sourceCode, language, testCases, timeLimitSec })
     }
   }
 
   // Otherwise, use built-in local runner directly (zero setup required!)
-  return executeLocally({ sourceCode, language, testCases, timeLimitSec })
+  return await executeLocally({ sourceCode, language, testCases, timeLimitSec })
+}
+
+interface AsyncProcessResult {
+  stdout: string
+  stderr: string
+  code: number | null
+  timedOut: boolean
+  elapsedMs: number
+}
+
+/**
+ * Asynchronously spawns a non-blocking child process with timeout protection.
+ * Prevents freezing the Node.js event loop during intensive code runs.
+ */
+function runProcessAsync(
+  command: string,
+  args: string[],
+  options: {
+    cwd: string
+    input?: string
+    timeoutMs: number
+    env?: NodeJS.ProcessEnv
+  }
+): Promise<AsyncProcessResult> {
+  return new Promise((resolve) => {
+    const startTime = Date.now()
+    let timedOut = false
+    let stdout = ""
+    let stderr = ""
+
+    const child = spawn(command, args, {
+      cwd: options.cwd,
+      env: options.env,
+      stdio: ["pipe", "pipe", "pipe"],
+    })
+
+    const timer = setTimeout(() => {
+      timedOut = true
+      try {
+        child.kill("SIGKILL")
+      } catch {
+        // ignore
+      }
+    }, options.timeoutMs)
+
+    if (options.input !== undefined && options.input !== null) {
+      try {
+        child.stdin.write(options.input)
+      } catch {
+        // ignore
+      }
+    }
+    try {
+      child.stdin.end()
+    } catch {
+      // ignore
+    }
+
+    child.stdout.on("data", (data) => {
+      if (stdout.length < 5 * 1024 * 1024) {
+        stdout += data.toString("utf-8")
+      }
+    })
+
+    child.stderr.on("data", (data) => {
+      if (stderr.length < 2 * 1024 * 1024) {
+        stderr += data.toString("utf-8")
+      }
+    })
+
+    child.on("error", (err) => {
+      clearTimeout(timer)
+      stderr += `\n${err.message}`
+      resolve({
+        stdout,
+        stderr,
+        code: 1,
+        timedOut: false,
+        elapsedMs: Date.now() - startTime,
+      })
+    })
+
+    child.on("close", (code) => {
+      clearTimeout(timer)
+      resolve({
+        stdout,
+        stderr,
+        code,
+        timedOut,
+        elapsedMs: Date.now() - startTime,
+      })
+    })
+  })
 }
 
 /**
  * Built-in local execution engine using the machine's native compilers / runtimes.
+ * Fully asynchronous, non-blocking, and sandboxed with isolated environment variables.
  */
-function executeLocally(params: {
+async function executeLocally(params: {
   sourceCode: string
   language: string
   testCases: TestCaseInput[]
   timeLimitSec?: number
-}): ExecutionResult {
+}): Promise<ExecutionResult> {
   const { sourceCode, language, testCases, timeLimitSec = 3 } = params
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), `arena_${Date.now()}_`))
+
+  // SECURE ISOLATED ENVIRONMENT: Stripped of production credentials / secrets
+  const safeEnv: NodeJS.ProcessEnv = {
+    PATH: process.env.PATH || "/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin",
+    TMPDIR: tmpDir,
+    HOME: tmpDir,
+    LANG: "en_US.UTF-8",
+    LC_ALL: "en_US.UTF-8",
+    NODE_ENV: "production",
+  }
 
   try {
     let compileOutput: string | null = null
@@ -107,19 +211,23 @@ function executeLocally(params: {
       const src = path.join(tmpDir, "solution.py")
       fs.writeFileSync(src, sourceCode)
       runCommand = "python3"
-      runArgs = [src]
+      runArgs = ["-u", src]
     } else if (language === "javascript") {
       const src = path.join(tmpDir, "solution.js")
       fs.writeFileSync(src, sourceCode)
       runCommand = "node"
-      runArgs = [src]
+      runArgs = ["--max-old-space-size=128", src]
     } else if (language === "cpp") {
       const src = path.join(tmpDir, "main.cpp")
       const bin = path.join(tmpDir, "main")
       fs.writeFileSync(src, sourceCode)
-      const comp = spawnSync("g++", ["-O2", "-std=c++17", src, "-o", bin], { timeout: 6000 })
-      if (comp.status !== 0) {
-        compileOutput = comp.stderr?.toString() || comp.error?.message || "Compilation Error"
+      const comp = await runProcessAsync("g++", ["-O2", "-std=c++17", src, "-o", bin], {
+        cwd: tmpDir,
+        timeoutMs: 6000,
+        env: safeEnv,
+      })
+      if (comp.code !== 0) {
+        compileOutput = comp.stderr || "Compilation Error"
         return {
           results: testCases.map(() => ({
             passed: false,
@@ -144,9 +252,13 @@ function executeLocally(params: {
     } else if (language === "java") {
       const src = path.join(tmpDir, "Main.java")
       fs.writeFileSync(src, sourceCode)
-      const comp = spawnSync("javac", [src], { timeout: 6000 })
-      if (comp.status !== 0) {
-        compileOutput = comp.stderr?.toString() || comp.error?.message || "Compilation Error"
+      const comp = await runProcessAsync("javac", [src], {
+        cwd: tmpDir,
+        timeoutMs: 6000,
+        env: safeEnv,
+      })
+      if (comp.code !== 0) {
+        compileOutput = comp.stderr || "Compilation Error"
         return {
           results: testCases.map(() => ({
             passed: false,
@@ -167,7 +279,7 @@ function executeLocally(params: {
         }
       }
       runCommand = "java"
-      runArgs = ["-cp", tmpDir, "Main"]
+      runArgs = ["-Xmx256m", "-cp", tmpDir, "Main"]
     } else {
       throw new Error(`Unsupported language: ${language}`)
     }
@@ -176,20 +288,19 @@ function executeLocally(params: {
     let maxTimeMs = 0
 
     for (const tc of testCases) {
-      const startTime = Date.now()
-      const proc = spawnSync(runCommand, runArgs, {
+      const proc = await runProcessAsync(runCommand, runArgs, {
+        cwd: tmpDir,
         input: tc.input || "",
-        timeout: timeLimitSec * 1000,
-        encoding: "utf-8",
-        maxBuffer: 10 * 1024 * 1024,
+        timeoutMs: timeLimitSec * 1000,
+        env: safeEnv,
       })
-      const elapsedMs = Date.now() - startTime
-      if (elapsedMs > maxTimeMs) maxTimeMs = elapsedMs
 
-      const stdout = proc.stdout ? proc.stdout.toString() : ""
-      const stderr = proc.stderr ? proc.stderr.toString() : ""
+      if (proc.elapsedMs > maxTimeMs) maxTimeMs = proc.elapsedMs
 
-      if (proc.error && (proc.error as any).code === "ETIMEDOUT") {
+      const stdout = proc.stdout
+      const stderr = proc.stderr
+
+      if (proc.timedOut) {
         results.push({
           passed: false,
           statusId: 5,
@@ -198,22 +309,22 @@ function executeLocally(params: {
           stdout,
           stderr: "Execution exceeded time limit.",
           compileOutput: null,
-          time: (elapsedMs / 1000).toFixed(2),
+          time: (proc.elapsedMs / 1000).toFixed(2),
           memory: null,
         })
         continue
       }
 
-      if (proc.status !== 0) {
+      if (proc.code !== 0) {
         results.push({
           passed: false,
           statusId: 7,
           statusDescription: "Runtime Error",
           verdict: "RUNTIME_ERROR",
           stdout,
-          stderr: stderr || proc.error?.message || "Process exited with non-zero exit code",
+          stderr: stderr || "Process exited with non-zero exit code",
           compileOutput: null,
-          time: (elapsedMs / 1000).toFixed(2),
+          time: (proc.elapsedMs / 1000).toFixed(2),
           memory: null,
         })
         continue
@@ -231,7 +342,7 @@ function executeLocally(params: {
         stdout,
         stderr: stderr || null,
         compileOutput: null,
-        time: (elapsedMs / 1000).toFixed(2),
+        time: (proc.elapsedMs / 1000).toFixed(2),
         memory: null,
       })
     }

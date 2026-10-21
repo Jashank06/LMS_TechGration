@@ -1,6 +1,7 @@
 import { cookies } from "next/headers"
 import { SESSION_COOKIE_NAME, verifyPassword, createSession, destroySession } from "@/server/auth"
 import { db } from "@/server/db"
+import { getTeacherCourseScope, isStaff } from "@/server/services/teacher-scope"
 
 export async function loginTeacher({
   email,
@@ -111,13 +112,15 @@ export async function getTeacherSession() {
       return null
     }
 
-    // Real dynamic counts from live MongoDB database
+    // Real dynamic counts from live MongoDB database based on scope
+    const courseScope = getTeacherCourseScope(session.user)
+
     const totalCourses = await db.course.count({
-      where: { instructorName: session.user.name },
+      where: courseScope,
     })
 
     const totalStudents = await db.enrollment.count({
-      where: { course: { instructorName: session.user.name } },
+      where: { course: courseScope },
     })
 
     return {
@@ -126,6 +129,7 @@ export async function getTeacherSession() {
         name: session.user.name,
         email: session.user.email,
         role: session.user.role,
+        isStaff: isStaff(session.user.role),
         avatarUrl: session.user.profile?.avatarUrl ?? null,
         headline: session.user.profile?.headline ?? "Instructor",
         department: "Faculty of Technology & Engineering",

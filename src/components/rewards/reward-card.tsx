@@ -21,13 +21,13 @@ export function RewardCard({ item, isEligible, onPreview, onClaim }: RewardCardP
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -6 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-border/70 bg-card/80 backdrop-blur-xl p-6 sm:p-7 shadow-xl hover:shadow-2xl hover:border-amber-500/50 transition-all"
+      className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-border/70 bg-card/80 backdrop-blur-xl p-5 sm:p-6 shadow-xl hover:shadow-2xl hover:border-amber-500/50 transition-all"
     >
       {/* Subtle Glow on Card Hover */}
       <div className="pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-amber-500/10 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
       {/* Top Bar: Clean Category & Champion Pill */}
-      <div className="flex items-center justify-between gap-3 mb-4 z-10">
+      <div className="flex items-center justify-between gap-3 mb-3 z-10">
         <span className="px-3.5 py-1 rounded-full text-xs font-semibold bg-muted text-muted-foreground border border-border/50">
           {item.category}
         </span>
@@ -40,7 +40,7 @@ export function RewardCard({ item, isEligible, onPreview, onClaim }: RewardCardP
       {/* BIG HERO IMAGE CONTAINER (Clickable to Inspect Full Showcase) */}
       <div
         onClick={() => onPreview(item)}
-        className="relative w-full aspect-[16/11] sm:aspect-[16/10] cursor-pointer rounded-2xl overflow-hidden bg-gradient-to-b from-muted/50 via-muted/30 to-muted/10 border border-border/50 flex items-center justify-center p-3 sm:p-5 group/img transition-all"
+        className="relative w-full aspect-[16/11] sm:aspect-[16/10] cursor-pointer rounded-2xl overflow-hidden bg-gradient-to-b from-muted/50 via-muted/30 to-muted/10 border border-border/50 flex items-center justify-center p-3 sm:p-4 group/img transition-all"
       >
         <Image
           src={item.image}
@@ -61,7 +61,7 @@ export function RewardCard({ item, isEligible, onPreview, onClaim }: RewardCardP
       </div>
 
       {/* Clean Bottom Section: Prominent Title, Value Tag, & Action Button (No Clutter) */}
-      <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-border/40">
+      <div className="mt-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 pt-3.5 border-t border-border/40">
         <div className="space-y-1">
           <h3 className="text-xl sm:text-2xl font-black tracking-tight text-foreground group-hover:text-amber-500 transition-colors">
             {item.title}

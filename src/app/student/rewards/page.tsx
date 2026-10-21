@@ -14,7 +14,7 @@ export default async function StudentRewardsPage() {
   const { eligibility, claims } = await getStudentRewardStatus(user.id)
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-5 lg:py-5 lg:px-8 max-w-7xl mx-auto">
       <RewardsClient eligibility={eligibility} claims={claims} />
     </div>
   )

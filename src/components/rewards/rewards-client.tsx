@@ -10,6 +10,8 @@ import {
   Package,
   Shirt,
   Headphones,
+  Backpack,
+  Coffee,
   SlidersHorizontal,
   Crown,
   Trophy,
@@ -31,16 +33,15 @@ interface RewardsClientProps {
   claims: ClaimWithCourse[]
 }
 
-type TabType = "all" | "wearables" | "tech" | "claims"
+type TabType = "all" | "wearables" | "audio" | "tech" | "lifestyle" | "claims"
 
 export function RewardsClient({ eligibility, claims }: RewardsClientProps) {
   const router = useRouter()
   const [activeTab, setActiveTab] = React.useState<TabType>("all")
   const [previewItem, setPreviewItem] = React.useState<SwagRewardItem | null>(null)
   const [claimItem, setClaimItem] = React.useState<SwagRewardItem | null>(null)
-  const [simulatedChampion, setSimulatedChampion] = React.useState(false)
 
-  const isEligible = eligibility.isChampion || simulatedChampion
+  const isEligible = eligibility.isChampion
 
   const triggerConfetti = () => {
     confetti({
@@ -55,12 +56,31 @@ export function RewardsClient({ eligibility, claims }: RewardsClientProps) {
   const filteredItems = React.useMemo(() => {
     if (activeTab === "wearables") {
       return SWAG_CATALOG.filter(
-        (i) => i.id === "techgration-tshirt" || i.id === "techgration-cap"
+        (i) =>
+          i.id === "techgration-tshirt" ||
+          i.id === "techgration-hoodie" ||
+          i.id === "techgration-cap"
+      )
+    }
+    if (activeTab === "audio") {
+      return SWAG_CATALOG.filter(
+        (i) =>
+          i.id === "boat-rockerz-headphones" ||
+          i.id === "boat-earbuds"
       )
     }
     if (activeTab === "tech") {
       return SWAG_CATALOG.filter(
-        (i) => i.id === "techgration-sleeve" || i.id === "boat-earbuds"
+        (i) =>
+          i.id === "techgration-backpack" ||
+          i.id === "techgration-sleeve"
+      )
+    }
+    if (activeTab === "lifestyle") {
+      return SWAG_CATALOG.filter(
+        (i) =>
+          i.id === "techgration-bottle" ||
+          i.id === "techgration-mug"
       )
     }
     return SWAG_CATALOG
@@ -71,57 +91,79 @@ export function RewardsClient({ eligibility, claims }: RewardsClientProps) {
   }
 
   return (
-    <div className="space-y-8 pb-16">
+    <div className="space-y-5 pb-12">
       {/* Hero Section with Rank Eligibility & Champion Status */}
       <RewardHero
         eligibility={eligibility}
         claimsCount={claims.length}
-        simulatedChampion={simulatedChampion}
-        onToggleSimulate={() => setSimulatedChampion((prev) => !prev)}
         onTriggerConfetti={triggerConfetti}
       />
 
       {/* Navigation Filter Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-4">
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar touch-pan-x scroll-smooth pb-1 -mx-1 px-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar touch-pan-x scroll-smooth pb-0.5 -mx-1 px-1">
           <button
             onClick={() => setActiveTab("all")}
-            className={`whitespace-nowrap min-h-[44px] px-4 py-2 rounded-2xl text-xs sm:text-sm font-semibold transition-all shrink-0 ${
+            className={`whitespace-nowrap min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all shrink-0 ${
               activeTab === "all"
                 ? "bg-foreground text-background shadow-md"
                 : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground active:bg-muted"
             }`}
           >
-            All Champion Swag (4)
+            All Champion Swag ({SWAG_CATALOG.length})
           </button>
 
           <button
             onClick={() => setActiveTab("wearables")}
-            className={`whitespace-nowrap min-h-[44px] px-4 py-2 rounded-2xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
+            className={`whitespace-nowrap min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
               activeTab === "wearables"
                 ? "bg-foreground text-background shadow-md"
                 : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground active:bg-muted"
             }`}
           >
             <Shirt className="w-3.5 h-3.5" />
-            <span>Wearables (T-Shirt & Cap)</span>
+            <span>Wearables (T-Shirt, Hoodie & Cap)</span>
           </button>
 
           <button
-            onClick={() => setActiveTab("tech")}
-            className={`whitespace-nowrap min-h-[44px] px-4 py-2 rounded-2xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
-              activeTab === "tech"
+            onClick={() => setActiveTab("audio")}
+            className={`whitespace-nowrap min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
+              activeTab === "audio"
                 ? "bg-foreground text-background shadow-md"
                 : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground active:bg-muted"
             }`}
           >
             <Headphones className="w-3.5 h-3.5" />
-            <span>Tech Gear (Sleeve & Earbuds)</span>
+            <span>boAt Audio (Headphones & Earbuds)</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("tech")}
+            className={`whitespace-nowrap min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
+              activeTab === "tech"
+                ? "bg-foreground text-background shadow-md"
+                : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground active:bg-muted"
+            }`}
+          >
+            <Backpack className="w-3.5 h-3.5" />
+            <span>Tech Gear (Backpack & Sleeve)</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("lifestyle")}
+            className={`whitespace-nowrap min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
+              activeTab === "lifestyle"
+                ? "bg-foreground text-background shadow-md"
+                : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground active:bg-muted"
+            }`}
+          >
+            <Coffee className="w-3.5 h-3.5" />
+            <span>Desk & Lifestyle (Bottle & Mug)</span>
           </button>
 
           <button
             onClick={() => setActiveTab("claims")}
-            className={`whitespace-nowrap min-h-[44px] px-4 py-2 rounded-2xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
+            className={`whitespace-nowrap min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
               activeTab === "claims"
                 ? "bg-amber-500 text-white shadow-md shadow-amber-500/20"
                 : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground active:bg-muted"
@@ -145,7 +187,7 @@ export function RewardsClient({ eligibility, claims }: RewardsClientProps) {
           onExploreCatalog={() => setActiveTab("all")}
         />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6">
           {filteredItems.map((item) => (
             <RewardCard
               key={item.id}
@@ -169,7 +211,6 @@ export function RewardsClient({ eligibility, claims }: RewardsClientProps) {
       {/* Claim Configuration & Shipping Dialog */}
       <RewardClaimDialog
         item={claimItem}
-        simulatedChampion={simulatedChampion}
         onClose={() => setClaimItem(null)}
         onSuccess={handleClaimSuccess}
       />

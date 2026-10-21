@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { db } from "@/server/db"
 import { getTeacherSession } from "@/server/services/teacher-auth"
+import { getTeacherCourseScope } from "@/server/services/teacher-scope"
 
 export async function GET(request: Request) {
   try {
@@ -14,9 +15,9 @@ export async function GET(request: Request) {
     const health = searchParams.get("health")
     const course = searchParams.get("course")
 
-    // Find all courses taught by this teacher
+    // Find all courses taught by this teacher or staff
     const teacherCourses = await db.course.findMany({
-      where: { instructorName: session.user.name },
+      where: getTeacherCourseScope(session.user),
       include: {
         enrollments: {
           include: {

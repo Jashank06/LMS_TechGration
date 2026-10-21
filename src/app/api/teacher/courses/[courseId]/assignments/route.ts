@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { db } from "@/server/db"
 import { getTeacherSession } from "@/server/services/teacher-auth"
+import { getTeacherCourseScope } from "@/server/services/teacher-scope"
 
 export async function GET(
   _request: Request,
@@ -13,6 +14,19 @@ export async function GET(
     }
 
     const { courseId } = await params
+
+    // Verify course exists and belongs to teacher/staff
+    const course = await db.course.findFirst({
+      where: {
+        id: courseId,
+        ...getTeacherCourseScope(session.user),
+      },
+      select: { id: true },
+    })
+
+    if (!course) {
+      return NextResponse.json({ error: "Course not found or unauthorized" }, { status: 404 })
+    }
 
     const assignments = await db.assignment.findMany({
       where: { courseId },
@@ -109,14 +123,17 @@ export async function POST(
       return NextResponse.json({ error: "Invalid due date" }, { status: 400 })
     }
 
-    // Verify course exists
-    const course = await db.course.findUnique({
-      where: { id: courseId },
+    // Verify course exists and belongs to teacher/staff
+    const course = await db.course.findFirst({
+      where: {
+        id: courseId,
+        ...getTeacherCourseScope(session.user),
+      },
       select: { id: true },
     })
 
     if (!course) {
-      return NextResponse.json({ error: "Course not found" }, { status: 404 })
+      return NextResponse.json({ error: "Course not found or unauthorized" }, { status: 404 })
     }
 
     const newAssignment = await db.assignment.create({

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { db } from "@/server/db"
 import { getTeacherSession } from "@/server/services/teacher-auth"
+import { getTeacherCourseScope } from "@/server/services/teacher-scope"
 
 export async function GET() {
   try {
@@ -9,9 +10,11 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const courseScope = getTeacherCourseScope(session.user)
+
     const assignmentsRaw = await db.assignment.findMany({
       where: {
-        course: { instructorName: session.user.name },
+        course: courseScope,
       },
       include: {
         course: true,

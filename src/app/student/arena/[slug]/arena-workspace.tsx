@@ -31,6 +31,8 @@ import {
   ShieldAlert,
   Copy,
   Check,
+  Bot,
+  Sparkles,
 } from "lucide-react"
 import { motion, AnimatePresence } from "motion/react"
 import { DifficultyBadge } from "@/components/arena/difficulty-badge"
@@ -38,6 +40,9 @@ import { TestResultsPanel } from "@/components/arena/test-results-panel"
 import { SubmissionHistory } from "@/components/arena/submission-history"
 import { McqQuestionView } from "@/components/arena/mcq-question-view"
 import { AcceptedCelebrationModal } from "@/components/arena/accepted-celebration-modal"
+import { StatementMathRenderer } from "@/components/arena/statement-math-renderer"
+import { InteractiveTestcases, type TestCaseItem } from "@/components/arena/interactive-testcases"
+import { AiCoachPanel } from "@/components/arena/ai-coach-panel"
 import { TOPIC_LABELS, SUPPORTED_LANGUAGES, type SupportedLanguage } from "@/lib/arena-constants"
 import { cn } from "@/lib/utils"
 
@@ -142,8 +147,6 @@ export function ArenaWorkspace({
 }: ArenaWorkspaceProps) {
   const [language, setLanguage] = React.useState<SupportedLanguage>("python")
   const [code, setCode] = React.useState(problem.starterCode?.["python"] || "")
-  const [customInput, setCustomInput] = React.useState("")
-  const [useCustomInput, setUseCustomInput] = React.useState(false)
   const [isRunning, setIsRunning] = React.useState(false)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [runResult, setRunResult] = React.useState<any>(null)
@@ -159,6 +162,29 @@ export function ArenaWorkspace({
   const [isBookmarked, setIsBookmarked] = React.useState(progress?.isBookmarked || false)
   const [showCelebration, setShowCelebration] = React.useState(false)
   const [saveStatus, setSaveStatus] = React.useState<"saved" | "saving" | "unsaved">("saved")
+
+  // Interactive Test Cases State
+  const [activeTestCases, setActiveTestCases] = React.useState<TestCaseItem[]>(() =>
+    problem.sampleTests.map((s, i) => ({
+      id: s.id || `sample_${i}`,
+      input: s.input,
+      expectedOutput: s.expectedOutput,
+      isCustom: false,
+    }))
+  )
+  const [activeTestCaseIndex, setActiveTestCaseIndex] = React.useState(0)
+
+  // Mobile viewport layout switcher
+  const [mobileView, setMobileView] = React.useState<"problem" | "editor" | "console">("problem")
+
+  // AI Code Coach State
+  const [showAiCoach, setShowAiCoach] = React.useState(false)
+  const [aiCoachContext, setAiCoachContext] = React.useState<any>(null)
+
+  const handleOpenAiCoach = (ctx?: any) => {
+    setAiCoachContext(ctx || null)
+    setShowAiCoach(true)
+  }
 
   // Solution tab & unlock states
   const [activeLeftTab, setActiveLeftTab] = React.useState<"description" | "solution">("description")
@@ -313,6 +339,7 @@ export function ArenaWorkspace({
     setSubmitResult(null)
     setBottomTab("results")
     setShowConsole(true)
+    setMobileView("console")
 
     try {
       const res = await fetch("/api/student/arena/run", {
@@ -322,7 +349,10 @@ export function ArenaWorkspace({
           problemSlug: problem.slug,
           code,
           language,
-          ...(useCustomInput ? { customInput } : {}),
+          customTestCases: activeTestCases.map((tc) => ({
+            input: tc.input,
+            expectedOutput: tc.expectedOutput,
+          })),
         }),
       })
 
@@ -348,6 +378,7 @@ export function ArenaWorkspace({
     setSubmitResult(null)
     setBottomTab("results")
     setShowConsole(true)
+    setMobileView("console")
 
     try {
       const res = await fetch("/api/student/arena/submit", {
@@ -475,19 +506,21 @@ export function ArenaWorkspace({
           </span>
 
           {!isMcq && (
-            <div className="hidden sm:flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <button
                 onClick={handleRun}
                 disabled={isRunning || isSubmitting}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-muted hover:bg-muted/80 text-foreground text-xs font-semibold transition-all disabled:opacity-50 cursor-pointer"
+                className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-muted hover:bg-muted/80 text-foreground text-xs font-semibold transition-all disabled:opacity-50 cursor-pointer"
+                title="Run Code"
               >
                 <Play className="w-3.5 h-3.5" />
-                <span>{isRunning ? "Running..." : "Run"}</span>
+                <span className="hidden sm:inline">{isRunning ? "Running..." : "Run"}</span>
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={isRunning || isSubmitting}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-brand-teal hover:bg-brand-teal/90 text-white text-xs font-semibold transition-all disabled:opacity-50 shadow-md shadow-brand-teal/20 cursor-pointer"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-xl bg-brand-teal hover:bg-brand-teal/90 text-white text-xs font-semibold transition-all disabled:opacity-50 shadow-md shadow-brand-teal/20 cursor-pointer"
+                title="Submit Solution"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>{isSubmitting ? "Submitting..." : "Submit"}</span>
@@ -496,6 +529,52 @@ export function ArenaWorkspace({
           )}
         </div>
       </div>
+
+      {/* Mobile View Switcher (Only visible on screens < md) */}
+      {!isMcq && (
+        <div className="md:hidden flex items-center justify-around bg-card/90 border-b border-border/80 px-2 py-1.5 shrink-0">
+          <button
+            onClick={() => setMobileView("problem")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+              mobileView === "problem"
+                ? "bg-foreground text-background font-bold shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>Problem</span>
+          </button>
+          <button
+            onClick={() => setMobileView("editor")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+              mobileView === "editor"
+                ? "bg-foreground text-background font-bold shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <CodeIcon className="w-3.5 h-3.5" />
+            <span>Code</span>
+          </button>
+          <button
+            onClick={() => {
+              setMobileView("console")
+              setShowConsole(true)
+            }}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+              mobileView === "console"
+                ? "bg-foreground text-background font-bold shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Terminal className="w-3.5 h-3.5" />
+            <span>Console</span>
+            {(runResult || submitResult) && <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />}
+          </button>
+        </div>
+      )}
 
       {/* ─── Main Content (Split view or MCQ) ─────────────────────── */}
       <div className="flex-1 flex min-h-0 relative overflow-hidden">
@@ -638,7 +717,10 @@ export function ArenaWorkspace({
           <div ref={containerRef} className="flex flex-1 min-h-0 relative">
             {/* Left panel — problem statement & hints OR Solution tab */}
             <div
-              className="flex flex-col border-r border-border/80 bg-card/40 min-h-0 overflow-hidden"
+              className={cn(
+                "flex flex-col border-r border-border/80 bg-card/40 min-h-0 overflow-hidden",
+                mobileView !== "problem" ? "hidden md:flex" : "w-full md:w-auto"
+              )}
               style={{ width: `${leftPanelWidth}%` }}
             >
               {/* Header Tabs: Description vs Solution 🔒 */}
@@ -724,9 +806,9 @@ export function ArenaWorkspace({
                       ))}
                     </div>
 
-                    {/* Statement */}
-                    <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed">
-                      <div dangerouslySetInnerHTML={{ __html: formatStatement(problem.statement) }} />
+                    {/* Statement with KaTeX & Markdown Math support */}
+                    <div className="text-sm leading-relaxed">
+                      <StatementMathRenderer content={problem.statement} />
                     </div>
 
                     {/* Sample tests */}
@@ -858,8 +940,8 @@ export function ArenaWorkspace({
                             <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                               Approach & Logic Explanation
                             </h4>
-                            <div className="p-4 rounded-2xl bg-card border border-border/80 text-xs leading-relaxed prose prose-sm dark:prose-invert max-w-none">
-                              <div dangerouslySetInnerHTML={{ __html: formatStatement(solutionEditorial) }} />
+                            <div className="p-4 rounded-2xl bg-card border border-border/80 text-xs leading-relaxed">
+                              <StatementMathRenderer content={solutionEditorial} />
                             </div>
                           </div>
                         ) : (
@@ -930,7 +1012,12 @@ export function ArenaWorkspace({
             />
 
             {/* Right panel — editor + console drawer */}
-            <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-[#1e1e1e]">
+            <div
+              className={cn(
+                "flex-1 flex flex-col min-w-0 min-h-0 bg-[#1e1e1e]",
+                mobileView === "problem" ? "hidden md:flex" : "w-full md:w-auto"
+              )}
+            >
               {/* Code editor */}
               <div className="flex-1 min-h-0 p-1">
                 <CodeEditor
@@ -951,7 +1038,7 @@ export function ArenaWorkspace({
 
               {/* Bottom collapsible console drawer */}
               {showConsole && (
-                <div className="shrink-0 border-t border-white/10 max-h-[45%] min-h-[190px] flex flex-col bg-[#18181b] text-white">
+                <div className="shrink-0 border-t border-white/10 max-h-[48%] min-h-[200px] flex flex-col bg-[#18181b] text-white">
                   {/* Tabs header */}
                   <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 bg-[#252526]">
                     <div className="flex items-center gap-1">
@@ -971,18 +1058,16 @@ export function ArenaWorkspace({
                       ))}
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      {bottomTab === "testcases" && (
-                        <label className="flex items-center gap-1.5 text-xs text-white/70 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={useCustomInput}
-                            onChange={(e) => setUseCustomInput(e.target.checked)}
-                            className="rounded"
-                          />
-                          Custom Input
-                        </label>
-                      )}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleOpenAiCoach()}
+                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-teal-500/15 hover:bg-teal-500/25 text-teal-300 border border-teal-500/30 transition-all cursor-pointer"
+                        title="Consult Socratic AI Code Coach"
+                      >
+                        <Bot className="w-3.5 h-3.5 text-teal-400" />
+                        <span>Code Coach</span>
+                      </button>
+
                       <button
                         onClick={() => setShowConsole(false)}
                         className="p-1 rounded text-white/60 hover:text-white cursor-pointer"
@@ -995,45 +1080,15 @@ export function ArenaWorkspace({
 
                   {/* Tab content */}
                   <div className="flex-1 overflow-y-auto p-3">
-                    {bottomTab === "testcases" &&
-                      (useCustomInput ? (
-                        <div className="space-y-2">
-                          <label className="text-xs font-semibold text-white/70 flex items-center gap-1">
-                            <Terminal className="w-3.5 h-3.5" /> Custom Input Stdin
-                          </label>
-                          <textarea
-                            value={customInput}
-                            onChange={(e) => setCustomInput(e.target.value)}
-                            className="w-full h-24 p-3 rounded-xl bg-[#1e1e1e] border border-white/10 text-xs font-mono text-white resize-none focus:outline-none focus:ring-1 focus:ring-teal-500"
-                            placeholder="Type input here..."
-                          />
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          {problem.sampleTests.map((tc, i) => (
-                            <div
-                              key={tc.id}
-                              className="rounded-lg border border-white/10 bg-white/5 p-2.5 text-[11px]"
-                            >
-                              <p className="font-semibold text-white/60 mb-1">Case {i + 1}</p>
-                              <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                  <p className="text-white/40 text-[10px]">Input</p>
-                                  <pre className="p-1.5 rounded bg-[#1e1e1e] font-mono overflow-x-auto text-white/90">
-                                    {tc.input}
-                                  </pre>
-                                </div>
-                                <div>
-                                  <p className="text-white/40 text-[10px]">Expected</p>
-                                  <pre className="p-1.5 rounded bg-[#1e1e1e] font-mono overflow-x-auto text-white/90">
-                                    {tc.expectedOutput}
-                                  </pre>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ))}
+                    {bottomTab === "testcases" && (
+                      <InteractiveTestcases
+                        initialSamples={problem.sampleTests}
+                        testCases={activeTestCases}
+                        onTestCasesChange={setActiveTestCases}
+                        activeCaseIndex={activeTestCaseIndex}
+                        onSelectCaseIndex={setActiveTestCaseIndex}
+                      />
+                    )}
 
                     {bottomTab === "results" && (
                       <TestResultsPanel
@@ -1041,6 +1096,7 @@ export function ArenaWorkspace({
                         submitResult={submitResult}
                         isLoading={isRunning || isSubmitting}
                         error={error}
+                        onAskAiCoach={handleOpenAiCoach}
                       />
                     )}
 
@@ -1187,6 +1243,25 @@ export function ArenaWorkspace({
         runtimeMs={submitResult?.maxTimeMs ?? null}
         memoryKb={submitResult?.maxMemoryKb ?? null}
         nextProblem={nextProblem}
+      />
+
+      {/* ─── Socratic AI Code Coach Modal ──────────────────────────── */}
+      <AiCoachPanel
+        problemSlug={problem.slug}
+        code={code}
+        language={language}
+        verdict={aiCoachContext?.verdict || submitResult?.verdict || runResult?.overallVerdict}
+        compileOutput={
+          aiCoachContext?.compileOutput ||
+          submitResult?.compileOutput ||
+          runResult?.results?.[0]?.compileOutput
+        }
+        errorOutput={aiCoachContext?.errorOutput || submitResult?.errorOutput}
+        testInput={aiCoachContext?.testInput}
+        expectedOutput={aiCoachContext?.expectedOutput}
+        actualOutput={aiCoachContext?.actualOutput}
+        isOpen={showAiCoach}
+        onClose={() => setShowAiCoach(false)}
       />
     </div>
   )

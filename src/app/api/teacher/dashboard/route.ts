@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { db } from "@/server/db"
 import { getTeacherSession } from "@/server/services/teacher-auth"
+import { getTeacherCourseScope, getTeacherLiveClassScope } from "@/server/services/teacher-scope"
 
 export async function GET() {
   try {
@@ -9,22 +10,23 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const teacherName = session.user.name
+    const courseScope = getTeacherCourseScope(session.user)
+    const liveClassScope = getTeacherLiveClassScope(session.user)
 
-    // 1. Total courses by this teacher
+    // 1. Total courses by this teacher / staff
     const totalCourses = await db.course.count({
-      where: { instructorName: teacherName },
+      where: courseScope,
     })
 
-    // 2. Total students enrolled in this teacher's courses
+    // 2. Total students enrolled
     const totalStudents = await db.enrollment.count({
-      where: { course: { instructorName: teacherName } },
+      where: { course: courseScope },
     })
 
     // 3. Upcoming live classes
     const upcomingClasses = await db.liveClass.count({
       where: {
-        instructorName: teacherName,
+        ...liveClassScope,
         status: { in: ["SCHEDULED", "LIVE"] },
       },
     })
@@ -33,13 +35,13 @@ export async function GET() {
     const pendingGrading = await db.assignmentSubmission.count({
       where: {
         status: "SUBMITTED",
-        assignment: { course: { instructorName: teacherName } },
+        assignment: { course: courseScope },
       },
     })
 
     // 5. Schedule
     const schedule = await db.liveClass.findMany({
-      where: { instructorName: teacherName },
+      where: liveClassScope,
       include: { course: true },
       orderBy: { startsAt: "asc" },
       take: 10,
@@ -49,7 +51,7 @@ export async function GET() {
     const urgentSubmissionsRaw = await db.assignmentSubmission.findMany({
       where: {
         status: "SUBMITTED",
-        assignment: { course: { instructorName: teacherName } },
+        assignment: { course: courseScope },
       },
       include: {
         user: true,

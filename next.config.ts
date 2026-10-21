@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 
+// Next.js configuration - auto-reload trigger
 const nextConfig: NextConfig = {
   output: "standalone",
   images: {

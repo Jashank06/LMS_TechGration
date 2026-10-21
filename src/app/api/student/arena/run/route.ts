@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    const { problemSlug, code, language, customInput } = body
+    const { problemSlug, code, language, customInput, customTestCases } = body
 
     if (!problemSlug || !code || !language) {
       return NextResponse.json({ error: "Missing required fields: problemSlug, code, language" }, { status: 400 })
@@ -37,9 +37,16 @@ export async function POST(req: Request) {
     }
 
     let testCases: TestCaseInput[]
+    let isMultiCustom = false
 
-    if (customInput !== undefined && customInput !== null) {
-      // Custom input mode — no expected output comparison
+    if (Array.isArray(customTestCases) && customTestCases.length > 0) {
+      isMultiCustom = true
+      testCases = customTestCases.map((tc: any) => ({
+        input: String(tc.input ?? ""),
+        expectedOutput: String(tc.expectedOutput ?? ""),
+      }))
+    } else if (customInput !== undefined && customInput !== null) {
+      // Legacy single custom input mode
       testCases = [{ input: customInput, expectedOutput: "" }]
     } else {
       // Run against sample test cases
@@ -76,8 +83,8 @@ export async function POST(req: Request) {
       },
     })
 
-    // For custom input, return stdout/stderr directly
-    if (customInput !== undefined && customInput !== null) {
+    // Single custom input mode response
+    if (!isMultiCustom && customInput !== undefined && customInput !== null) {
       const r = result.results[0]
       return NextResponse.json({
         success: true,
@@ -92,10 +99,11 @@ export async function POST(req: Request) {
       })
     }
 
-    // Return sample test results (safe to show expected output for samples)
+    // Return sample/multi-custom test results (safe to show expected output for samples/custom)
     return NextResponse.json({
       success: true,
       isCustomInput: false,
+      isMultiCustom,
       overallVerdict: result.overallVerdict,
       passedCount: result.passedCount,
       totalCount: result.totalCount,
@@ -108,8 +116,8 @@ export async function POST(req: Request) {
         stdout: r.stdout,
         stderr: r.stderr,
         compileOutput: r.compileOutput,
-        expectedOutput: problem.testCases[i]?.expectedOutput || "",
-        input: problem.testCases[i]?.input || "",
+        expectedOutput: testCases[i]?.expectedOutput || "",
+        input: testCases[i]?.input || "",
         time: r.time,
         memory: r.memory,
       })),

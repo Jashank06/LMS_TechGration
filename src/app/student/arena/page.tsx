@@ -1,8 +1,9 @@
 import * as React from "react"
 import { Metadata } from "next"
+import Link from "next/link"
 import { requireStudent } from "@/server/auth"
 import { db } from "@/server/db"
-import { Code, Zap, ArrowRight, BookOpen } from "lucide-react"
+import { Code, Zap, ArrowRight, BookOpen, Swords, Flame } from "lucide-react"
 import { ArenaCurriculumView } from "@/components/arena/arena-curriculum-view"
 import { ProblemStatsBar } from "@/components/arena/problem-stats-bar"
 import { DailyChallengeCard } from "@/components/arena/daily-challenge-card"
@@ -155,6 +156,40 @@ export default async function ArenaPage() {
           </p>
         </div>
       </div>
+
+      {/* ⚔️ 1v1 Battle Arena Esports Banner */}
+      <Link
+        href="/student/arena/duels"
+        className="group relative block overflow-hidden rounded-3xl border border-teal-500/40 bg-gradient-to-r from-teal-950/40 via-neutral-900/80 to-purple-950/30 backdrop-blur-xl p-5 sm:p-6 shadow-xl shadow-teal-500/5 hover:border-teal-500/70 hover:shadow-teal-500/15 transition-all"
+      >
+        <div className="pointer-events-none absolute -top-12 -right-12 w-48 h-48 bg-teal-500/15 rounded-full blur-3xl group-hover:bg-teal-500/25 transition-all" />
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-teal-500/15 border border-teal-500/30 text-teal-400 flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+              <Swords className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-teal-400 bg-teal-500/10 border border-teal-500/20 px-2 py-0.5 rounded-full">
+                  New Feature
+                </span>
+                <span className="text-xs text-neutral-400">Esports Mode</span>
+              </div>
+              <h2 className="text-lg sm:text-xl font-black text-foreground group-hover:text-teal-400 transition-colors">
+                1v1 Code Duel &amp; Battle Arena
+              </h2>
+              <p className="text-xs text-muted-foreground max-w-xl">
+                Race live against batchmates, challenge friends via WhatsApp, race authentic past ghosts, or join the daily 9 PM 2x XP rush!
+              </p>
+            </div>
+          </div>
+
+          <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-500 group-hover:bg-teal-400 text-black font-extrabold text-xs transition-colors self-start sm:self-auto shadow-md shadow-teal-500/20">
+            <span>Enter Battle Arena</span>
+            <ArrowRight className="w-4 h-4" />
+          </div>
+        </div>
+      </Link>
 
       {/* Stats Bar */}
       <ProblemStatsBar stats={stats} bookmarkedProblems={bookmarkedProblems} />

@@ -145,8 +145,41 @@ export async function POST(req: Request) {
     })
 
     let xpResult = { awarded: false, totalXp: 0 }
+    let runtimePercentile: number | null = null
+    let memoryPercentile: number | null = null
 
     if (isAccepted) {
+      // Calculate authentic runtime and memory percentiles against real database submissions
+      if (result.maxTimeMs !== null) {
+        try {
+          const [slowerSubmissions, totalSubmissions] = await Promise.all([
+            db.codingSubmission.count({
+              where: {
+                problemId: problem.id,
+                verdict: "ACCEPTED",
+                executionTimeMs: { gt: result.maxTimeMs },
+              },
+            }),
+            db.codingSubmission.count({
+              where: {
+                problemId: problem.id,
+                verdict: "ACCEPTED",
+              },
+            }),
+          ])
+
+          if (totalSubmissions >= 2) {
+            // Authentic percentile calculation: % of submissions that ran slower than current user
+            runtimePercentile = Math.min(
+              99.9,
+              Math.max(1.0, Math.round(((slowerSubmissions + 1) / (totalSubmissions + 1)) * 1000) / 10)
+            )
+          }
+        } catch (pctErr) {
+          console.warn("Could not calculate runtime percentile:", pctErr)
+        }
+      }
+
       // Calculate XP: base + daily challenge bonus
       let xpAmount = XP_REWARDS[problem.difficulty] || 10
       if (problem.isDailyChallenge) {
@@ -169,6 +202,8 @@ export async function POST(req: Request) {
       totalTests: result.totalCount,
       maxTimeMs: result.maxTimeMs,
       maxMemoryKb: result.maxMemoryKb,
+      runtimePercentile,
+      memoryPercentile,
       // Only show compile/runtime errors — not test data
       compileOutput: result.results[0]?.compileOutput || null,
       errorOutput: result.results.find((r) => r.stderr)?.stderr?.substring(0, 500) || null,

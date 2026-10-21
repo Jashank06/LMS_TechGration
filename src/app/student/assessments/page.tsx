@@ -20,7 +20,20 @@ export const metadata: Metadata = {
 export default async function AssessmentsPage() {
   const user = await requireStudent()
 
+  // Scope to actively enrolled courses only
+  const enrollments = await db.enrollment.findMany({
+    where: {
+      userId: user.id,
+      status: { in: ["ACTIVE", "COMPLETED"] },
+    },
+    select: { courseId: true },
+  })
+  const enrolledCourseIds = enrollments.map((e) => e.courseId)
+
   const assessments = await db.assessment.findMany({
+    where: {
+      courseId: { in: enrolledCourseIds },
+    },
     include: {
       course: true,
       questions: true,
@@ -101,30 +114,33 @@ export default async function AssessmentsPage() {
                   </div>
                 </div>
 
-                <div className="pt-6 flex flex-col xs:flex-row xs:items-center justify-between gap-3">
+                <div className="pt-5 border-t border-border/60 mt-4 flex items-center justify-between gap-3">
                   {bestAttempt ? (
-                    <span
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 shadow-xs w-full xs:w-auto ${
-                        isPassed
-                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                          : "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
-                      }`}
-                    >
-                      {isPassed && <CheckCircle2 className="w-3.5 h-3.5" />}
-                      <span>Best: {Math.round(bestAttempt.scorePct)}%</span>
-                    </span>
+                    <div className="flex items-center gap-1.5 text-xs font-bold">
+                      {isPassed ? (
+                        <span className="text-emerald-500 flex items-center gap-1">
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>Passed ({bestAttempt.scorePct}%)</span>
+                        </span>
+                      ) : (
+                        <span className="text-amber-500 flex items-center gap-1">
+                          <Sparkles className="w-4 h-4" />
+                          <span>Best: {bestAttempt.scorePct}%</span>
+                        </span>
+                      )}
+                    </div>
                   ) : (
-                    <span className="text-xs text-muted-foreground font-medium">Not attempted yet</span>
+                    <span className="text-xs text-muted-foreground font-medium">Not Attempted</span>
                   )}
 
                   <Button
                     asChild
                     size="sm"
-                    className="font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal text-xs h-10 px-5 rounded-xl shadow-md shadow-brand-teal/20 transition-all hover:scale-[1.02] active:scale-[0.98] w-full xs:w-auto"
+                    className="font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal text-xs h-9 px-4 rounded-xl shadow-md shadow-brand-teal/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                   >
-                    <Link href={`/student/assessments/${quiz.id}`} className="justify-center">
+                    <Link href={`/student/assessments/${quiz.id}`}>
                       <span>{bestAttempt ? "Retake Quiz" : "Start Quiz"}</span>
-                      <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                      <ArrowRight className="w-3.5 h-3.5 ml-1" />
                     </Link>
                   </Button>
                 </div>

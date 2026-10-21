@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { db } from "@/server/db"
 import { getTeacherSession } from "@/server/services/teacher-auth"
+import { getTeacherCourseScope } from "@/server/services/teacher-scope"
 
 export async function GET() {
   try {
@@ -9,20 +10,20 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const teacherName = session.user.name
+    const courseScope = getTeacherCourseScope(session.user)
 
     const [totalEnrollments, totalGradedSubmissions, courses] = await Promise.all([
       db.enrollment.count({
-        where: { course: { instructorName: teacherName } },
+        where: { course: courseScope },
       }),
       db.assignmentSubmission.count({
         where: {
           status: "GRADED",
-          assignment: { course: { instructorName: teacherName } },
+          assignment: { course: courseScope },
         },
       }),
       db.course.findMany({
-        where: { instructorName: teacherName },
+        where: courseScope,
         include: {
           enrollments: true,
         },

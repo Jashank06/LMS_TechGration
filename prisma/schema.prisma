@@ -159,6 +159,12 @@ model User {
   codingProgress     CodingProgress[]
   codingXpLogs       CodingXpLog[]
   codingStreak       CodingStreak?
+
+  // 1v1 Battle Arena relations
+  createdDuels       CodingDuel[] @relation("DuelCreator")
+  joinedDuels        CodingDuel[] @relation("DuelOpponent")
+  wonDuels           CodingDuel[] @relation("DuelWinner")
+  ghostDuels         CodingDuel[] @relation("DuelGhostUser")
 }
 
 model UserProfile {
@@ -796,6 +802,7 @@ model CodingProblem {
   testCases   CodingTestCase[]
   submissions CodingSubmission[]
   progress    CodingProgress[]
+  duels       CodingDuel[]
 }
 
 model CodingTestCase {
@@ -876,4 +883,79 @@ model CodingStreak {
   lastActiveDate String?
   totalXp        Int     @default(0)
   totalSolved    Int     @default(0)
+}
+
+enum DuelMode {
+  OPEN_CHALLENGE
+  GHOST_RACE
+  DIRECT_INVITE
+  HAPPY_HOUR
+}
+
+enum DuelStatus {
+  WAITING
+  COUNTDOWN
+  IN_PROGRESS
+  COMPLETED
+  FORFEITED
+  EXPIRED
+  CANCELLED
+}
+
+model CodingDuel {
+  id                 String           @id @default(auto()) @map("_id") @db.ObjectId
+  code               String           @unique
+  mode               DuelMode
+  status             DuelStatus       @default(WAITING)
+
+  problemId          String           @db.ObjectId
+  problem            CodingProblem    @relation(fields: [problemId], references: [id])
+
+  creatorId          String           @db.ObjectId
+  creator            User             @relation("DuelCreator", fields: [creatorId], references: [id])
+
+  opponentId         String?          @db.ObjectId
+  opponent           User?            @relation("DuelOpponent", fields: [opponentId], references: [id])
+
+  winnerId           String?          @db.ObjectId
+  winner             User?            @relation("DuelWinner", fields: [winnerId], references: [id])
+
+  difficulty         CodingDifficulty
+  topic              String?
+  stakeXp            Int              @default(0)
+  isHappyHour        Boolean          @default(false)
+
+  // Ghost Mode data (Authentic real-student past run)
+  isGhost            Boolean          @default(false)
+  ghostUserId        String?          @db.ObjectId
+  ghostUser          User?            @relation("DuelGhostUser", fields: [ghostUserId], references: [id])
+  ghostSubmissionId  String?          @db.ObjectId
+  ghostTotalTimeMs   Int?
+  ghostTimeline      Json?
+
+  // Live Duel Progress & Anti-Cheat
+  creatorPassedTests  Int             @default(0)
+  creatorTotalTests   Int             @default(0)
+  creatorTimeMs       Int?
+  creatorFinished     Boolean         @default(false)
+  creatorCode         String?
+  creatorTabSwitches  Int             @default(0)
+
+  opponentPassedTests Int             @default(0)
+  opponentTotalTests  Int             @default(0)
+  opponentTimeMs      Int?
+  opponentFinished    Boolean         @default(false)
+  opponentCode        String?
+  opponentTabSwitches Int             @default(0)
+
+  expiresAt          DateTime
+  startedAt          DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime?        @updatedAt
+
+  @@index([mode, status])
+  @@index([creatorId])
+  @@index([opponentId])
+  @@index([expiresAt])
 }

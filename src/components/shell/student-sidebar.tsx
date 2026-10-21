@@ -24,6 +24,7 @@ import {
   Gift,
   Briefcase,
   Code,
+  Swords,
 } from "lucide-react"
 
 export interface StudentNavCountsProp {
@@ -90,6 +91,13 @@ const academicNavItems: AppleNavItem[] = [
     href: "/student/arena",
     icon: Code,
     iconGradient: "from-green-500 to-emerald-600",
+  },
+  {
+    title: "1v1 Battle Arena",
+    href: "/student/arena/duels",
+    icon: Swords,
+    iconGradient: "from-teal-400 via-cyan-500 to-blue-500",
+    badgeText: "1v1",
     isNew: true,
   },
   {

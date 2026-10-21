@@ -4,7 +4,7 @@ import { liveClassScheduleSchema } from "@/server/schemas/teacher-schemas"
 import { detectScheduleConflict } from "@/server/services/conflict-detector"
 import { db } from "@/server/db"
 import { getTeacherSession } from "@/server/services/teacher-auth"
-import { isStaff, ownedByTeacher } from "@/server/services/teacher-scope"
+import { isStaff, getTeacherCourseScope, getTeacherLiveClassScope } from "@/server/services/teacher-scope"
 import { validateMeetingUrl } from "@/server/services/meeting-links"
 import { DEFAULT_REMINDER_OFFSETS, getOffsets, runDispatch } from "@/server/services/live-class-mailer"
 import { buildReminderTimeline, markPastOffsetsSkipped } from "@/server/services/reminder-engine"
@@ -18,11 +18,12 @@ export async function GET() {
     }
 
     const teacher = session.user
-    const scope = ownedByTeacher(teacher)
+    const classScope = getTeacherLiveClassScope(teacher)
+    const courseScope = getTeacherCourseScope(teacher)
 
     const [classesRaw, coursesRaw] = await Promise.all([
       db.liveClass.findMany({
-        where: scope,
+        where: classScope,
         include: {
           course: true,
           dispatches: true,
@@ -31,7 +32,7 @@ export async function GET() {
         orderBy: { startsAt: "asc" },
       }),
       db.course.findMany({
-        where: scope,
+        where: courseScope,
         select: { id: true, title: true, slug: true },
       }),
     ])
@@ -124,7 +125,7 @@ export async function POST(request: Request) {
     }
 
     const existingSessions = await db.liveClass.findMany({
-      where: ownedByTeacher(teacher),
+      where: getTeacherLiveClassScope(teacher),
       include: { course: true },
     })
 

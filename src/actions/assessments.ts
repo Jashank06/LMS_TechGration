@@ -22,7 +22,25 @@ export async function submitQuizAttemptAction(
   })
 
   if (!assessment) {
-    return { success: false, error: "Assessment not found" }
+    return { success: false, error: "Assessment not found." }
+  }
+
+  // Verify active student enrollment in the course
+  const enrollment = await db.enrollment.findUnique({
+    where: {
+      userId_courseId: {
+        userId: user.id,
+        courseId: assessment.courseId,
+      },
+    },
+    select: { status: true },
+  })
+
+  if (!enrollment || (enrollment.status !== "ACTIVE" && enrollment.status !== "COMPLETED")) {
+    return {
+      success: false,
+      error: "Active enrollment in this course is required to take this assessment.",
+    }
   }
 
   const totalQuestions = assessment.questions.length
@@ -91,6 +109,8 @@ export async function submitQuizAttemptAction(
   revalidatePath(`/student/assessments/${assessmentId}`)
   revalidatePath("/student/assessments")
   revalidatePath("/student/dashboard")
+  revalidatePath("/student/leaderboard")
+  revalidatePath("/student/rewards")
   if (assessment.courseId) {
     revalidatePath(`/student/courses/${assessment.courseId}`)
   }

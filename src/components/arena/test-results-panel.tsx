@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Gauge,
   Flame,
+  Bot,
 } from "lucide-react"
 import { motion, AnimatePresence } from "motion/react"
 import { cn } from "@/lib/utils"
@@ -62,7 +63,9 @@ export interface SubmitResult {
   compileOutput: string | null
   errorOutput: string | null
   firstFailingTest: number | null
-  xp: { awarded: boolean; amount: number; totalXp: number }
+  runtimePercentile?: number | null
+  memoryPercentile?: number | null
+  xp: { awarded: boolean; amount: number; totalXp: number; forfeited?: boolean }
 }
 
 interface TestResultsPanelProps {
@@ -70,6 +73,7 @@ interface TestResultsPanelProps {
   submitResult?: SubmitResult | null
   isLoading?: boolean
   error?: string | null
+  onAskAiCoach?: (ctx?: any) => void
 }
 
 const verdictColors: Record<string, string> = {
@@ -94,27 +98,13 @@ const verdictLabels: Record<string, string> = {
   PENDING: "Pending",
 }
 
-/** Compute mock speed percentile based on max time ms */
-function calculateSpeedPercentile(timeMs: number | null): number {
-  if (!timeMs) return 88
-  if (timeMs <= 20) return 98.4
-  if (timeMs <= 50) return 92.6
-  if (timeMs <= 100) return 85.1
-  if (timeMs <= 250) return 72.3
-  return 54.0
-}
-
-/** Compute mock memory percentile based on memory KB */
-function calculateMemoryPercentile(memKb: number | null): number {
-  if (!memKb) return 84
-  const mb = memKb / 1024
-  if (mb <= 15) return 95.2
-  if (mb <= 30) return 89.4
-  if (mb <= 60) return 76.5
-  return 60.0
-}
-
-export function TestResultsPanel({ runResult, submitResult, isLoading, error }: TestResultsPanelProps) {
+export function TestResultsPanel({
+  runResult,
+  submitResult,
+  isLoading,
+  error,
+  onAskAiCoach,
+}: TestResultsPanelProps) {
   const [activeCaseIndex, setActiveCaseIndex] = React.useState<number>(0)
   const [copiedText, setCopiedText] = React.useState<string | null>(null)
 
@@ -152,8 +142,6 @@ export function TestResultsPanel({ runResult, submitResult, isLoading, error }: 
   if (submitResult) {
     const v = submitResult.verdict
     const isAc = v === "ACCEPTED"
-    const speedPct = calculateSpeedPercentile(submitResult.maxTimeMs)
-    const memPct = calculateMemoryPercentile(submitResult.maxMemoryKb)
 
     return (
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
@@ -195,7 +183,11 @@ export function TestResultsPanel({ runResult, submitResult, isLoading, error }: 
                     <Clock className="w-3 h-3 text-teal-400" /> Runtime
                   </div>
                   <p className="text-white font-mono font-bold">{submitResult.maxTimeMs.toFixed(0)} ms</p>
-                  <p className="text-[10px] text-teal-400 font-semibold">Beats {speedPct}%</p>
+                  {submitResult.runtimePercentile !== undefined && submitResult.runtimePercentile !== null ? (
+                    <p className="text-[10px] text-teal-400 font-semibold">Beats {submitResult.runtimePercentile}%</p>
+                  ) : (
+                    <p className="text-[10px] text-white/40 font-medium">Verified</p>
+                  )}
                 </div>
 
                 <div className="w-px h-8 bg-white/10" />
@@ -208,7 +200,11 @@ export function TestResultsPanel({ runResult, submitResult, isLoading, error }: 
                     <p className="text-white font-mono font-bold">
                       {(submitResult.maxMemoryKb / 1024).toFixed(1)} MB
                     </p>
-                    <p className="text-[10px] text-cyan-400 font-semibold">Beats {memPct}%</p>
+                    {submitResult.memoryPercentile !== undefined && submitResult.memoryPercentile !== null ? (
+                      <p className="text-[10px] text-cyan-400 font-semibold">Beats {submitResult.memoryPercentile}%</p>
+                    ) : (
+                      <p className="text-[10px] text-white/40 font-medium">Optimal</p>
+                    )}
                   </div>
                 )}
               </div>
@@ -227,6 +223,27 @@ export function TestResultsPanel({ runResult, submitResult, isLoading, error }: 
             <div className="mt-3 text-xs text-rose-300/90 font-medium flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-rose-500" />
               Failed on hidden test case #{submitResult.firstFailingTest}. Check edge cases, large inputs, or zero conditions!
+            </div>
+          )}
+
+          {/* Ask AI Code Coach button on non-AC verdicts */}
+          {!isAc && onAskAiCoach && (
+            <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between flex-wrap gap-2">
+              <p className="text-[11px] text-white/60">Stuck or failing tricky edge cases?</p>
+              <button
+                onClick={() =>
+                  onAskAiCoach({
+                    verdict: submitResult.verdict,
+                    compileOutput: submitResult.compileOutput,
+                    errorOutput: submitResult.errorOutput,
+                    failingTest: submitResult.firstFailingTest,
+                  })
+                }
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 border border-teal-500/40 text-xs font-bold transition-all cursor-pointer shadow-sm hover:scale-[1.02]"
+              >
+                <Bot className="w-3.5 h-3.5 text-teal-400" />
+                <span>Ask AI Coach for Hint</span>
+              </button>
             </div>
           )}
         </div>
@@ -334,7 +351,6 @@ export function TestResultsPanel({ runResult, submitResult, isLoading, error }: 
     const r = runResult as RunResult
     const isAllPassed = r.overallVerdict === "ACCEPTED"
     const currentCase = r.results[activeCaseIndex] || r.results[0]
-    const speedPct = calculateSpeedPercentile(r.maxTimeMs)
 
     return (
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
@@ -351,14 +367,32 @@ export function TestResultsPanel({ runResult, submitResult, isLoading, error }: 
             </span>
           </div>
 
-          {r.maxTimeMs !== null && (
-            <div className="flex items-center gap-3 text-xs text-white/60 font-mono">
-              <span className="flex items-center gap-1">
+          <div className="flex items-center gap-3">
+            {r.maxTimeMs !== null && (
+              <span className="flex items-center gap-1 text-xs text-white/60 font-mono">
                 <Clock className="w-3.5 h-3.5 text-teal-400" /> {r.maxTimeMs.toFixed(0)} ms
               </span>
-              <span className="text-teal-400 font-semibold">• Beats {speedPct}%</span>
-            </div>
-          )}
+            )}
+
+            {!isAllPassed && onAskAiCoach && (
+              <button
+                onClick={() =>
+                  onAskAiCoach({
+                    verdict: r.overallVerdict,
+                    testInput: currentCase?.input,
+                    expectedOutput: currentCase?.expectedOutput,
+                    actualOutput: currentCase?.stdout,
+                    errorOutput: currentCase?.stderr,
+                    compileOutput: currentCase?.compileOutput,
+                  })
+                }
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/30 text-teal-300 text-[11px] font-semibold transition-all cursor-pointer"
+              >
+                <Bot className="w-3 h-3 text-teal-400" />
+                <span>Ask AI Coach</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Interactive Tabs Header */}

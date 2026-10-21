@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { db } from "@/server/db"
 import { getTeacherSession } from "@/server/services/teacher-auth"
+import { getTeacherLiveClassScope } from "@/server/services/teacher-scope"
 
 export async function GET() {
   try {
@@ -10,7 +11,7 @@ export async function GET() {
     }
 
     const liveClasses = await db.liveClass.findMany({
-      where: { instructorName: session.user.name },
+      where: getTeacherLiveClassScope(session.user),
       include: {
         course: {
           include: {

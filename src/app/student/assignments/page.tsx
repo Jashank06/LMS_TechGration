@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button"
 import {
   FileCheck2,
   Calendar,
-  ArrowRight,
-  CheckCircle2,
   Clock,
+  ArrowRight,
   Sparkles,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react"
 
 export const metadata: Metadata = {
@@ -21,7 +22,20 @@ export const metadata: Metadata = {
 export default async function AssignmentsPage() {
   const user = await requireStudent()
 
+  // Scope to actively enrolled courses only
+  const enrollments = await db.enrollment.findMany({
+    where: {
+      userId: user.id,
+      status: { in: ["ACTIVE", "COMPLETED"] },
+    },
+    select: { courseId: true },
+  })
+  const enrolledCourseIds = enrollments.map((e) => e.courseId)
+
   const assignments = await db.assignment.findMany({
+    where: {
+      courseId: { in: enrolledCourseIds },
+    },
     include: {
       course: true,
       submissions: {
@@ -52,25 +66,29 @@ export default async function AssignmentsPage() {
         </div>
       </div>
 
-      {/* Assignment List */}
-      <div className="space-y-4">
-        {assignments.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-border/80 p-12 text-center bg-card/60 backdrop-blur-md space-y-3 max-w-md mx-auto">
-            <div className="w-14 h-14 rounded-2xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-500 mx-auto shadow-md">
-              <FileCheck2 className="w-7 h-7" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-base font-bold text-foreground">No assignments active</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Your instructors have not published any pending assignments yet.
-              </p>
-            </div>
+      {assignments.length === 0 ? (
+        <div className="rounded-3xl border border-dashed border-border/80 p-12 text-center bg-card/60 backdrop-blur-md space-y-3 max-w-md mx-auto">
+          <div className="w-14 h-14 rounded-2xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-500 mx-auto shadow-md">
+            <FileCheck2 className="w-7 h-7" />
           </div>
-        ) : (
-          assignments.map((asgn) => {
+          <div className="space-y-1">
+            <h3 className="text-base font-bold text-foreground">No active assignments</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              When faculty post deliverables for your enrolled courses, they will appear here with instructions and evaluation rubrics.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {assignments.map((asgn) => {
             const submission = asgn.submissions[0]
             const isGraded = submission?.status === "GRADED"
-            const isSubmitted = submission?.status === "SUBMITTED"
+            const isLate = submission?.status === "LATE"
+            const isSubmitted =
+              submission?.status === "SUBMITTED" ||
+              submission?.status === "IN_REVIEW" ||
+              isLate
+
             const dueDate = new Date(asgn.dueAt)
             const formattedDue = dueDate.toLocaleDateString("en-US", {
               month: "short",
@@ -81,20 +99,19 @@ export default async function AssignmentsPage() {
             return (
               <div
                 key={asgn.id}
-                className="group p-6 rounded-3xl border border-border/80 bg-card/80 backdrop-blur-xl shadow-xs hover:border-brand-teal/50 hover:shadow-[0_8px_25px_-5px_rgba(0,214,214,0.15)] transition-all duration-300 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-6"
+                className="group p-5 sm:p-6 rounded-3xl border border-border/80 bg-card/80 backdrop-blur-xl shadow-xs hover:border-brand-teal/50 hover:shadow-[0_12px_35px_-8px_rgba(0,214,214,0.18)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
               >
-                <div className="space-y-2.5 min-w-0 flex-1">
+                <div className="space-y-2 max-w-2xl">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-brand-teal/15 text-brand-teal border border-brand-teal/30">
                       {asgn.course.title}
                     </span>
-                    <span className="text-muted-foreground text-xs">•</span>
-                    <span className="text-xs text-muted-foreground font-semibold">
+                    <span className="text-xs text-muted-foreground font-semibold bg-secondary/60 px-2 py-0.5 rounded-md">
                       Max {asgn.maxMarks} Points
                     </span>
                   </div>
 
-                  <h3 className="text-base sm:text-lg font-bold text-foreground group-hover:text-brand-teal transition-colors">
+                  <h3 className="text-lg font-bold text-foreground group-hover:text-brand-teal transition-colors">
                     {asgn.title}
                   </h3>
 
@@ -120,6 +137,11 @@ export default async function AssignmentsPage() {
                           <span>Score: {submission.marksAwarded}/{asgn.maxMarks} pts</span>
                         </span>
                       </div>
+                    ) : isLate ? (
+                      <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center sm:justify-start gap-1.5 shadow-xs">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                        <span>Submitted Late</span>
+                      </span>
                     ) : isSubmitted ? (
                       <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30 flex items-center justify-center sm:justify-start gap-1.5 shadow-xs">
                         <Clock className="w-3.5 h-3.5 shrink-0" />
@@ -146,9 +168,9 @@ export default async function AssignmentsPage() {
                 </div>
               </div>
             )
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
     </div>
   )
 }

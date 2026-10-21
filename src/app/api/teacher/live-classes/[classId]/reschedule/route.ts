@@ -3,7 +3,7 @@ import { liveClassRescheduleSchema } from "@/server/schemas/teacher-schemas"
 import { detectScheduleConflict } from "@/server/services/conflict-detector"
 import { db } from "@/server/db"
 import { getTeacherSession } from "@/server/services/teacher-auth"
-import { isStaff, ownedByTeacher } from "@/server/services/teacher-scope"
+import { isStaff, getTeacherLiveClassScope } from "@/server/services/teacher-scope"
 import { runDispatch } from "@/server/services/live-class-mailer"
 import { markPastOffsetsSkipped } from "@/server/services/reminder-engine"
 import { logAuditEvent } from "@/server/audit/audit-logger"
@@ -46,7 +46,7 @@ export async function PUT(
 
     // Check conflict excluding this session
     const allSessions = await db.liveClass.findMany({
-      where: ownedByTeacher(teacher),
+      where: getTeacherLiveClassScope(teacher),
       include: { course: true },
     })
 

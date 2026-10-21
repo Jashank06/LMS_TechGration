@@ -28,14 +28,14 @@ import type { SwagRewardItem } from "@/server/services/rewards"
 
 interface RewardClaimDialogProps {
   item: SwagRewardItem | null
-  simulatedChampion: boolean
+  simulatedChampion?: boolean
   onClose: () => void
   onSuccess: () => void
 }
 
 export function RewardClaimDialog({
   item,
-  simulatedChampion,
+  simulatedChampion = false,
   onClose,
   onSuccess,
 }: RewardClaimDialogProps) {

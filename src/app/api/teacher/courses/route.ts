@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { courseCreateSchema } from "@/server/schemas/teacher-schemas"
 import { db } from "@/server/db"
 import { getTeacherSession } from "@/server/services/teacher-auth"
+import { getTeacherCourseScope } from "@/server/services/teacher-scope"
 
 export async function GET(request: Request) {
   try {
@@ -14,20 +15,27 @@ export async function GET(request: Request) {
     const status = searchParams.get("status")
     const search = searchParams.get("search")?.toLowerCase()
 
-    const where: any = {
-      instructorName: session.user.name,
+    const courseScope = getTeacherCourseScope(session.user)
+    const andConditions: any[] = []
+
+    if (Object.keys(courseScope).length > 0) {
+      andConditions.push(courseScope)
     }
 
     if (status && status !== "ALL") {
-      where.approvalStatus = status
+      andConditions.push({ approvalStatus: status })
     }
 
     if (search) {
-      where.OR = [
-        { title: { contains: search, mode: "insensitive" } },
-        { category: { contains: search, mode: "insensitive" } },
-      ]
+      andConditions.push({
+        OR: [
+          { title: { contains: search, mode: "insensitive" } },
+          { category: { contains: search, mode: "insensitive" } },
+        ],
+      })
     }
+
+    const where: any = andConditions.length > 0 ? { AND: andConditions } : {}
 
     const coursesRaw = await db.course.findMany({
       where,
