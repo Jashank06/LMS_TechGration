@@ -117,12 +117,13 @@ export async function demoLoginAction(role: "student" | "teacher" | "admin" = "s
   }
 }
 
-export async function logoutAction() {
+export async function logoutAction(formData?: FormData) {
+  const redirectTo = (formData && typeof formData.get === "function" ? (formData.get("redirectTo") as string) : null) || "/login"
   try {
     await destroySession()
   } catch (err) {
     console.error("logoutAction error:", err)
   }
   revalidatePath("/", "layout")
-  redirect("/login")
+  redirect(redirectTo)
 }

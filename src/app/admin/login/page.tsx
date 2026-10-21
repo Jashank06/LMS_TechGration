@@ -36,6 +36,17 @@ export default function AdminLoginPage() {
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
   const [activeDemo, setActiveDemo] = React.useState<string | null>(null)
 
+  React.useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.authenticated && (data.user?.role === "ADMIN" || data.user?.role === "SUPER_ADMIN")) {
+          router.replace("/admin/dashboard")
+        }
+      })
+      .catch(() => {})
+  }, [router])
+
   const demoAccounts = [
     {
       role: "Super Admin",

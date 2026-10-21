@@ -15,7 +15,52 @@ import {
   Award,
 } from "lucide-react"
 
-export function LandingHero() {
+export interface LandingHeroProps {
+  user?: {
+    name: string
+    role: string
+  } | null
+}
+
+export function LandingHero({ user }: LandingHeroProps) {
+  const [currentUser, setCurrentUser] = React.useState(user ?? null)
+
+  React.useEffect(() => {
+    if (user !== undefined) {
+      setCurrentUser(user)
+      return
+    }
+
+    fetch("/api/auth/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.authenticated && data.user) {
+          setCurrentUser({
+            name: data.user.name,
+            role: data.user.role,
+          })
+        } else {
+          setCurrentUser(null)
+        }
+      })
+      .catch(() => {})
+  }, [user])
+
+  const isAdmin = currentUser?.role === "ADMIN" || currentUser?.role === "SUPER_ADMIN"
+  const isTeacher = currentUser?.role === "TEACHER"
+  const dashboardHref = isAdmin
+    ? "/admin/dashboard"
+    : isTeacher
+    ? "/teacher/dashboard"
+    : "/student/dashboard"
+
+  const primaryBtnLabel = currentUser
+    ? isAdmin
+      ? "Open Admin Console"
+      : isTeacher
+      ? "Open Teacher Console"
+      : "Go to Student Dashboard"
+    : "Start Learning Now"
   const handleScrollToCourses = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault()
     const element = document.querySelector("#courses")
@@ -74,9 +119,9 @@ export function LandingHero() {
             size="lg"
             className="rounded-full px-8 py-6 text-sm font-bold bg-brand-teal text-brand-charcoal hover:bg-brand-cyan shadow-lg shadow-brand-teal/25 hover:shadow-brand-teal/40 hover:scale-[1.02] active:scale-[0.98] transition-all"
           >
-            <Link href="/student/dashboard" className="gap-2">
+            <Link href={dashboardHref} className="gap-2">
               <GraduationCap className="w-4 h-4" />
-              <span>Start Learning Now</span>
+              <span>{primaryBtnLabel}</span>
               <ArrowRight className="w-4 h-4 ml-1" />
             </Link>
           </Button>

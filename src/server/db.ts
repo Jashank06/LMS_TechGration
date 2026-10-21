@@ -12,12 +12,13 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-// In development, invalidate the cached global instance if new fields were added
+// In development, invalidate the cached global instance if new models/fields were added
 const cachedClient = globalForPrisma.prisma
 const isStale =
   Boolean(cachedClient) &&
-  !(cachedClient as unknown as { _runtimeDataModel?: { models?: { Course?: { fields?: Array<{ name: string }> } } } })
-    ?._runtimeDataModel?.models?.Course?.fields?.some((f) => f.name === "timetableUrl")
+  (!Boolean((cachedClient as unknown as { codingProblem?: unknown })?.codingProblem) ||
+    !(cachedClient as unknown as { _runtimeDataModel?: { models?: { CodingProgress?: { fields?: Array<{ name: string }> } } } })
+      ?._runtimeDataModel?.models?.CodingProgress?.fields?.some((f) => f.name === "lastCode"))
 
 if (isStale && cachedClient) {
   try {

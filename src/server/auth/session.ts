@@ -4,7 +4,7 @@ import { db } from "@/server/db"
 import { Role, UserStatus, type User } from "@prisma/client"
 
 const SESSION_COOKIE_NAME = "tg_session"
-const SESSION_MAX_AGE_DAYS = 7
+const SESSION_MAX_AGE_DAYS = 365
 
 export interface SessionUser {
   id: string
@@ -55,6 +55,7 @@ export async function createSession(userId: string, req?: Request): Promise<{ to
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
+      maxAge: SESSION_MAX_AGE_DAYS * 24 * 60 * 60,
       expires: expiresAt,
     })
   } catch {
@@ -76,6 +77,14 @@ export async function destroySession(): Promise<void> {
     })
   }
 
+  cookieStore.set(SESSION_COOKIE_NAME, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+    expires: new Date(0),
+  })
   cookieStore.delete(SESSION_COOKIE_NAME)
 }
 
@@ -137,6 +146,30 @@ export async function getCurrentUser(req?: Request): Promise<SessionUser | null>
 
     if (session.user.status === UserStatus.SUSPENDED || session.user.status === UserStatus.DEACTIVATED) {
       return null
+    }
+
+    // Sliding session renewal: automatically refresh expiry for active users
+    const daysUntilExpiry = (session.expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+    if (daysUntilExpiry < 330) {
+      const newExpiresAt = new Date(Date.now() + SESSION_MAX_AGE_DAYS * 24 * 60 * 60 * 1000)
+      db.session.update({
+        where: { id: session.id },
+        data: { expiresAt: newExpiresAt },
+      }).catch(() => {})
+
+      try {
+        const cookieStore = await cookies()
+        cookieStore.set(SESSION_COOKIE_NAME, token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          maxAge: SESSION_MAX_AGE_DAYS * 24 * 60 * 60,
+          expires: newExpiresAt,
+        })
+      } catch {
+        // In read-only or non-cookie context
+      }
     }
 
     return {

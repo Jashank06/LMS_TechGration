@@ -30,6 +30,9 @@ class CourseImage extends StatelessWidget {
 
   String get _fallbackAsset {
     final lower = courseTitle.toLowerCase();
+    if (lower.contains('iot') || lower.contains('robot')) {
+      return 'assets/images/iot_robotics.png';
+    }
     if (lower.contains('cyber') || lower.contains('security') || lower.contains('ethical hacking')) {
       return 'assets/images/cybersecurity_course.png';
     }

@@ -1,3 +1,4 @@
+import { getCurrentUser } from "@/server/auth"
 import { LandingNav } from "@/components/landing/landing-nav"
 import { LandingHero } from "@/components/landing/landing-hero"
 import { LandingFeatures } from "@/components/landing/landing-features"
@@ -12,16 +13,35 @@ export const metadata = {
     "Official Learning Management System of TechGration Technologies. Master modern cloud architecture, full-stack systems, and generative AI through live mentor-led cohorts and hands-on projects.",
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const user = await getCurrentUser()
+
+  const navUser = user
+    ? {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatarUrl: user.profile?.avatarUrl ?? null,
+      }
+    : null
+
+  const heroUser = user
+    ? {
+        name: user.name,
+        role: user.role,
+      }
+    : null
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col selection:bg-brand-teal/30 scroll-smooth">
       {/* 1. Frosted Glass Top Navigation */}
-      <LandingNav />
+      <LandingNav user={navUser} />
 
       {/* Main Single-Page LMS Experience */}
       <main className="flex-1 w-full">
         {/* 2. Flagship Hero: TechGration Technologies LMS */}
-        <LandingHero />
+        <LandingHero user={heroUser} />
 
         {/* 3. The TechGration Learning Experience (Live Classes, Labs, Quizzes, Leaderboard) */}
         <LandingFeatures />

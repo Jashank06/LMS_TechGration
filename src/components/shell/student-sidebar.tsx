@@ -23,6 +23,7 @@ import {
   Sparkles,
   Gift,
   Briefcase,
+  Code,
 } from "lucide-react"
 
 export interface StudentNavCountsProp {
@@ -83,6 +84,13 @@ const academicNavItems: AppleNavItem[] = [
     icon: HelpCircle,
     iconGradient: "from-purple-500 to-violet-600",
     countKey: "pendingQuizzes",
+  },
+  {
+    title: "Coding Arena",
+    href: "/student/arena",
+    icon: Code,
+    iconGradient: "from-green-500 to-emerald-600",
+    isNew: true,
   },
   {
     title: "Leaderboard",

@@ -7,7 +7,7 @@ import { db } from "@/server/db"
 import { resolveReferrerByCode } from "@/server/services/referrals"
 
 export const SESSION_COOKIE_NAME = "tg_session"
-export const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60 // 30 days
+export const SESSION_MAX_AGE_SECONDS = 365 * 24 * 60 * 60 // 365 days (persistent login)
 
 export type AuthenticatedUser = User & {
   profile: UserProfile | null
@@ -50,6 +50,7 @@ export async function createSession(userId: string): Promise<Session> {
     sameSite: "lax",
     path: "/",
     maxAge: SESSION_MAX_AGE_SECONDS,
+    expires: expiresAt,
   })
 
   return session
@@ -128,6 +129,30 @@ export async function getSession(req?: Request): Promise<{
       return null
     }
 
+    // Sliding session renewal: automatically refresh expiry for active users
+    const daysUntilExpiry = (session.expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+    if (daysUntilExpiry < 330) {
+      const newExpiresAt = new Date(Date.now() + SESSION_MAX_AGE_SECONDS * 1000)
+      db.session.update({
+        where: { id: session.id },
+        data: { expiresAt: newExpiresAt },
+      }).catch(() => {})
+
+      try {
+        const cookieStore = await cookies()
+        cookieStore.set(SESSION_COOKIE_NAME, token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          maxAge: SESSION_MAX_AGE_SECONDS,
+          expires: newExpiresAt,
+        })
+      } catch {
+        // In read-only or non-cookie context
+      }
+    }
+
     return {
       session,
       user: session.user,
@@ -197,9 +222,17 @@ export async function destroySession(): Promise<void> {
     const token = cookieStore.get(SESSION_COOKIE_NAME)?.value
 
     if (token) {
-      await db.session.delete({ where: { token } }).catch(() => {})
-      cookieStore.delete(SESSION_COOKIE_NAME)
+      await db.session.deleteMany({ where: { token } }).catch(() => {})
     }
+    cookieStore.set(SESSION_COOKIE_NAME, "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 0,
+      expires: new Date(0),
+    })
+    cookieStore.delete(SESSION_COOKIE_NAME)
   } catch (error) {
     console.error("Error destroying session:", error)
   }

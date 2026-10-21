@@ -153,6 +153,12 @@ model User {
   taughtCourses      Course[]    @relation("CourseInstructor")
   invitedById        String?     @db.ObjectId
   rewardClaims       RewardClaim[]
+
+  // Coding Arena relations
+  codingSubmissions  CodingSubmission[]
+  codingProgress     CodingProgress[]
+  codingXpLogs       CodingXpLog[]
+  codingStreak       CodingStreak?
 }
 
 model UserProfile {
@@ -732,3 +738,142 @@ model RewardClaim {
   @@index([status])
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════
+// CODING ARENA — LeetCode-style practice environment
+// ═══════════════════════════════════════════════════════════════════════
+
+enum CodingDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum CodingVerdict {
+  PENDING
+  ACCEPTED
+  WRONG_ANSWER
+  COMPILATION_ERROR
+  RUNTIME_ERROR
+  TIME_LIMIT_EXCEEDED
+  MEMORY_LIMIT_EXCEEDED
+  INTERNAL_ERROR
+}
+
+enum CodingProblemType {
+  CODING
+  MCQ
+}
+
+model CodingProblem {
+  id                 String            @id @default(auto()) @map("_id") @db.ObjectId
+  slug               String            @unique
+  title              String
+  statement          String
+  type               CodingProblemType @default(CODING)
+  stage              Int               @default(1)
+  stageTitle         String?
+  mcqOptions         Json?
+  mcqAnswer          String?
+  difficulty         CodingDifficulty  @default(EASY)
+  topics             String[]
+  hints              String[]
+  editorial          String?
+  timeLimitMs        Int               @default(2000)
+  memoryLimitKb      Int               @default(256000)
+  starterCode        Json?
+  solutionCode       Json?
+  isPublished        Boolean           @default(false)
+  isDailyChallenge   Boolean           @default(false)
+  dailyChallengeDate DateTime?
+  xpReward           Int               @default(10)
+  position           Int               @default(0)
+  acceptedCount      Int               @default(0)
+  submissionCount    Int               @default(0)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  testCases   CodingTestCase[]
+  submissions CodingSubmission[]
+  progress    CodingProgress[]
+}
+
+model CodingTestCase {
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  problemId      String        @db.ObjectId
+  problem        CodingProblem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  input          String
+  expectedOutput String
+  isSample       Boolean       @default(false)
+  position       Int           @default(0)
+  explanation    String?
+
+  @@index([problemId])
+}
+
+model CodingSubmission {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String        @db.ObjectId
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problemId       String        @db.ObjectId
+  problem         CodingProblem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  code            String
+  language        String
+  verdict         CodingVerdict @default(PENDING)
+  passedTests     Int           @default(0)
+  totalTests      Int           @default(0)
+  executionTimeMs Float?
+  memoryUsedKb    Int?
+  compileOutput   String?
+  errorOutput     String?
+  isRunOnly       Boolean       @default(false)
+  submittedAt     DateTime      @default(now())
+
+  @@index([userId, problemId])
+  @@index([problemId])
+}
+
+model CodingProgress {
+  id               String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String        @db.ObjectId
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problemId        String        @db.ObjectId
+  problem          CodingProblem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  isSolved         Boolean       @default(false)
+  bestSubmissionId String?       @db.ObjectId
+  lastCode         String?
+  lastLanguage     String?
+  isBookmarked     Boolean       @default(false)
+  isSolutionUnlocked Boolean     @default(false)
+  solutionUnlockedAt DateTime?
+  xpAwarded        Int           @default(0)
+  attemptCount     Int           @default(0)
+  solvedAt         DateTime?
+  updatedAt        DateTime?     @default(now()) @updatedAt
+
+  @@unique([userId, problemId])
+  @@index([userId, isBookmarked])
+}
+
+model CodingXpLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problemId String?  @db.ObjectId
+  amount    Int
+  reason    String
+  awardedAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model CodingStreak {
+  id             String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String  @unique @db.ObjectId
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentStreak  Int     @default(0)
+  longestStreak  Int     @default(0)
+  lastActiveDate String?
+  totalXp        Int     @default(0)
+  totalSolved    Int     @default(0)
+}

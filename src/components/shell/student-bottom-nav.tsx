@@ -7,7 +7,7 @@ import {
   LayoutDashboard,
   BookOpenCheck,
   Video,
-  HelpCircle,
+  Code,
   Gift,
 } from "lucide-react"
 import type { StudentNavCountsProp } from "./student-sidebar"
@@ -50,15 +50,15 @@ export function StudentBottomNav({ counts }: StudentBottomNavProps) {
     {
       label: "Quizzes",
       href: "/student/assessments",
-      icon: HelpCircle,
+      icon: BookOpenCheck,
       activePattern: (p) => p.startsWith("/student/assessments") || p.startsWith("/student/assignments"),
       badge: (counts?.pendingQuizzes ?? 0) + (counts?.pendingAssignments ?? 0),
     },
     {
-      label: "Rewards",
-      href: "/student/rewards",
-      icon: Gift,
-      activePattern: (p) => p.startsWith("/student/rewards") || p.startsWith("/student/leaderboard"),
+      label: "Arena",
+      href: "/student/arena",
+      icon: Code,
+      activePattern: (p) => p.startsWith("/student/arena"),
     },
   ]
 

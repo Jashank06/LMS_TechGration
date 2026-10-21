@@ -37,6 +37,7 @@ import {
   ShieldCheck,
   Menu,
   X,
+  Code,
 } from "lucide-react"
 
 interface NavItem {
@@ -54,6 +55,7 @@ const navItems: NavItem[] = [
   { title: "Course Approvals", href: "/admin/courses", icon: GraduationCap, badge: "Review", badgeColor: "bg-amber-500/20 text-amber-400 border border-amber-500/30" },
   { title: "Categories & Skills", href: "/admin/categories", icon: FolderTree },
   { title: "Enrollments", href: "/admin/enrollments", icon: UserCheck },
+  { title: "Coding Arena", href: "/admin/arena", icon: Code, badge: "New", badgeColor: "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" },
   { title: "Payments & Coupons", href: "/admin/billing", icon: CreditCard },
   { title: "Reports & Analytics", href: "/admin/reports", icon: BarChart3 },
   { title: "Announcements", href: "/admin/announcements", icon: Megaphone },

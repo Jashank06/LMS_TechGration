@@ -36,6 +36,17 @@ export default function TeacherLoginPage() {
   const [demoLoading, setDemoLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
+  React.useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.authenticated && (data.user?.role === "TEACHER" || data.user?.role === "ADMIN" || data.user?.role === "SUPER_ADMIN")) {
+          router.replace("/teacher/dashboard")
+        }
+      })
+      .catch(() => {})
+  }, [router])
+
   const handleCredentialsLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
