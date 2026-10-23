@@ -39,9 +39,13 @@ export async function GET() {
       },
     })
 
-    // 5. Schedule
+    // 5. Schedule (only upcoming/active classes)
     const schedule = await db.liveClass.findMany({
-      where: liveClassScope,
+      where: {
+        ...liveClassScope,
+        status: { in: ["SCHEDULED", "LIVE"] },
+        endsAt: { gte: new Date() },
+      },
       include: { course: true },
       orderBy: { startsAt: "asc" },
       take: 10,

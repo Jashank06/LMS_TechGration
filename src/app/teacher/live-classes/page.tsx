@@ -26,6 +26,8 @@ import {
   ExternalLink,
   CheckCircle2,
   Lock,
+  CalendarClock,
+  Loader2,
 } from "lucide-react"
 import { toast } from "sonner"
 import { type TeacherLiveClass } from "@/server/services/teacher-mock-data"
@@ -55,8 +57,28 @@ export default function TeacherLiveClassesPage() {
   // Reschedule Modal
   const [rescheduleTarget, setRescheduleTarget] = React.useState<TeacherLiveClass | null>(null)
   const [rescheduleDate, setRescheduleDate] = React.useState("")
-  const [rescheduleTime, setRescheduleTime] = React.useState("17:00")
-  const [rescheduleReason, setRescheduleReason] = React.useState("")
+  const [rescheduleTime, setRescheduleTime] = React.useState("18:00")
+  const [rescheduleDuration, setRescheduleDuration] = React.useState(60)
+  const [rescheduleReason, setRescheduleReason] = React.useState("Timing adjusted by instructor.")
+  const [notifyStudents, setNotifyStudents] = React.useState(true)
+  const [isRescheduling, setIsRescheduling] = React.useState(false)
+
+  const handleOpenReschedule = (cls: TeacherLiveClass) => {
+    const start = new Date(cls.startsAt)
+    const end = new Date(cls.endsAt)
+    const pad = (n: number) => n.toString().padStart(2, "0")
+
+    const localDate = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`
+    const localTime = `${pad(start.getHours())}:${pad(start.getMinutes())}`
+    const durationMin = Math.max(15, Math.round((end.getTime() - start.getTime()) / 60000)) || 60
+
+    setRescheduleTarget(cls)
+    setRescheduleDate(localDate)
+    setRescheduleTime(localTime)
+    setRescheduleDuration(durationMin)
+    setRescheduleReason("Timing adjusted by instructor.")
+    setNotifyStudents(true)
+  }
 
   // Cancel Modal
   const [cancelTarget, setCancelTarget] = React.useState<TeacherLiveClass | null>(null)
@@ -156,13 +178,26 @@ export default function TeacherLiveClassesPage() {
   }
 
   const handleRescheduleSubmit = async () => {
-    if (!rescheduleTarget || !rescheduleDate || !rescheduleTime) return
+    if (!rescheduleTarget || !rescheduleDate || !rescheduleTime) {
+      toast.error("Please pick a valid date and time")
+      return
+    }
 
-    const startsAt = new Date(`${rescheduleDate}T${rescheduleTime}:00`).toISOString()
-    const endsAt = new Date(
-      new Date(`${rescheduleDate}T${rescheduleTime}:00`).getTime() + 90 * 60000
-    ).toISOString()
+    const startDateTime = new Date(`${rescheduleDate}T${rescheduleTime}:00`)
+    if (isNaN(startDateTime.getTime())) {
+      toast.error("Invalid date or time selected")
+      return
+    }
 
+    if (startDateTime.getTime() <= Date.now()) {
+      toast.error("New start time must be in the future")
+      return
+    }
+
+    const startsAt = startDateTime.toISOString()
+    const endsAt = new Date(startDateTime.getTime() + rescheduleDuration * 60000).toISOString()
+
+    setIsRescheduling(true)
     try {
       const res = await fetch(`/api/teacher/live-classes/${rescheduleTarget.id}/reschedule`, {
         method: "PUT",
@@ -170,14 +205,14 @@ export default function TeacherLiveClassesPage() {
         body: JSON.stringify({
           startsAt,
           endsAt,
-          reason: rescheduleReason || "Instructor schedule shift",
-          notifyStudents: true,
+          reason: rescheduleReason?.trim() || "Timing adjusted by instructor.",
+          notifyStudents,
         }),
       })
 
       const data = await res.json()
       if (res.ok) {
-        toast.success(data.message)
+        toast.success(data.message || "Class rescheduled successfully!")
         setRescheduleTarget(null)
         loadLiveClasses()
       } else {
@@ -185,6 +220,8 @@ export default function TeacherLiveClassesPage() {
       }
     } catch {
       toast.error("Network error during reschedule")
+    } finally {
+      setIsRescheduling(false)
     }
   }
 
@@ -342,12 +379,18 @@ export default function TeacherLiveClassesPage() {
                     <div className="flex flex-wrap items-center gap-2 shrink-0">
                       {!isCancelled && (
                         <>
-                          <Button asChild size="sm" className="gap-1.5 shadow-sm">
-                            <a href={cls.meetingUrl} target="_blank" rel="noopener noreferrer">
-                              <PlayCircle className="w-3.5 h-3.5" />
-                              <span>Join Room</span>
-                            </a>
-                          </Button>
+                          {!isCompleted ? (
+                            <Button asChild size="sm" className="gap-1.5 shadow-sm">
+                              <a href={cls.meetingUrl} target="_blank" rel="noopener noreferrer">
+                                <PlayCircle className="w-3.5 h-3.5" />
+                                <span>{isLive ? "Host Live Room" : "Open Room"}</span>
+                              </a>
+                            </Button>
+                          ) : (
+                            <Badge variant="outline" className="text-muted-foreground border-border bg-muted/40 py-1.5 px-2.5 font-medium">
+                              Session Concluded
+                            </Badge>
+                          )}
 
                           <Button asChild variant="outline" size="sm">
                             <Link href={`/teacher/attendance?classId=${cls.id}`}>
@@ -356,27 +399,31 @@ export default function TeacherLiveClassesPage() {
                             </Link>
                           </Button>
 
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={() => {
-                              setRescheduleTarget(cls)
-                              setRescheduleDate(new Date(cls.startsAt).toISOString().split("T")[0])
-                            }}
-                            title="Reschedule Class"
-                          >
-                            <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
-                          </Button>
+                          {!isCompleted && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenReschedule(cls)}
+                                className="gap-1.5 border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 hover:border-amber-500/50 font-semibold shadow-xs"
+                                title="Reschedule Class Timing"
+                              >
+                                <CalendarClock className="w-3.5 h-3.5 text-amber-500" />
+                                <span>Reschedule</span>
+                              </Button>
 
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={() => setCancelTarget(cls)}
-                            className="text-muted-foreground hover:text-destructive"
-                            title="Cancel Class"
-                          >
-                            <Ban className="w-3.5 h-3.5" />
-                          </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setCancelTarget(cls)}
+                                className="gap-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 text-xs"
+                                title="Cancel Class"
+                              >
+                                <Ban className="w-3.5 h-3.5" />
+                                <span>Cancel</span>
+                              </Button>
+                            </>
+                          )}
                         </>
                       )}
                     </div>
@@ -569,58 +616,136 @@ export default function TeacherLiveClassesPage() {
       </Dialog>
 
       {/* Reschedule Dialog */}
-      <Dialog open={Boolean(rescheduleTarget)} onOpenChange={() => setRescheduleTarget(null)}>
-        <DialogContent className="max-w-md p-6 space-y-4 shadow-2xl">
+      <Dialog open={Boolean(rescheduleTarget)} onOpenChange={() => !isRescheduling && setRescheduleTarget(null)}>
+        <DialogContent className="max-w-lg p-6 space-y-4 shadow-2xl">
           <DialogHeader className="border-b border-border pb-3">
             <DialogTitle className="text-base font-bold flex items-center gap-2">
-              <RotateCcw className="w-4 h-4 text-brand-cyan" />
+              <CalendarClock className="w-4 h-4 text-amber-500" />
               <span>Reschedule Live Session</span>
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-3 text-xs">
-            <p className="text-muted-foreground">
-              Adjusting schedule for: <span className="font-bold text-foreground">{rescheduleTarget?.title}</span>
-            </p>
+          {rescheduleTarget && (
+            <div className="space-y-4 text-xs">
+              {/* Current vs New preview card */}
+              <div className="p-3.5 rounded-xl border border-border/80 bg-muted/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-foreground truncate">{rescheduleTarget.title}</span>
+                  <Badge variant="outline" className="text-[10px] uppercase font-bold text-brand-teal border-brand-teal/30">
+                    {rescheduleTarget.courseCode}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground text-[11px]">
+                  <Clock className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+                  <span>
+                    Currently Scheduled:{" "}
+                    <strong className="text-foreground">
+                      {new Date(rescheduleTarget.startsAt).toLocaleDateString("en-US", {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                      })}{" "}
+                      at{" "}
+                      {new Date(rescheduleTarget.startsAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </strong>
+                  </span>
+                </div>
+              </div>
 
-            <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">New Date</Label>
+                  <Input
+                    type="date"
+                    min={new Date().toISOString().split("T")[0]}
+                    value={rescheduleDate}
+                    onChange={(e) => setRescheduleDate(e.target.value)}
+                    className="h-10 text-xs font-medium"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">New Start Time</Label>
+                  <Input
+                    type="time"
+                    value={rescheduleTime}
+                    onChange={(e) => setRescheduleTime(e.target.value)}
+                    className="h-10 text-xs font-medium"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">New Date</Label>
-                <Input
-                  type="date"
-                  value={rescheduleDate}
-                  onChange={(e) => setRescheduleDate(e.target.value)}
-                  className="h-9 text-xs"
+                <Label className="text-xs font-semibold">Session Duration</Label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[45, 60, 90, 120].map((mins) => (
+                    <button
+                      key={mins}
+                      type="button"
+                      onClick={() => setRescheduleDuration(mins)}
+                      className={`h-9 rounded-lg text-xs font-bold transition-all border ${
+                        rescheduleDuration === mins
+                          ? "bg-brand-teal text-brand-charcoal border-brand-teal shadow-xs"
+                          : "bg-secondary/40 text-muted-foreground border-border hover:text-foreground hover:bg-secondary"
+                      }`}
+                    >
+                      {mins} min
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Reschedule Reason (Sent to Students)</Label>
+                <Textarea
+                  rows={2}
+                  placeholder="e.g. Schedule shifted to accommodate student requests..."
+                  value={rescheduleReason}
+                  onChange={(e) => setRescheduleReason(e.target.value)}
+                  className="text-xs resize-none"
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">New Start Time</Label>
-                <Input
-                  type="time"
-                  value={rescheduleTime}
-                  onChange={(e) => setRescheduleTime(e.target.value)}
-                  className="h-9 text-xs"
+
+              <div className="p-3 rounded-xl border border-brand-teal/20 bg-brand-teal/5 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">📧</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    Email all enrolled learners & update calendar invites (.ics)
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={notifyStudents}
+                  onChange={(e) => setNotifyStudents(e.target.checked)}
+                  className="w-4 h-4 rounded text-brand-teal accent-brand-teal cursor-pointer"
                 />
               </div>
             </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Reschedule Reason (Sent to Students)</Label>
-              <Textarea
-                rows={2}
-                placeholder="e.g. Schedule shifted to accommodate exam preparation..."
-                value={rescheduleReason}
-                onChange={(e) => setRescheduleReason(e.target.value)}
-              />
-            </div>
-          </div>
+          )}
 
           <DialogFooter className="border-t border-border pt-3 gap-2">
-            <Button variant="outline" size="sm" onClick={() => setRescheduleTarget(null)}>
+            <Button variant="outline" size="sm" onClick={() => setRescheduleTarget(null)} disabled={isRescheduling}>
               Cancel
             </Button>
-            <Button size="sm" onClick={handleRescheduleSubmit}>
-              Confirm Reschedule
+            <Button
+              size="sm"
+              onClick={handleRescheduleSubmit}
+              disabled={isRescheduling}
+              className="bg-brand-teal text-brand-charcoal hover:bg-brand-teal/90 font-bold gap-1.5 shadow-md shadow-brand-teal/20"
+            >
+              {isRescheduling ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Rescheduling & Sending Emails...</span>
+                </>
+              ) : (
+                <>
+                  <CalendarClock className="w-3.5 h-3.5" />
+                  <span>Confirm Reschedule</span>
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

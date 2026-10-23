@@ -13,6 +13,27 @@ export interface SweepResult {
 }
 
 /**
+ * Automatically marks expired sessions (where endsAt has passed) as COMPLETED.
+ */
+export async function autoCompleteExpiredClasses(now: Date = new Date()): Promise<number> {
+  try {
+    const res = await db.liveClass.updateMany({
+      where: {
+        status: { in: ["SCHEDULED", "LIVE"] },
+        endsAt: { lt: now },
+      },
+      data: {
+        status: "COMPLETED",
+      },
+    })
+    return res.count
+  } catch (err) {
+    console.error("Auto-complete expired classes error:", err)
+    return 0
+  }
+}
+
+/**
  * Called every minute. For each upcoming class, every reminder offset that is due and
  * has no ReminderDispatch row yet is claimed atomically (unique index) and sent once.
  *
@@ -22,6 +43,9 @@ export interface SweepResult {
  */
 export async function runReminderSweep(now: Date = new Date()): Promise<SweepResult> {
   const result: SweepResult = { checked: 0, sent: [], skipped: [] }
+
+  // 1. Auto-transition any session whose endsAt has passed to COMPLETED
+  await autoCompleteExpiredClasses(now)
 
   const classes = await db.liveClass.findMany({
     where: { status: "SCHEDULED", startsAt: { gt: now, lte: addMin(now, HORIZON_MIN) } },

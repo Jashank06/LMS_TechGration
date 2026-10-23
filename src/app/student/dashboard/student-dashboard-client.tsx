@@ -23,6 +23,7 @@ import { Progress } from "@/components/ui/progress"
 import { WeeklyActivityChart } from "@/components/dashboard/weekly-activity-chart"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AnimatedCounter } from "@/components/ui/animated-counter"
+import { computeClassWindowStatus } from "@/lib/live-class-utils"
 
 interface StudentDashboardClientProps {
   user: {
@@ -66,6 +67,9 @@ interface StudentDashboardClientProps {
     status: string
     instructorName: string
     startsAt: string | Date
+    endsAt?: string | Date
+    meetingUrl?: string | null
+    joinOpensMinBefore?: number
     course?: {
       title: string
     } | null
@@ -527,34 +531,78 @@ export function StudentDashboardClient({
                 </p>
               </div>
             ) : (
-              upcomingLiveClasses.map((cls) => (
-                <div
-                  key={cls.id}
-                  className="p-4 rounded-2xl border border-border/60 bg-secondary/30 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 hover:border-brand-teal/40 transition-all"
-                >
-                  <div className="space-y-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 shrink-0">
-                        {cls.status}
-                      </span>
-                      <p className="text-xs sm:text-sm font-bold text-foreground truncate">
-                        {cls.title}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                      <span>Instructor: {cls.instructorName}</span>
-                    </div>
-                  </div>
+              upcomingLiveClasses.map((cls) => {
+                const windowStatus = computeClassWindowStatus(
+                  {
+                    startsAt: cls.startsAt,
+                    endsAt: cls.endsAt || new Date(new Date(cls.startsAt).getTime() + 60 * 60 * 1000),
+                    status: cls.status,
+                    joinOpensMinBefore: cls.joinOpensMinBefore,
+                  },
+                  new Date()
+                )
 
-                  <Button
-                    asChild
-                    size="sm"
-                    className="w-full sm:w-auto shrink-0 bg-brand-teal text-brand-charcoal hover:bg-brand-teal/90 font-bold text-xs h-10 sm:h-9 px-4 rounded-xl"
+                return (
+                  <div
+                    key={cls.id}
+                    className="p-4 rounded-2xl border border-border/60 bg-secondary/30 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 hover:border-brand-teal/40 transition-all"
                   >
-                    <Link href="/student/live-classes">Join Live</Link>
-                  </Button>
-                </div>
-              ))
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shrink-0 ${
+                            windowStatus.isLive
+                              ? "bg-amber-500 text-black animate-pulse"
+                              : windowStatus.isJoinable
+                              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                              : "bg-brand-teal/15 text-brand-teal border border-brand-teal/30"
+                          }`}
+                        >
+                          {windowStatus.isLive
+                            ? "LIVE NOW"
+                            : windowStatus.isJoinable
+                            ? "DOORS OPEN"
+                            : "SCHEDULED"}
+                        </span>
+                        <p className="text-xs sm:text-sm font-bold text-foreground truncate">
+                          {cls.title}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                        <span>Instructor: {cls.instructorName}</span>
+                      </div>
+                    </div>
+
+                    {windowStatus.isJoinable ? (
+                      <Button
+                        asChild
+                        size="sm"
+                        className="w-full sm:w-auto shrink-0 bg-brand-teal text-brand-charcoal hover:bg-brand-teal/90 font-bold text-xs h-10 sm:h-9 px-4 rounded-xl"
+                      >
+                        {cls.meetingUrl ? (
+                          <a href={cls.meetingUrl} target="_blank" rel="noopener noreferrer">
+                            Join Live
+                          </a>
+                        ) : (
+                          <Link href="/student/live-classes">Join Live</Link>
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        className="w-full sm:w-auto shrink-0 border-amber-500/30 bg-amber-500/5 text-amber-600 dark:text-amber-400 font-semibold text-xs h-10 sm:h-9 px-3 rounded-xl hover:bg-amber-500/10"
+                      >
+                        <Link href="/student/live-classes">
+                          <Clock className="w-3.5 h-3.5 mr-1 text-amber-500 shrink-0" />
+                          <span>Opens at {windowStatus.formattedOpenTime}</span>
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
+                )
+              })
             )}
           </div>
         </div>

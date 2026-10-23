@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { db } from "@/server/db"
 import { getSession } from "@/server/auth"
+import { computeClassWindowStatus } from "@/lib/live-class-utils"
 
 export async function GET(
   _request: Request,
@@ -15,6 +16,22 @@ export async function GET(
 
     if (!liveClass || liveClass.status === "CANCELLED") {
       return NextResponse.redirect(new URL("/student/dashboard", _request.url))
+    }
+
+    // Time-gated window check: prevent premature joins or joining ended classes
+    const windowStatus = computeClassWindowStatus(liveClass)
+    if (!windowStatus.isJoinable) {
+      if (windowStatus.isEnded) {
+        return NextResponse.redirect(
+          new URL("/student/live-classes?notice=concluded", _request.url)
+        )
+      }
+      return NextResponse.redirect(
+        new URL(
+          `/student/live-classes?notice=join_locked&opensAt=${encodeURIComponent(windowStatus.formattedOpenTime)}`,
+          _request.url
+        )
+      )
     }
 
     // Best-effort attendance marking if user is authenticated

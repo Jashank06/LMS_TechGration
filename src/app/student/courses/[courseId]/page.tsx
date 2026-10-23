@@ -196,6 +196,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
     status: lc.status,
     meetingId: lc.meetingId,
     meetingPasscode: lc.meetingPasscode,
+    joinOpensMinBefore: lc.joinOpensMinBefore,
   }))
 
   const courseHubData: CourseHubData = {

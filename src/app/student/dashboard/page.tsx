@@ -60,6 +60,7 @@ export default async function StudentDashboardPage() {
   const upcomingLiveClasses = await db.liveClass.findMany({
     where: {
       status: { in: ["SCHEDULED", "LIVE"] },
+      endsAt: { gt: new Date() },
       courseId: { in: enrolledCourseIds },
     },
     include: {
@@ -201,6 +202,9 @@ export default async function StudentDashboardPage() {
         status: cls.status,
         instructorName: cls.instructorName,
         startsAt: cls.startsAt,
+        endsAt: cls.endsAt,
+        meetingUrl: cls.meetingUrl,
+        joinOpensMinBefore: cls.joinOpensMinBefore,
         course: cls.course ? { title: cls.course.title } : null,
       }))}
       assignments={assignments.map((asgn) => ({

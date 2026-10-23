@@ -74,12 +74,12 @@ export const liveClassScheduleSchema = z.object({
 export const liveClassRescheduleSchema = z.object({
   startsAt: z.string().datetime(),
   endsAt: z.string().datetime(),
-  reason: z.string().min(3, "Reschedule reason required"),
+  reason: z.string().optional().default("Timing adjusted by instructor."),
   notifyStudents: z.boolean().default(true),
 })
 
 export const liveClassCancelSchema = z.object({
-  reason: z.string().min(3, "Cancellation reason required"),
+  reason: z.string().optional().default("Session cancelled by instructor."),
   notifyStudents: z.boolean().default(true),
 })
 

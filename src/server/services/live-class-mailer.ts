@@ -136,7 +136,7 @@ export async function sendClassMails(input: SendClassMailsInput) {
         endsAt: cls.endsAt,
         url: cls.meetingUrl,
         organizerName: teacher?.name || cls.instructorName,
-        organizerEmail: teacher?.email || "welcome@jashank.me",
+        organizerEmail: teacher?.email || process.env.SMTP_USER || "welcome@jashank.me",
         sequence: input.kind === "RESCHEDULED" ? Math.floor(Date.now() / 60000) % 100000 : 0,
         cancelled,
       })

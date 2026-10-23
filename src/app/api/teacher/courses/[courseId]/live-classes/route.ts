@@ -1,6 +1,8 @@
 import { NextResponse, after } from "next/server"
 import { db } from "@/server/db"
 import { getTeacherSession } from "@/server/services/teacher-auth"
+import { getTeacherCourseScope } from "@/server/services/teacher-scope"
+import { validateMeetingUrl } from "@/server/services/meeting-links"
 import { MeetingPlatform, LiveClassStatus } from "@prisma/client"
 import { runDispatch } from "@/server/services/live-class-mailer"
 
@@ -15,12 +17,19 @@ export async function POST(
     }
 
     const { courseId } = await params
-    const course = await db.course.findUnique({
-      where: { id: courseId },
+    const course = await db.course.findFirst({
+      where: {
+        id: courseId,
+        ...getTeacherCourseScope(session.user),
+      },
     })
 
     if (!course) {
-      return NextResponse.json({ error: "Course not found" }, { status: 404 })
+      const exists = await db.course.findUnique({ where: { id: courseId }, select: { id: true } })
+      if (!exists) {
+        return NextResponse.json({ error: "Course not found" }, { status: 404 })
+      }
+      return NextResponse.json({ error: "This course is not assigned to you" }, { status: 403 })
     }
 
     const body = await request.json()
@@ -53,11 +62,6 @@ export async function POST(
       )
     }
 
-    const defaultUrl =
-      meetingUrl && meetingUrl.trim()
-        ? meetingUrl.trim()
-        : "https://us06web.zoom.us/j/89248109283?pwd=TG2026"
-
     const selectedPlatform =
       platform === "ZOOM"
         ? MeetingPlatform.ZOOM
@@ -66,6 +70,15 @@ export async function POST(
         : platform === "TEAMS"
         ? MeetingPlatform.TEAMS
         : MeetingPlatform.CUSTOM
+
+    const rawUrl = meetingUrl && meetingUrl.trim()
+      ? meetingUrl.trim()
+      : "https://us06web.zoom.us/j/89248109283?pwd=TG2026"
+
+    const link = validateMeetingUrl(selectedPlatform, rawUrl)
+    if (!link.ok) {
+      return NextResponse.json({ error: link.error }, { status: 400 })
+    }
 
     const liveClass = await db.liveClass.create({
       data: {
@@ -77,7 +90,7 @@ export async function POST(
         startsAt: startDate,
         endsAt: endDate,
         timezone: "Asia/Kolkata",
-        meetingUrl: defaultUrl,
+        meetingUrl: link.url!,
         meetingId: meetingId?.trim() || null,
         meetingPasscode: meetingPasscode?.trim() || null,
         platform: selectedPlatform,
@@ -89,29 +102,10 @@ export async function POST(
     if (notifyStudents) {
       after(async () => {
         try {
-          // 1. Run live class email dispatcher with calendar invite (.ics)
+          // runDispatch handles email delivery + in-app notification dispatch in a single clean pass
           await runDispatch({ classId: liveClass.id, kind: "SCHEDULED", includeTeacherCopy: true }).catch((e) =>
             console.error("Scheduled email dispatch error:", e)
           )
-
-          // 2. Best-effort direct in-app notification creation
-          const enrollments = await db.enrollment.findMany({
-            where: { courseId, status: "ACTIVE" },
-            select: { userId: true },
-          })
-
-          if (enrollments.length > 0) {
-            await db.notification
-              .createMany({
-                data: enrollments.map((e) => ({
-                  userId: e.userId,
-                  title: `🔴 Live Class Scheduled: ${liveClass.title}`,
-                  message: `${course.title} • Hosted by ${liveClass.instructorName}. Starts ${startDate.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true })} IST.`,
-                  href: `/student/courses/${courseId}`,
-                })),
-              })
-              .catch((err) => console.error("In-app notification creation error:", err))
-          }
         } catch (err) {
           console.error("Async live class notification error:", err)
         }
@@ -149,20 +143,14 @@ export async function GET(
     const { courseId } = await params
     const classes = await db.liveClass.findMany({
       where: { courseId },
-      orderBy: { startsAt: "asc" },
+      orderBy: { startsAt: "desc" },
     })
 
-    return NextResponse.json({
-      classes: classes.map((c) => ({
-        ...c,
-        startsAt: c.startsAt.toISOString(),
-        endsAt: c.endsAt.toISOString(),
-      })),
-    })
-  } catch (error) {
+    return NextResponse.json({ classes })
+  } catch (error: any) {
     console.error("Get live classes error:", error)
     return NextResponse.json(
-      { error: "Failed to get live classes" },
+      { error: error?.message || "Failed to fetch live classes" },
       { status: 500 }
     )
   }

@@ -2,7 +2,9 @@ import * as React from "react"
 import { Metadata } from "next"
 import { requireStudent } from "@/server/auth"
 import { db } from "@/server/db"
+import { autoCompleteExpiredClasses } from "@/server/services/reminder-engine"
 import { LiveClassesClient, LiveClassItem } from "./live-classes-client"
+import { computeClassWindowStatus } from "@/lib/live-class-utils"
 import { Video } from "lucide-react"
 
 export const metadata: Metadata = {
@@ -12,6 +14,9 @@ export const metadata: Metadata = {
 
 export default async function LiveClassesPage() {
   const user = await requireStudent()
+
+  // Ensure any ended session is synced to COMPLETED state
+  await autoCompleteExpiredClasses().catch(() => {})
 
   // Only get classes for courses the student is actively enrolled in
   const enrollments = await db.enrollment.findMany({
@@ -35,11 +40,19 @@ export default async function LiveClassesPage() {
         where: { userId: user.id },
       },
     },
-    orderBy: { startsAt: "asc" },
+    orderBy: { startsAt: "desc" },
   })
 
+  const now = new Date()
   const classItems: LiveClassItem[] = liveClasses.map((cls) => {
     const attendance = cls.attendances[0]
+    const windowInfo = computeClassWindowStatus(cls, now)
+    const effectiveStatus: "SCHEDULED" | "LIVE" | "COMPLETED" | "CANCELLED" = windowInfo.isEnded
+      ? "COMPLETED"
+      : windowInfo.isLive
+      ? "LIVE"
+      : cls.status
+
     return {
       id: cls.id,
       title: cls.title,
@@ -49,10 +62,12 @@ export default async function LiveClassesPage() {
       startsAt: cls.startsAt.toISOString(),
       endsAt: cls.endsAt.toISOString(),
       meetingUrl: cls.meetingUrl || "https://meet.google.com/tg-lms-demo",
-      status: cls.status,
+      status: effectiveStatus,
       recordingUrl: cls.recordingUrl,
       attendanceStatus: attendance?.status,
-      isJoinable: cls.status === "LIVE" || cls.status === "SCHEDULED",
+      isJoinable: windowInfo.isJoinable,
+      joinOpensMinBefore: windowInfo.bufferMin,
+      joinOpensAt: windowInfo.joinOpensAt.toISOString(),
     }
   })
 

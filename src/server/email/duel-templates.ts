@@ -1,7 +1,7 @@
 import { transporter } from "./mailer"
 
-const SMTP_USER = process.env.OTP_GMAIL_USER || "admin@techgration.live"
-const APP_URL = process.env.NEXTAUTH_URL || "https://techgration.live"
+const SMTP_USER = process.env.OTP_GMAIL_USER || "welcome@jashank.me"
+const APP_URL = (process.env.PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "https://campus.techgration.live").replace(/\/$/, "")
 
 /**
  * Sends a notification email when a batchmate creates an Open Challenge.

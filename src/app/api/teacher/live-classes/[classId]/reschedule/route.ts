@@ -123,10 +123,15 @@ export async function PUT(
       details: { from: oldStartsAt.toISOString(), to: updated.startsAt.toISOString(), reason: parsed.reason },
     }).catch(() => {})
 
+    const enrolledCount = await db.enrollment.count({
+      where: { courseId: existing.courseId, status: "ACTIVE" },
+    })
+
     return NextResponse.json({
       success: true,
+      enrolledCount,
       message: parsed.notifyStudents
-        ? `Rescheduled. Updated invite is being emailed and reminders were reset for the new time.`
+        ? `Class rescheduled successfully! Announcement email sent to ${enrolledCount} enrolled learner(s).`
         : "Session rescheduled.",
       session: {
         ...updated,

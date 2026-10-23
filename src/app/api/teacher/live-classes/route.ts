@@ -7,7 +7,7 @@ import { getTeacherSession } from "@/server/services/teacher-auth"
 import { isStaff, getTeacherCourseScope, getTeacherLiveClassScope } from "@/server/services/teacher-scope"
 import { validateMeetingUrl } from "@/server/services/meeting-links"
 import { DEFAULT_REMINDER_OFFSETS, getOffsets, runDispatch } from "@/server/services/live-class-mailer"
-import { buildReminderTimeline, markPastOffsetsSkipped } from "@/server/services/reminder-engine"
+import { buildReminderTimeline, markPastOffsetsSkipped, autoCompleteExpiredClasses } from "@/server/services/reminder-engine"
 import { logAuditEvent } from "@/server/audit/audit-logger"
 
 export async function GET() {
@@ -16,6 +16,9 @@ export async function GET() {
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    // Auto-transition ended classes to COMPLETED
+    await autoCompleteExpiredClasses().catch(() => {})
 
     const teacher = session.user
     const classScope = getTeacherLiveClassScope(teacher)
@@ -47,34 +50,41 @@ export async function GET() {
     )
     const enrolledByCourse = new Map(enrollmentCounts.map((e) => [e.courseId, e.count]))
 
-    const classes = classesRaw.map((c) => ({
-      id: c.id,
-      courseId: c.courseId,
-      courseTitle: c.course.title,
-      courseCode: c.course.slug.toUpperCase().slice(0, 8),
-      title: c.title,
-      description: c.description || "",
-      instructorName: c.instructorName,
-      startsAt: c.startsAt.toISOString(),
-      endsAt: c.endsAt.toISOString(),
-      timezone: c.timezone,
-      platform: c.platform,
-      meetingUrl: c.meetingUrl,
-      status: c.status,
-      enrolledCount: enrolledByCourse.get(c.courseId) ?? 0,
-      attendedCount: c._count.attendances,
-      reminderOffsetsMin: getOffsets(c),
-      joinOpensMinBefore: c.joinOpensMinBefore,
-      dispatches: c.dispatches.map((d) => ({
-        kind: d.kind,
-        offsetMin: d.offsetMin,
-        status: d.status,
-        recipients: d.recipients,
-        sentCount: d.sentCount,
-        failedCount: d.failedCount,
-        completedAt: d.completedAt ? d.completedAt.toISOString() : null,
-      })),
-    }))
+    const now = new Date()
+    const classes = classesRaw.map((c) => {
+      const isEnded = c.status === "COMPLETED" || new Date(c.endsAt) < now
+      const isLive = !isEnded && (c.status === "LIVE" || (now >= new Date(c.startsAt) && now <= new Date(c.endsAt)))
+      const effectiveStatus = isEnded ? "COMPLETED" : isLive ? "LIVE" : c.status
+
+      return {
+        id: c.id,
+        courseId: c.courseId,
+        courseTitle: c.course.title,
+        courseCode: c.course.slug.toUpperCase().slice(0, 8),
+        title: c.title,
+        description: c.description || "",
+        instructorName: c.instructorName,
+        startsAt: c.startsAt.toISOString(),
+        endsAt: c.endsAt.toISOString(),
+        timezone: c.timezone,
+        platform: c.platform,
+        meetingUrl: c.meetingUrl,
+        status: effectiveStatus,
+        enrolledCount: enrolledByCourse.get(c.courseId) ?? 0,
+        attendedCount: c._count.attendances,
+        reminderOffsetsMin: getOffsets(c),
+        joinOpensMinBefore: c.joinOpensMinBefore,
+        dispatches: c.dispatches.map((d) => ({
+          kind: d.kind,
+          offsetMin: d.offsetMin,
+          status: d.status,
+          recipients: d.recipients,
+          sentCount: d.sentCount,
+          failedCount: d.failedCount,
+          completedAt: d.completedAt ? d.completedAt.toISOString() : null,
+        })),
+      }
+    })
 
     const courses = coursesRaw.map((c) => ({
       id: c.id,
@@ -110,12 +120,17 @@ export async function POST(request: Request) {
     }
 
     // Course ownership — a teacher can only schedule for courses mapped to them
-    const course = await db.course.findUnique({ where: { id: parsed.courseId } })
+    const course = await db.course.findFirst({
+      where: {
+        id: parsed.courseId,
+        ...getTeacherCourseScope(teacher),
+      },
+    })
     if (!course) {
-      return NextResponse.json({ error: "Course not found" }, { status: 404 })
-    }
-    const owns = course.instructorId === teacher.id || course.instructorName === teacher.name
-    if (!owns && !isStaff(teacher.role)) {
+      const exists = await db.course.findUnique({ where: { id: parsed.courseId }, select: { id: true } })
+      if (!exists) {
+        return NextResponse.json({ error: "Course not found" }, { status: 404 })
+      }
       return NextResponse.json({ error: "This course is not assigned to you" }, { status: 403 })
     }
 

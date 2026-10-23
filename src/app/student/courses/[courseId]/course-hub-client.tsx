@@ -36,6 +36,7 @@ import {
 } from "lucide-react"
 import { QuickSubmitAssignmentModal } from "@/components/student/quick-submit-assignment-modal"
 import { toast } from "sonner"
+import { computeClassWindowStatus } from "@/lib/live-class-utils"
 
 export interface CourseHubData {
   id: string
@@ -67,6 +68,7 @@ export interface CourseHubData {
     status: string
     meetingId?: string | null
     meetingPasscode?: string | null
+    joinOpensMinBefore?: number
   }>
   recordings: Array<{
     id: string
@@ -166,7 +168,7 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
 
   const liveOrUpcomingClass = React.useMemo(() => {
     const now = new Date()
-    // 1. First look for an explicitly LIVE class or one happening right now (never cancelled)
+    // 1. First look for an explicitly LIVE class or one happening right now (never cancelled, endsAt in future)
     const currentlyLive = activeLiveClasses.find((lc) => {
       const start = new Date(lc.startsAt)
       const end = new Date(lc.endsAt)
@@ -174,16 +176,12 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
     })
     if (currentlyLive) return { ...currentlyLive, isLiveNow: true }
 
-    // 2. Otherwise look for the next upcoming scheduled class
+    // 2. Otherwise look for the next upcoming scheduled class whose end time is strictly in the future
     const upcoming = activeLiveClasses
-      .filter((lc) => new Date(lc.startsAt) > now && lc.status === "SCHEDULED")
+      .filter((lc) => new Date(lc.startsAt) > now && new Date(lc.endsAt) > now && lc.status === "SCHEDULED")
       .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0]
 
     if (upcoming) return { ...upcoming, isLiveNow: false }
-
-    // Fallback to any scheduled class if any
-    const anyScheduled = activeLiveClasses.find((lc) => lc.status === "SCHEDULED")
-    if (anyScheduled) return { ...anyScheduled, isLiveNow: false }
 
     return null
   }, [activeLiveClasses])
@@ -214,11 +212,28 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
     return () => clearInterval(interval)
   }, [liveOrUpcomingClass])
 
+  const liveOrUpcomingStatus = React.useMemo(() => {
+    if (!liveOrUpcomingClass) return null
+    return computeClassWindowStatus(
+      {
+        startsAt: liveOrUpcomingClass.startsAt,
+        endsAt: liveOrUpcomingClass.endsAt,
+        status: liveOrUpcomingClass.status,
+        joinOpensMinBefore: liveOrUpcomingClass.joinOpensMinBefore,
+      },
+      new Date()
+    )
+  }, [liveOrUpcomingClass, timeLeft])
+
   const [copiedId, setCopiedId] = React.useState(false)
   const [copiedPasscode, setCopiedPasscode] = React.useState(false)
 
   // Copy Meeting Link Handler
   const handleCopyMeetLink = () => {
+    if (!liveOrUpcomingStatus?.isJoinable) {
+      toast.info(`Meeting link unlocks at ${liveOrUpcomingStatus?.formattedOpenTime || "session time"}`)
+      return
+    }
     const url = liveOrUpcomingClass?.meetingUrl || "https://us06web.zoom.us/j/89248109283?pwd=TG2026"
     navigator.clipboard.writeText(url)
     setCopiedLink(true)
@@ -712,41 +727,53 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
 
                     {/* Joining Link & Action Controls */}
                     <div className="pt-4 border-t border-border/60 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-                      <Button
-                        asChild
-                        className="w-full sm:w-auto bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold h-12 px-6 sm:px-8 rounded-2xl shadow-lg shadow-brand-teal/25 text-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
-                      >
-                        <a
-                          href={liveOrUpcomingClass.meetingUrl || defaultMeetUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center justify-center"
+                      {liveOrUpcomingStatus?.isJoinable ? (
+                        <Button
+                          asChild
+                          className="w-full sm:w-auto bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold h-12 px-6 sm:px-8 rounded-2xl shadow-lg shadow-brand-teal/25 text-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
                         >
-                          <Video className="w-5 h-5 mr-2 shrink-0" />
-                          <span className="truncate">
-                            Join Live Class ({liveOrUpcomingClass.platform === "ZOOM" ? "Zoom" : liveOrUpcomingClass.platform === "GOOGLE_MEET" ? "Google Meet" : "Live Room"})
-                          </span>
-                          <ExternalLink className="w-4 h-4 ml-2 shrink-0" />
-                        </a>
-                      </Button>
+                          <a
+                            href={liveOrUpcomingClass.meetingUrl || defaultMeetUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center"
+                          >
+                            <Video className="w-5 h-5 mr-2 shrink-0" />
+                            <span className="truncate">
+                              Join Live Class ({liveOrUpcomingClass.platform === "ZOOM" ? "Zoom" : liveOrUpcomingClass.platform === "GOOGLE_MEET" ? "Google Meet" : "Live Room"})
+                            </span>
+                            <ExternalLink className="w-4 h-4 ml-2 shrink-0" />
+                          </a>
+                        </Button>
+                      ) : (
+                        <Button
+                          disabled
+                          className="w-full sm:w-auto bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-bold h-12 px-6 sm:px-8 rounded-2xl text-sm cursor-not-allowed opacity-95"
+                        >
+                          <Clock className="w-4 h-4 mr-2 text-amber-500 shrink-0" />
+                          <span>Join Opens at {liveOrUpcomingStatus?.formattedOpenTime}</span>
+                        </Button>
+                      )}
 
-                      <Button
-                        onClick={handleCopyMeetLink}
-                        variant="outline"
-                        className="w-full sm:w-auto h-12 px-5 rounded-2xl text-xs font-semibold justify-center"
-                      >
-                        {copiedLink ? (
-                          <>
-                            <Check className="w-4 h-4 mr-2 text-emerald-500" />
-                            <span>Link Copied!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-4 h-4 mr-2" />
-                            <span>Copy Meeting Link</span>
-                          </>
-                        )}
-                      </Button>
+                      {liveOrUpcomingStatus?.isJoinable && (
+                        <Button
+                          onClick={handleCopyMeetLink}
+                          variant="outline"
+                          className="w-full sm:w-auto h-12 px-5 rounded-2xl text-xs font-semibold justify-center"
+                        >
+                          {copiedLink ? (
+                            <>
+                              <Check className="w-4 h-4 mr-2 text-emerald-500" />
+                              <span>Link Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-4 h-4 mr-2" />
+                              <span>Copy Meeting Link</span>
+                            </>
+                          )}
+                        </Button>
+                      )}
 
                       <Button
                         asChild
@@ -1127,16 +1154,40 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
                                 </div>
                               </div>
 
-                              <Button
-                                asChild
-                                size="sm"
-                                className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold rounded-xl text-xs shrink-0"
-                              >
-                                <a href={session.meetingUrl || defaultMeetUrl} target="_blank" rel="noopener noreferrer">
-                                  <Video className="w-3.5 h-3.5 mr-1" />
-                                  <span>Join Room</span>
-                                </a>
-                              </Button>
+                              {(() => {
+                                const sessionWindow = computeClassWindowStatus(
+                                  {
+                                    startsAt: session.startsAt,
+                                    endsAt: session.endsAt,
+                                    status: session.status,
+                                    joinOpensMinBefore: session.joinOpensMinBefore,
+                                  },
+                                  new Date()
+                                )
+
+                                return sessionWindow.isJoinable ? (
+                                  <Button
+                                    asChild
+                                    size="sm"
+                                    className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold rounded-xl text-xs shrink-0"
+                                  >
+                                    <a href={session.meetingUrl || defaultMeetUrl} target="_blank" rel="noopener noreferrer">
+                                      <Video className="w-3.5 h-3.5 mr-1" />
+                                      <span>Join Room</span>
+                                    </a>
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    disabled
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-amber-500/30 bg-amber-500/5 text-amber-600 dark:text-amber-400 font-semibold rounded-xl text-xs shrink-0 cursor-not-allowed opacity-90"
+                                  >
+                                    <Clock className="w-3.5 h-3.5 mr-1 text-amber-500 shrink-0" />
+                                    <span>Opens at {sessionWindow.formattedOpenTime}</span>
+                                  </Button>
+                                )
+                              })()}
                             </div>
                           )
                         })}
@@ -1240,20 +1291,44 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
                           </div>
 
                           <div className="shrink-0 flex items-center gap-3">
-                            <Button
-                              asChild
-                              size="sm"
-                              className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold rounded-xl text-xs shadow-md shadow-brand-teal/20"
-                            >
-                              <a
-                                href={session.meetingUrl || defaultMeetUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                <Video className="w-3.5 h-3.5 mr-1" />
-                                <span>Join Meet Room</span>
-                              </a>
-                            </Button>
+                            {(() => {
+                              const sessionWindow = computeClassWindowStatus(
+                                {
+                                  startsAt: session.startsAt,
+                                  endsAt: session.endsAt,
+                                  status: session.status,
+                                  joinOpensMinBefore: session.joinOpensMinBefore,
+                                },
+                                new Date()
+                              )
+
+                              return sessionWindow.isJoinable ? (
+                                <Button
+                                  asChild
+                                  size="sm"
+                                  className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold rounded-xl text-xs shadow-md shadow-brand-teal/20"
+                                >
+                                  <a
+                                    href={session.meetingUrl || defaultMeetUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <Video className="w-3.5 h-3.5 mr-1" />
+                                    <span>Join Meet Room</span>
+                                  </a>
+                                </Button>
+                              ) : (
+                                <Button
+                                  disabled
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-amber-500/30 bg-amber-500/5 text-amber-600 dark:text-amber-400 font-semibold rounded-xl text-xs shadow-xs cursor-not-allowed opacity-90"
+                                >
+                                  <Clock className="w-3.5 h-3.5 mr-1 text-amber-500 shrink-0" />
+                                  <span>Opens at {sessionWindow.formattedOpenTime}</span>
+                                </Button>
+                              )
+                            })()}
                           </div>
                         </div>
                       )

@@ -3,7 +3,16 @@
  * Every template returns { subject, html, text } so callers can pass it to sendMail().
  */
 
-export const APP_URL = (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "")
+const rawAppUrl =
+  process.env.PUBLIC_APP_URL ||
+  process.env.NEXT_PUBLIC_APP_URL ||
+  process.env.APP_URL ||
+  "https://campus.techgration.live"
+
+// In outbound emails sent to learners, never send localhost links; always use the production domain.
+export const APP_URL = (
+  rawAppUrl.includes("localhost") ? "https://campus.techgration.live" : rawAppUrl
+).replace(/\/$/, "")
 
 export interface RenderedMail {
   subject: string
@@ -219,18 +228,22 @@ function joinBlock(d: LiveClassMailData, accent: string): string {
 export function classScheduledEmail(d: LiveClassMailData): RenderedMail {
   const accent = "#00D6D6"
   const when = formatWhen(d.startsAt, d.timezone)
+  const portalUrl = `${APP_URL}/student/live-classes`
   return {
     subject: `📅 Class scheduled: ${d.title} — ${when}`,
-    text: `Hi ${d.recipientName}, "${d.title}" (${d.courseTitle}) by ${d.teacherName} is scheduled for ${when}.\nPlatform: ${PLATFORM_LABEL[d.platform]}\nMeeting link: ${d.meetingUrl}`,
+    text: `Hi ${d.recipientName}, "${d.title}" (${d.courseTitle}) by ${d.teacherName} is scheduled for ${when}.\nPlatform: ${PLATFORM_LABEL[d.platform]}\n\nA calendar invite (.ics) is attached to this email so you can add it to your calendar.\n\nNOTE: The active Join Classroom link will be emailed to you 30 minutes before the session starts, and will also unlock on your student portal at that time.\nView schedule on portal: ${portalUrl}`,
     html: layout({
       accent,
       eyebrow: "Live Class Scheduled",
-      heading: `New live class, ${d.recipientName}!`,
+      heading: `Live class scheduled, ${d.recipientName}!`,
       bodyHtml:
-        p("A new live session has been scheduled for your course. Add it to your calendar using the attached invite.") +
+        p("A new live session has been scheduled for your course. Please add it to your calendar using the attached invite.") +
         classCard(d, accent) +
-        p("You'll get reminder emails shortly before the class starts.") +
-        joinBlock(d, accent),
+        `<div style="background:#0F172A;border:1px dashed #334155;border-radius:12px;padding:14px 16px;margin:16px 0;font-size:13px;line-height:1.6;color:#94A3B8;">
+          <div style="font-weight:700;color:#F8FAFC;margin-bottom:4px;">⏰ Active Join Link Delivery</div>
+          The active <strong>Join Classroom</strong> button will be emailed to you <strong>30 minutes before the session begins</strong>, and will also unlock directly on your student portal at that time.
+        </div>` +
+        button("View Class Schedule", portalUrl, accent),
     }),
   }
 }
@@ -258,9 +271,12 @@ export function classRescheduledEmail(d: LiveClassMailData): RenderedMail {
   const accent = "#5B9BFF"
   const tz = d.timezone || "Asia/Kolkata"
   const when = formatWhen(d.startsAt, tz)
+  const portalUrl = `${APP_URL}/student/live-classes`
+  const isImminent = d.startsAt.getTime() - Date.now() <= (d.joinOpensMinBefore ?? 15) * 60 * 1000
+
   return {
     subject: `🔁 Rescheduled: ${d.title} — now ${when}`,
-    text: `Hi ${d.recipientName}, "${d.title}" has been rescheduled to ${when}.${d.oldStartsAt ? ` (Earlier: ${formatWhen(d.oldStartsAt, tz)})` : ""}\nMeeting link: ${d.meetingUrl}`,
+    text: `Hi ${d.recipientName}, "${d.title}" has been rescheduled to ${when}.${d.oldStartsAt ? ` (Earlier: ${formatWhen(d.oldStartsAt, tz)})` : ""}${d.reason ? `\nReason: ${d.reason}` : ""}\n\nA calendar update (.ics) has been attached to this email.\n${isImminent ? `Meeting link: ${d.meetingUrl}` : `View on portal: ${portalUrl}`}`,
     html: layout({
       accent,
       eyebrow: "Class Rescheduled",
@@ -270,8 +286,19 @@ export function classRescheduledEmail(d: LiveClassMailData): RenderedMail {
           ? p(`<span style="text-decoration:line-through;color:#64748B;">${esc(formatWhen(d.oldStartsAt, tz))}</span> &nbsp;→&nbsp; <strong style="color:#E2E8F0;">${esc(when)}</strong>`)
           : "") +
         classCard(d, accent) +
-        p("Fresh reminders will be sent before the new start time. The attached invite updates your calendar.") +
-        joinBlock(d, accent),
+        (d.reason
+          ? `<div style="background:#1E293B;border-left:4px solid #5B9BFF;padding:12px 14px;border-radius:8px;margin:12px 0 16px;font-size:13px;line-height:1.6;color:#E2E8F0;">
+              <strong style="color:#5B9BFF;">Note from instructor:</strong> ${esc(d.reason)}
+            </div>`
+          : "") +
+        p("The attached invite updates your calendar. Fresh reminder emails will be sent before the new start time.") +
+        (isImminent
+          ? joinBlock(d, accent)
+          : `<div style="background:#0F172A;border:1px dashed #334155;border-radius:12px;padding:14px 16px;margin:16px 0;font-size:13px;line-height:1.6;color:#94A3B8;">
+              <div style="font-weight:700;color:#F8FAFC;margin-bottom:4px;">⏰ Active Join Link Delivery</div>
+              The active join link will be emailed to you 30 minutes before the new start time, and will unlock on your student portal.
+            </div>` +
+            button("View Updated Schedule", portalUrl, accent)),
     }),
   }
 }
