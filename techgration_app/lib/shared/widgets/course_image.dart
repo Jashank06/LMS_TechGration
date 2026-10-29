@@ -42,6 +42,9 @@ class CourseImage extends StatelessWidget {
     if (lower.contains('machine learning') && !lower.contains('deep learning')) {
       return 'assets/images/ml_course.jpg';
     }
+    if (lower.contains('analytics')) {
+      return 'assets/images/data_analytics.png';
+    }
     return 'assets/images/ai_course.png';
   }
 

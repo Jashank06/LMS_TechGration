@@ -63,6 +63,44 @@ export default function TeacherLiveClassesPage() {
   const [notifyStudents, setNotifyStudents] = React.useState(true)
   const [isRescheduling, setIsRescheduling] = React.useState(false)
 
+  // Recording Modal
+  const [recordingTarget, setRecordingTarget] = React.useState<TeacherLiveClass | null>(null)
+  const [recordingUrlInput, setRecordingUrlInput] = React.useState("")
+  const [savingRecording, setSavingRecording] = React.useState(false)
+
+  const handleOpenRecordingModal = (cls: TeacherLiveClass) => {
+    setRecordingTarget(cls)
+    setRecordingUrlInput(cls.recordingUrl || "")
+  }
+
+  const handleSaveRecording = async () => {
+    if (!recordingTarget) return
+    setSavingRecording(true)
+    try {
+      const res = await fetch(`/api/teacher/live-classes/${recordingTarget.id}/recording`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recordingUrl: recordingUrlInput }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || "Failed to update recording")
+
+      toast.success(recordingUrlInput.trim() ? "Recording published! Students can now watch." : "Recording removed.")
+      setClasses((prev) =>
+        prev.map((c) =>
+          c.id === recordingTarget.id
+            ? { ...c, recordingUrl: json.liveClass.recordingUrl, status: json.liveClass.status }
+            : c
+        )
+      )
+      setRecordingTarget(null)
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save recording")
+    } finally {
+      setSavingRecording(false)
+    }
+  }
+
   const handleOpenReschedule = (cls: TeacherLiveClass) => {
     const start = new Date(cls.startsAt)
     const end = new Date(cls.endsAt)
@@ -398,6 +436,29 @@ export default function TeacherLiveClassesPage() {
                               <span>Roster</span>
                             </Link>
                           </Button>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenRecordingModal(cls)}
+                            className={`gap-1.5 font-semibold text-xs ${
+                              cls.recordingUrl
+                                ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                                : "border-brand-teal/40 text-brand-charcoal dark:text-brand-teal hover:bg-brand-teal/10"
+                            }`}
+                            title="Attach or update class recording link"
+                          >
+                            <Video className="w-3.5 h-3.5 text-brand-teal" />
+                            <span>{cls.recordingUrl ? "Edit Recording" : "Attach Recording"}</span>
+                          </Button>
+
+                          {cls.recordingUrl && (
+                            <Button asChild variant="ghost" size="sm" className="text-xs text-brand-teal hover:bg-brand-teal/10">
+                              <a href={cls.recordingUrl} target="_blank" rel="noopener noreferrer" title="Preview recording in new tab">
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            </Button>
+                          )}
 
                           {!isCompleted && (
                             <>
@@ -784,6 +845,91 @@ export default function TeacherLiveClassesPage() {
             <Button variant="destructive" size="sm" onClick={handleCancelSubmit}>
               Confirm Cancellation
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Attach / Edit Recording Dialog */}
+      <Dialog open={Boolean(recordingTarget)} onOpenChange={(open) => !open && setRecordingTarget(null)}>
+        <DialogContent className="sm:max-w-md shadow-2xl">
+          <DialogHeader className="border-b border-border pb-3">
+            <DialogTitle className="text-base font-bold flex items-center gap-2">
+              <PlayCircle className="w-5 h-5 text-brand-teal" />
+              <span>Attach Class Recording</span>
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2 text-xs">
+            <div className="p-3 rounded-xl bg-muted/40 border border-border/60 space-y-1">
+              <h4 className="text-xs font-bold text-foreground truncate">{recordingTarget?.title}</h4>
+              <p className="text-[11px] text-muted-foreground">
+                Platform: <span className="font-semibold text-foreground">{recordingTarget?.platform}</span>
+                {recordingTarget?.meetingId ? ` • ID: ${recordingTarget.meetingId}` : ""}
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="recording-url" className="text-xs font-semibold">
+                Recording Shareable Link (Zoom, YouTube, Drive, or MP4)
+              </Label>
+              <Input
+                id="recording-url"
+                placeholder="https://us05web.zoom.us/rec/share/..."
+                value={recordingUrlInput}
+                onChange={(e) => setRecordingUrlInput(e.target.value)}
+                className="text-xs font-mono"
+              />
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Zoom recording page par <strong>&quot;Copy shareable link&quot;</strong> button par click karke link yahan paste karein. Save karte hi student portal par <strong>&quot;Watch Recording&quot;</strong> button activate ho jayega.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="border-t border-border pt-3 flex items-center justify-between gap-2">
+            <div>
+              {recordingTarget?.recordingUrl && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setRecordingUrlInput("")}
+                  className="text-xs text-destructive hover:bg-destructive/10"
+                  disabled={savingRecording}
+                >
+                  Clear Link
+                </Button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setRecordingTarget(null)}
+                disabled={savingRecording}
+                className="text-xs"
+              >
+                Cancel
+              </Button>
+
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleSaveRecording}
+                disabled={savingRecording}
+                className="text-xs font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal gap-1.5"
+              >
+                {savingRecording ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <span>Save & Publish</span>
+                )}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

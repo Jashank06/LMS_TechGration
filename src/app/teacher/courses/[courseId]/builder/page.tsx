@@ -9,6 +9,7 @@ import { triggerBrandCelebration } from "@/components/motion/celebration"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   ArrowLeft,
   Radio,
@@ -43,6 +44,7 @@ import {
   Edit2,
   Key,
   Share2,
+  Loader2,
 } from "lucide-react"
 import { toast } from "sonner"
 import { CreateAssignmentModal } from "@/components/teacher/create-assignment-modal"
@@ -252,6 +254,43 @@ export default function TeacherCourseHubPage() {
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null)
   const [materialFilter, setMaterialFilter] = React.useState<"ALL" | "PDF" | "IPYNB" | "ZIP">("ALL")
   const [searchMaterial, setSearchMaterial] = React.useState("")
+
+  // Recording Modal state
+  const [editingRecordingClass, setEditingRecordingClass] = React.useState<LiveClassItem | null>(null)
+  const [editingRecordingUrl, setEditingRecordingUrl] = React.useState("")
+  const [savingRecordingUrl, setSavingRecordingUrl] = React.useState(false)
+
+  const handleSaveRecordingUrl = async () => {
+    if (!editingRecordingClass || !course) return
+    setSavingRecordingUrl(true)
+    try {
+      const res = await fetch(`/api/teacher/courses/${course.id}/live-classes/${editingRecordingClass.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recordingUrl: editingRecordingUrl }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || "Failed to update recording")
+
+      toast.success(editingRecordingUrl.trim() ? "Recording published! Students can now watch this session." : "Recording removed.")
+      setCourse((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          liveClasses: prev.liveClasses.map((lc) =>
+            lc.id === editingRecordingClass.id
+              ? { ...lc, recordingUrl: json.liveClass.recordingUrl }
+              : lc
+          ),
+        }
+      })
+      setEditingRecordingClass(null)
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save recording")
+    } finally {
+      setSavingRecordingUrl(false)
+    }
+  }
 
   const fetchAssignments = React.useCallback(async () => {
     try {
@@ -1403,14 +1442,91 @@ export default function TeacherCourseHubPage() {
                 </div>
               </div>
 
-              {/* List of past classes where recordings can be linked */}
+              {/* List of classes where recordings can be linked */}
               <div className="space-y-3">
-                <h3 className="text-sm font-bold text-foreground">Recorded Live Sessions</h3>
-                <div className="p-8 rounded-2xl border border-dashed border-border bg-card/40 text-center space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <h3 className="text-sm font-bold text-foreground">
+                    Course Sessions & Recordings ({course.liveClasses?.length || 0})
+                  </h3>
                   <p className="text-xs text-muted-foreground">
-                    No session recordings are currently published. Completed Google Meet sessions will be attached here.
+                    Attach Zoom shareable links, YouTube, or MP4 URLs to make them immediately streamable for students.
                   </p>
                 </div>
+
+                {!course.liveClasses || course.liveClasses.length === 0 ? (
+                  <div className="p-8 rounded-2xl border border-dashed border-border bg-card/40 text-center space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      No live sessions scheduled yet for this course. Schedule a session first to attach recordings.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-3">
+                    {course.liveClasses.map((lc) => (
+                      <div
+                        key={lc.id}
+                        className="p-4 sm:p-5 rounded-2xl border border-border/80 bg-card/80 backdrop-blur-sm flex flex-col md:flex-row md:items-center justify-between gap-4"
+                      >
+                        <div className="space-y-1.5 min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {lc.recordingUrl ? (
+                              <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30 gap-1 text-[11px] font-semibold">
+                                <CheckCircle2 className="w-3 h-3" />
+                                <span>Recording Published</span>
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-muted-foreground border-border text-[11px]">
+                                No Recording Attached
+                              </Badge>
+                            )}
+
+                            <span className="text-xs font-mono text-muted-foreground">
+                              {new Date(lc.startsAt).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                              })}{" "}
+                              •{" "}
+                              {new Date(lc.startsAt).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+
+                            <span className="text-xs text-muted-foreground">• Platform: {lc.platform}</span>
+                          </div>
+
+                          <h4 className="text-sm font-bold text-foreground truncate">{lc.title}</h4>
+                          {lc.recordingUrl && (
+                            <p className="text-xs font-mono text-brand-teal truncate">{lc.recordingUrl}</p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          {lc.recordingUrl && (
+                            <Button asChild size="sm" variant="ghost" className="text-xs text-brand-teal hover:bg-brand-teal/10">
+                              <a href={lc.recordingUrl} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="w-3.5 h-3.5 mr-1" />
+                                <span>View</span>
+                              </a>
+                            </Button>
+                          )}
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setEditingRecordingClass(lc)
+                              setEditingRecordingUrl(lc.recordingUrl || "")
+                            }}
+                            className="text-xs font-semibold gap-1.5 border-brand-teal/40 hover:bg-brand-teal/10 text-brand-charcoal dark:text-brand-teal"
+                          >
+                            <Video className="w-3.5 h-3.5 text-brand-teal" />
+                            <span>{lc.recordingUrl ? "Edit Link" : "Attach Recording"}</span>
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
@@ -2747,6 +2863,106 @@ export default function TeacherCourseHubPage() {
                   </div>
                 </form>
               )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Recording URL Modal */}
+      <AnimatePresence>
+        {Boolean(editingRecordingClass) && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-card border border-border rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-4"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-border">
+                <div className="flex items-center gap-2">
+                  <PlayCircle className="w-5 h-5 text-brand-teal" />
+                  <h3 className="font-extrabold text-foreground text-sm">Attach Class Recording</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingRecordingClass(null)}
+                  className="p-1 rounded-lg text-muted-foreground hover:bg-muted/60"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="p-3 rounded-xl bg-muted/40 border border-border/60 space-y-1">
+                  <h4 className="text-xs font-bold text-foreground truncate">{editingRecordingClass?.title}</h4>
+                  <p className="text-[11px] text-muted-foreground">
+                    Platform: <span className="font-semibold text-foreground">{editingRecordingClass?.platform}</span>
+                    {editingRecordingClass?.meetingId ? ` • ID: ${editingRecordingClass.meetingId}` : ""}
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="builder-recording-url" className="text-xs font-semibold">
+                    Recording Shareable Link (Zoom, YouTube, Drive, or MP4)
+                  </Label>
+                  <Input
+                    id="builder-recording-url"
+                    placeholder="https://us05web.zoom.us/rec/share/..."
+                    value={editingRecordingUrl}
+                    onChange={(e) => setEditingRecordingUrl(e.target.value)}
+                    className="text-xs font-mono"
+                  />
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Zoom recording page par <strong>&quot;Copy shareable link&quot;</strong> button par click karke link yahan paste karein. Save karte hi student portal par recording accessible ho jayegi.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-3 border-t border-border gap-2">
+                <div>
+                  {editingRecordingClass?.recordingUrl && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditingRecordingUrl("")}
+                      className="text-xs text-destructive hover:bg-destructive/10"
+                      disabled={savingRecordingUrl}
+                    >
+                      Clear Link
+                    </Button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditingRecordingClass(null)}
+                    disabled={savingRecordingUrl}
+                    className="text-xs"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleSaveRecordingUrl}
+                    disabled={savingRecordingUrl}
+                    className="text-xs font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal gap-1.5"
+                  >
+                    {savingRecordingUrl ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <span>Save & Publish</span>
+                    )}
+                  </Button>
+                </div>
+              </div>
             </motion.div>
           </div>
         )}

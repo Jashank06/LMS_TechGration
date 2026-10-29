@@ -35,6 +35,7 @@ import {
   ArrowRight,
 } from "lucide-react"
 import { QuickSubmitAssignmentModal } from "@/components/student/quick-submit-assignment-modal"
+import { RecordingPlayerModal, type RecordingModalData } from "@/components/video/recording-player-modal"
 import { toast } from "sonner"
 import { computeClassWindowStatus } from "@/lib/live-class-utils"
 
@@ -80,6 +81,11 @@ export interface CourseHubData {
     position: number
     isCompleted: boolean
     resourcesCount: number
+    startsAt?: string
+    endsAt?: string
+    instructorName?: string
+    platform?: string
+    meetingPasscode?: string | null
   }>
   studyMaterials: Array<{
     id: string
@@ -273,6 +279,9 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
       (r) => r.title.toLowerCase().includes(q) || (r.description && r.description.toLowerCase().includes(q))
     )
   }, [course.recordings, searchRecording])
+
+  // Active Interactive Video Recording Player Modal
+  const [activeModalRecording, setActiveModalRecording] = React.useState<RecordingModalData | null>(null)
 
   const defaultMeetUrl = liveOrUpcomingClass?.meetingUrl || "https://meet.google.com/jan-hnzk-nhf"
 
@@ -851,7 +860,7 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
                         Class Session Recordings ({filteredRecordings.length})
                       </h3>
                       <p className="text-xs text-muted-foreground">
-                        Recordings of live classes conducted by instructor Jay Kumar.
+                        Recordings of live classes conducted by instructor {course.instructorName || "Vineet Sir"}.
                       </p>
                     </div>
 
@@ -868,109 +877,159 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
 
                   {/* Recordings Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {filteredRecordings.map((rec, idx) => (
-                      <div
-                        key={rec.id}
-                        className="rounded-3xl border border-border/80 bg-card/80 backdrop-blur-xl overflow-hidden shadow-xs hover:border-brand-teal/40 transition-all flex flex-col justify-between group"
-                      >
-                        <div className="space-y-4">
-                          <div className="relative aspect-video w-full bg-slate-900 overflow-hidden">
-                            <Image
-                              src={course.thumbnailUrl}
-                              alt={rec.title}
-                              fill
-                              sizes="(max-width: 768px) 100vw, 50vw"
-                              className="object-cover group-hover:scale-105 transition-transform duration-500 opacity-80"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    {filteredRecordings.map((rec, idx) => {
+                      const startDate = rec.startsAt ? new Date(rec.startsAt) : null
+                      const formattedDate = startDate
+                        ? startDate.toLocaleDateString("en-US", {
+                            weekday: "short",
+                            month: "short",
+                            day: "numeric",
+                          })
+                        : null
+                      const formattedTime = startDate
+                        ? startDate.toLocaleTimeString("en-US", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : null
 
-                            <div className="absolute top-3 left-3">
-                              <span className="px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-brand-charcoal/90 text-brand-teal border border-brand-teal/30 shadow-md">
-                                Session 0{idx + 1}
-                              </span>
-                            </div>
+                      const isZoom = rec.platform === "ZOOM" || rec.videoUrl?.includes("zoom.us")
+                      const instructor = rec.instructorName || course.instructorName || "Vineet Sir"
 
-                            <div className="absolute bottom-3 right-3">
-                              <span className="px-2.5 py-1 rounded-md text-[11px] font-mono font-bold bg-black/80 text-white border border-white/10">
-                                {rec.durationMinutes} mins
-                              </span>
-                            </div>
+                      return (
+                        <div
+                          key={rec.id}
+                          className="rounded-3xl border border-border/80 bg-card/80 backdrop-blur-xl overflow-hidden shadow-xs hover:border-brand-teal/40 hover:shadow-card transition-all flex flex-col justify-between group"
+                        >
+                          <div className="space-y-4">
+                            <div className="relative aspect-video w-full bg-slate-900 overflow-hidden">
+                              <Image
+                                src={course.thumbnailUrl}
+                                alt={rec.title}
+                                fill
+                                sizes="(max-width: 768px) 100vw, 50vw"
+                                className="object-cover group-hover:scale-105 transition-transform duration-500 opacity-80"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
 
-                            {rec.videoUrl?.startsWith("http") ? (
-                              <a
-                                href={rec.videoUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="absolute inset-0 flex items-center justify-center group-hover:scale-110 transition-transform"
-                              >
-                                <div className="w-14 h-14 rounded-full bg-brand-teal text-brand-charcoal flex items-center justify-center shadow-xl shadow-brand-teal/30">
-                                  <PlayCircle className="w-7 h-7 fill-current" />
-                                </div>
-                              </a>
-                            ) : (
-                              <Link
-                                href={`/student/learn/${rec.id}`}
-                                className="absolute inset-0 flex items-center justify-center group-hover:scale-110 transition-transform"
-                              >
-                                <div className="w-14 h-14 rounded-full bg-brand-teal text-brand-charcoal flex items-center justify-center shadow-xl shadow-brand-teal/30">
-                                  <PlayCircle className="w-7 h-7 fill-current" />
-                                </div>
-                              </Link>
-                            )}
-                          </div>
-
-                          <div className="p-5 space-y-2">
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <span>Instructor: {course.instructorName || "Jay Kumar"}</span>
-                              {rec.isCompleted && (
-                                <span className="flex items-center gap-1 text-emerald-500 font-bold">
-                                  <CheckCircle2 className="w-3.5 h-3.5" />
-                                  <span>Watched</span>
+                              <div className="absolute top-3 left-3 flex items-center gap-2">
+                                <span className="px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-brand-charcoal/90 text-brand-teal border border-brand-teal/30 shadow-md">
+                                  Session 0{idx + 1}
                                 </span>
-                              )}
+                              </div>
+
+                              <div className="absolute top-3 right-3">
+                                {rec.videoUrl?.startsWith("/Recordings") || !rec.videoUrl?.startsWith("http") ? (
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide bg-brand-teal text-brand-charcoal border border-brand-teal/40 shadow-md flex items-center gap-1">
+                                    <Video className="w-3 h-3" />
+                                    <span>TechGration In-Portal Stream</span>
+                                  </span>
+                                ) : isZoom ? (
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide bg-blue-600/90 text-white border border-blue-400/30 shadow-md flex items-center gap-1">
+                                    <Video className="w-3 h-3" />
+                                    <span>Zoom Cloud HD</span>
+                                  </span>
+                                ) : (
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide bg-emerald-600/90 text-white border border-emerald-400/30 shadow-md flex items-center gap-1">
+                                    <Video className="w-3 h-3" />
+                                    <span>Google Meet Archive</span>
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="absolute bottom-3 right-3">
+                                <span className="px-2.5 py-1 rounded-md text-[11px] font-mono font-bold bg-black/80 text-white border border-white/10 flex items-center gap-1">
+                                  <Clock className="w-3 h-3 text-brand-teal" />
+                                  <span>{rec.durationMinutes} mins</span>
+                                </span>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setActiveModalRecording({
+                                    id: rec.id,
+                                    title: rec.title,
+                                    videoUrl: rec.videoUrl || "/Recordings/AI/Recording.mp4",
+                                    courseTitle: course.title,
+                                    instructorName: instructor,
+                                    conductedDate: formattedDate && formattedTime ? `Concluded ${formattedDate} at ${formattedTime}` : undefined,
+                                    description: rec.description,
+                                    durationMinutes: rec.durationMinutes,
+                                  })
+                                }
+                                className="absolute inset-0 flex items-center justify-center group-hover:scale-110 transition-transform cursor-pointer"
+                                aria-label="Play recording in portal"
+                              >
+                                <div className="w-16 h-16 rounded-full bg-brand-teal text-brand-charcoal flex items-center justify-center shadow-2xl shadow-brand-teal/40">
+                                  <PlayCircle className="w-8 h-8 fill-current" />
+                                </div>
+                              </button>
                             </div>
 
-                            <h4 className="text-base font-bold text-foreground leading-snug group-hover:text-brand-teal transition-colors">
-                              {rec.title}
-                            </h4>
+                            <div className="p-5 space-y-3">
+                              {/* Date & Time pill + Instructor badge */}
+                              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground border-b border-border/40 pb-2.5">
+                                {formattedDate && formattedTime ? (
+                                  <span className="flex items-center gap-1.5 font-medium text-foreground">
+                                    <Calendar className="w-3.5 h-3.5 text-brand-teal" />
+                                    <span>Concluded {formattedDate} at {formattedTime}</span>
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center gap-1.5">
+                                    <Calendar className="w-3.5 h-3.5 text-brand-teal" />
+                                    <span>Live Class Archive</span>
+                                  </span>
+                                )}
 
-                            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                              {rec.description || "Live class recording."}
-                            </p>
+                                <span className="flex items-center gap-1 text-xs">
+                                  <Users className="w-3.5 h-3.5 text-muted-foreground" />
+                                  <span>Faculty: <strong className="text-foreground font-semibold">{instructor}</strong></span>
+                                </span>
+                              </div>
+
+                              <div className="space-y-1">
+                                <h4 className="text-base font-bold text-foreground leading-snug group-hover:text-brand-teal transition-colors">
+                                  {rec.title}
+                                </h4>
+
+                                <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                                  {rec.description || "Official high-definition recording of this live classroom session."}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="p-5 pt-0 border-t border-border/40 flex items-center justify-between">
+                            <span className="text-[11px] text-muted-foreground font-mono flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                              <span>In-Portal Player Ready (1080p)</span>
+                            </span>
+
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() =>
+                                setActiveModalRecording({
+                                  id: rec.id,
+                                  title: rec.title,
+                                  videoUrl: rec.videoUrl || "/Recordings/AI/Recording.mp4",
+                                  courseTitle: course.title,
+                                  instructorName: instructor,
+                                  conductedDate: formattedDate && formattedTime ? `Concluded ${formattedDate} at ${formattedTime}` : undefined,
+                                  description: rec.description,
+                                  durationMinutes: rec.durationMinutes,
+                                })
+                              }
+                              className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold rounded-xl text-xs shadow-teal-glow gap-1.5 cursor-pointer"
+                            >
+                              <PlayCircle className="w-3.5 h-3.5 fill-current" />
+                              <span>Watch Recording</span>
+                            </Button>
                           </div>
                         </div>
-
-                        <div className="p-5 pt-0 border-t border-border/40 flex items-center justify-between">
-                          <span className="text-[11px] text-muted-foreground">
-                            {rec.resourcesCount > 0 ? `📁 ${rec.resourcesCount} Files Attached` : "HD Recording"}
-                          </span>
-
-                          {rec.videoUrl?.startsWith("http") ? (
-                            <Button
-                              asChild
-                              size="sm"
-                              className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold rounded-xl text-xs"
-                            >
-                              <a href={rec.videoUrl} target="_blank" rel="noopener noreferrer">
-                                <span>Watch Recording</span>
-                                <ExternalLink className="w-3.5 h-3.5 ml-1" />
-                              </a>
-                            </Button>
-                          ) : (
-                            <Button
-                              asChild
-                              size="sm"
-                              className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold rounded-xl text-xs"
-                            >
-                              <Link href={`/student/learn/${rec.id}`}>
-                                <span>Watch Recording</span>
-                                <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                              </Link>
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </>
               ) : (
@@ -1831,6 +1890,12 @@ export function CourseHubClient({ course }: CourseHubClientProps) {
         isOpen={Boolean(submittingAssignment)}
         onClose={() => setSubmittingAssignment(null)}
         onSuccess={handleSubmissionSuccess}
+      />
+
+      {/* INTERACTIVE VIDEO RECORDING PLAYER MODAL */}
+      <RecordingPlayerModal
+        recording={activeModalRecording}
+        onClose={() => setActiveModalRecording(null)}
       />
     </div>
   )

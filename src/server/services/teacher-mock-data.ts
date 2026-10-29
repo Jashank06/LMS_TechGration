@@ -77,6 +77,8 @@ export interface TeacherLiveClass {
   platform: "ZOOM" | "GOOGLE_MEET" | "TEAMS" | "CUSTOM"
   meetingUrl: string
   meetingPasscode?: string
+  meetingId?: string | null
+  recordingUrl?: string | null
   status: "SCHEDULED" | "LIVE" | "COMPLETED" | "CANCELLED"
   enrolledCount: number
   attendedCount?: number

@@ -119,6 +119,8 @@ export async function sendClassMails(input: SendClassMailsInput) {
     endsAt: cls.endsAt,
     platform: cls.platform as PlatformKey,
     meetingUrl: cls.meetingUrl,
+    meetingId: cls.meetingId,
+    meetingPasscode: cls.meetingPasscode,
     joinOpensMinBefore: cls.joinOpensMinBefore,
     offsetMin: input.offsetMin,
     oldStartsAt: input.oldStartsAt,
@@ -131,7 +133,7 @@ export async function sendClassMails(input: SendClassMailsInput) {
     ? buildIcs({
         uid: cls.id,
         title: `${cls.title} — ${cls.course.title}`,
-        description: `Live class by ${cls.instructorName}. Meeting Link: ${cls.meetingUrl}`,
+        description: `Live class by ${cls.instructorName}. Meeting Link: ${cls.meetingUrl}${cls.meetingPasscode ? ` | Passcode: ${cls.meetingPasscode}` : ""}`,
         startsAt: cls.startsAt,
         endsAt: cls.endsAt,
         url: cls.meetingUrl,

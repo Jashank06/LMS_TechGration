@@ -35,6 +35,8 @@ import {
   HelpCircle,
   Clock,
   BookOpen,
+  BarChart3,
+  Briefcase,
   ImageIcon,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -46,6 +48,8 @@ const CATEGORIES = [
   { id: "Security & DevSecOps", name: "Cybersecurity", icon: Shield, desc: "Zero-Trust, IAM, Network Defense" },
   { id: "DevOps & Infrastructure", name: "DevOps & CI/CD", icon: Terminal, desc: "Docker, Terraform, Observability" },
   { id: "Mobile Architecture", name: "Mobile Development", icon: Smartphone, desc: "Flutter, React Native & Swift" },
+  { id: "Data Analytics", name: "Data Analytics", icon: BarChart3, desc: "Python, SQL, Power BI & Business Intelligence" },
+  { id: "Leadership & Management", name: "Leadership & Management", icon: Briefcase, desc: "Team Leadership, Strategic Execution & Management" },
 ]
 
 const SKILL_LEVELS = [
@@ -85,6 +89,18 @@ const SUGGESTED_OUTCOMES_BY_CATEGORY: Record<string, string[]> = {
     "Conduct container image vulnerability scanning and automated remediation",
     "Architect secure cloud perimeters with Cloudflare, WAF, and DDoS mitigation",
     "Audit IAM privileges and cryptographic key rotation pipelines",
+  ],
+  "Data Analytics": [
+    "Perform exploratory data analysis and data wrangling with Python (Pandas, NumPy)",
+    "Write advanced SQL queries, multi-table joins, and window analytical functions",
+    "Design and build interactive business intelligence dashboards in Power BI and Tableau",
+    "Apply statistical modeling and data storytelling to drive strategic business decisions",
+  ],
+  "Leadership & Management": [
+    "Master cross-functional team leadership, motivation, and strategic decision-making",
+    "Apply Agile, Scrum, and modern project management frameworks for high-impact delivery",
+    "Develop executive communication, conflict resolution, and stakeholder negotiation skills",
+    "Lead organizational change, innovation culture, and high-performance engineering teams",
   ],
 }
 

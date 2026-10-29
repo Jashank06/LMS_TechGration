@@ -17,6 +17,7 @@ import {
   Lock,
 } from "lucide-react"
 import { computeClassWindowStatus } from "@/lib/live-class-utils"
+import { RecordingPlayerModal, type RecordingModalData } from "@/components/video/recording-player-modal"
 
 export interface LiveClassItem {
   id: string
@@ -44,6 +45,7 @@ export function LiveClassesClient({
 }) {
   const [activeTab, setActiveTab] = React.useState<"UPCOMING" | "PAST">("UPCOMING")
   const [now, setNow] = React.useState<Date>(() => new Date())
+  const [activeModalRecording, setActiveModalRecording] = React.useState<RecordingModalData | null>(null)
 
   React.useEffect(() => {
     setNow(new Date())
@@ -330,15 +332,23 @@ export function LiveClassesClient({
                   <div className="w-full md:w-auto shrink-0 flex items-center pt-2 md:pt-0">
                     {cls.recordingUrl ? (
                       <Button
-                        asChild
-                        variant="outline"
+                        type="button"
                         size="sm"
-                        className="h-11 sm:h-10 px-5 text-xs font-semibold rounded-xl border-border/80 w-full sm:w-auto shrink-0 hover:bg-brand-teal hover:text-brand-charcoal transition-all"
+                        onClick={() =>
+                          setActiveModalRecording({
+                            id: cls.id,
+                            title: cls.title,
+                            videoUrl: cls.recordingUrl || "/Recordings/AI/Recording.mp4",
+                            courseTitle: cls.courseTitle,
+                            instructorName: cls.teacherName,
+                            conductedDate: `Concluded on ${formattedDate} at ${formattedTime}`,
+                            description: cls.description,
+                          })
+                        }
+                        className="h-11 sm:h-10 px-5 text-xs font-bold rounded-xl bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal w-full sm:w-auto shrink-0 shadow-teal-glow gap-1.5 cursor-pointer"
                       >
-                        <a href={cls.recordingUrl} target="_blank" rel="noopener noreferrer">
-                          <PlayCircle className="w-4 h-4 mr-2 text-brand-teal" />
-                          <span>Watch Recording</span>
-                        </a>
+                        <PlayCircle className="w-4 h-4 fill-current" />
+                        <span>Watch Recording</span>
                       </Button>
                     ) : (
                       <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-secondary/50 border border-border/60 text-xs text-muted-foreground font-medium w-full sm:w-auto justify-center">
@@ -353,6 +363,12 @@ export function LiveClassesClient({
           )}
         </div>
       )}
+
+      {/* INTERACTIVE VIDEO RECORDING PLAYER MODAL */}
+      <RecordingPlayerModal
+        recording={activeModalRecording}
+        onClose={() => setActiveModalRecording(null)}
+      />
     </div>
   )
 }

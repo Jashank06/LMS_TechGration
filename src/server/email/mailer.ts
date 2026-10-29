@@ -9,6 +9,11 @@ export const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 465,
   secure: true,
+  pool: true,
+  maxConnections: 2,
+  maxMessages: 100,
+  rateDelta: 1000,
+  rateLimit: 3,
   auth: {
     user: SMTP_USER,
     pass: SMTP_PASS,
@@ -438,11 +443,11 @@ export async function sendMail(input: SendMailInput): Promise<{ success: boolean
 }
 
 /**
- * Throttled batch sender: runs `concurrency` mails in parallel (Gmail friendly).
+ * Throttled batch sender: runs `concurrency` mails in parallel (Gmail friendly with rate limiting).
  */
 export async function sendMailBatch(
   inputs: SendMailInput[],
-  concurrency = 5
+  concurrency = 2
 ): Promise<{ sent: number; failed: number }> {
   let sent = 0
   let failed = 0
@@ -454,6 +459,8 @@ export async function sendMailBatch(
       const res = await sendMail(current)
       if (res.success) sent++
       else failed++
+      // Polite pacing to respect Gmail SMTP rate limits
+      await new Promise((r) => setTimeout(r, 250))
     }
   }
 

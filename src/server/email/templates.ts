@@ -189,6 +189,8 @@ export interface LiveClassMailData {
   endsAt: Date
   platform: PlatformKey
   meetingUrl: string
+  meetingId?: string | null
+  meetingPasscode?: string | null
   recipientName: string
   timezone?: string
   joinOpensMinBefore?: number
@@ -209,7 +211,7 @@ function classCard(d: LiveClassMailData, accent: string): string {
       📚 ${esc(d.courseTitle)}<br/>
       👨‍🏫 ${esc(d.teacherName)}<br/>
       🕗 <strong style="color:#E2E8F0;">${esc(formatWhen(d.startsAt, tz))}</strong> (${mins} min)<br/>
-      💻 ${PLATFORM_LABEL[d.platform]}
+      💻 ${PLATFORM_LABEL[d.platform]}${d.meetingPasscode ? ` · 🔐 Passcode: <strong style="color:#F8FAFC;">${esc(d.meetingPasscode)}</strong>` : ""}${d.meetingId ? ` · ID: <span style="font-family:monospace;">${esc(d.meetingId)}</span>` : ""}
     </div>
   </div>`
 }
@@ -218,6 +220,9 @@ function joinBlock(d: LiveClassMailData, accent: string): string {
   const meetingUrl = d.meetingUrl?.trim() || `${APP_URL}/join/${d.classId}`
   return (
     button("Join Now", meetingUrl, accent) +
+    (d.meetingPasscode
+      ? `<div style="text-align:center;font-size:13px;font-weight:600;color:#F8FAFC;margin:10px 0 4px;">🔐 Meeting Passcode: <span style="font-family:monospace;background:#334155;color:#38BDF8;padding:3px 10px;border-radius:6px;letter-spacing:1px;">${esc(d.meetingPasscode)}</span></div>`
+      : "") +
     `<div style="text-align:center;font-size:12px;color:#64748B;margin-top:10px;line-height:1.7;">
       Or open the meeting link directly:<br/>
       <a href="${esc(meetingUrl)}" style="color:${accent};word-break:break-all;">${esc(meetingUrl)}</a>
@@ -229,21 +234,31 @@ export function classScheduledEmail(d: LiveClassMailData): RenderedMail {
   const accent = "#00D6D6"
   const when = formatWhen(d.startsAt, d.timezone)
   const portalUrl = `${APP_URL}/student/live-classes`
+  const isImminent = d.startsAt.getTime() - Date.now() <= 30 * 60 * 1000
+
   return {
-    subject: `📅 Class scheduled: ${d.title} — ${when}`,
-    text: `Hi ${d.recipientName}, "${d.title}" (${d.courseTitle}) by ${d.teacherName} is scheduled for ${when}.\nPlatform: ${PLATFORM_LABEL[d.platform]}\n\nA calendar invite (.ics) is attached to this email so you can add it to your calendar.\n\nNOTE: The active Join Classroom link will be emailed to you 30 minutes before the session starts, and will also unlock on your student portal at that time.\nView schedule on portal: ${portalUrl}`,
+    subject: isImminent
+      ? `🚀 Starting Soon — ${d.title} at ${formatWhen(d.startsAt, d.timezone)}`
+      : `📅 Class scheduled: ${d.title} — ${when}`,
+    text: isImminent
+      ? `Hi ${d.recipientName}, "${d.title}" is starting soon at ${when}.\nPlatform: ${PLATFORM_LABEL[d.platform]}\nMeeting Link: ${d.meetingUrl}${d.meetingPasscode ? `\nPasscode: ${d.meetingPasscode}` : ""}\n\nJoin Now: ${d.meetingUrl}\nOr open student portal: ${portalUrl}`
+      : `Hi ${d.recipientName}, "${d.title}" (${d.courseTitle}) by ${d.teacherName} is scheduled for ${when}.\nPlatform: ${PLATFORM_LABEL[d.platform]}\n\nA calendar invite (.ics) is attached to this email so you can add it to your calendar.\n\nNOTE: The active Join Classroom link will be emailed to you 30 minutes before the session starts, and will also unlock on your student portal at that time.\nView schedule on portal: ${portalUrl}`,
     html: layout({
       accent,
-      eyebrow: "Live Class Scheduled",
-      heading: `Live class scheduled, ${d.recipientName}!`,
+      eyebrow: isImminent ? "Workshop Starting Soon" : "Live Class Scheduled",
+      heading: isImminent ? `🚀 ${d.title} starts soon!` : `Live class scheduled, ${d.recipientName}!`,
       bodyHtml:
-        p("A new live session has been scheduled for your course. Please add it to your calendar using the attached invite.") +
+        (isImminent
+          ? p(`Hi <strong style="color:#E2E8F0;">${esc(d.recipientName)}</strong>, your live workshop is starting shortly. Please keep your setup ready and join on time!`)
+          : p("A new live session has been scheduled for your course. Please add it to your calendar using the attached invite.")) +
         classCard(d, accent) +
-        `<div style="background:#0F172A;border:1px dashed #334155;border-radius:12px;padding:14px 16px;margin:16px 0;font-size:13px;line-height:1.6;color:#94A3B8;">
-          <div style="font-weight:700;color:#F8FAFC;margin-bottom:4px;">⏰ Active Join Link Delivery</div>
-          The active <strong>Join Classroom</strong> button will be emailed to you <strong>30 minutes before the session begins</strong>, and will also unlock directly on your student portal at that time.
-        </div>` +
-        button("View Class Schedule", portalUrl, accent),
+        (isImminent
+          ? joinBlock(d, accent)
+          : `<div style="background:#0F172A;border:1px dashed #334155;border-radius:12px;padding:14px 16px;margin:16px 0;font-size:13px;line-height:1.6;color:#94A3B8;">
+              <div style="font-weight:700;color:#F8FAFC;margin-bottom:4px;">⏰ Active Join Link Delivery</div>
+              The active <strong>Join Classroom</strong> button will be emailed to you <strong>30 minutes before the session begins</strong>, and will also unlock directly on your student portal at that time.
+            </div>` +
+            button("View Class Schedule", portalUrl, accent)),
     }),
   }
 }
