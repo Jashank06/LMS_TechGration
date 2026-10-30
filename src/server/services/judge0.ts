@@ -4,8 +4,7 @@ import fs from "fs"
 import path from "path"
 import os from "os"
 
-const JUDGE0_API_URL = process.env.JUDGE0_API_URL || "https://judge0-ce.p.rapidapi.com"
-const RAPIDAPI_KEY = process.env.JUDGE0_RAPIDAPI_KEY || ""
+const DEFAULT_PUBLIC_JUDGE0 = "https://ce.judge0.com"
 
 export interface TestCaseInput {
   input: string
@@ -41,23 +40,45 @@ function b64decode(str: string): string {
   return Buffer.from(str, "base64").toString("utf-8")
 }
 
-function getHeaders(): Record<string, string> {
-  if (!RAPIDAPI_KEY) {
-    throw new Error(
-      "JUDGE0_RAPIDAPI_KEY is not configured. Please add it to your .env file. Get a free API key at https://rapidapi.com/judge0-official/api/judge0-ce"
-    )
+/**
+ * Resolves Judge0 API endpoint and headers.
+ * - If JUDGE0_RAPIDAPI_KEY is configured and host is RapidAPI: passes RapidAPI headers.
+ * - If not configured or empty: seamlessly defaults to the official free public Judge0 CE (https://ce.judge0.com).
+ * - If self-hosted (e.g. http://localhost:2358): uses self-hosted URL.
+ */
+export function getJudge0Config(): { apiUrl: string; headers: Record<string, string> } {
+  let apiUrl = (process.env.JUDGE0_API_URL || "").trim()
+  const rapidApiKey = (process.env.JUDGE0_RAPIDAPI_KEY || "").trim()
+
+  // If apiUrl is empty, or if it points to RapidAPI without a key:
+  // automatically fallback to the official public Judge0 CE server
+  if (!apiUrl || (apiUrl.includes("rapidapi.com") && !rapidApiKey)) {
+    apiUrl = DEFAULT_PUBLIC_JUDGE0
   }
-  return {
+
+  // Remove trailing slashes
+  apiUrl = apiUrl.replace(/\/+$/, "")
+
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    "X-RapidAPI-Key": RAPIDAPI_KEY,
-    "X-RapidAPI-Host": new URL(JUDGE0_API_URL).hostname,
   }
+
+  if (apiUrl.includes("rapidapi.com") && rapidApiKey) {
+    try {
+      headers["X-RapidAPI-Key"] = rapidApiKey
+      headers["X-RapidAPI-Host"] = new URL(apiUrl).hostname
+    } catch {
+      // ignore
+    }
+  }
+
+  return { apiUrl, headers }
 }
 
 /**
  * Executes student code.
- * - If JUDGE0_RAPIDAPI_KEY is configured: Uses hosted Judge0 CE.
- * - If not configured: Automatically falls back to built-in local sandboxed executor (Python3, Node, G++, Java).
+ * - Tier 1: Cloud Judge0 CE (works in all environments: serverless, docker, local).
+ * - Tier 2: Built-in local sandboxed executor fallback if machine has local compilers.
  */
 export async function executeCode(params: {
   sourceCode: string
@@ -68,22 +89,24 @@ export async function executeCode(params: {
 }): Promise<ExecutionResult> {
   const { sourceCode, language, testCases, timeLimitSec = 3, memoryLimitKb = 256000 } = params
 
-  if (testCases.length === 0) {
+  if (!testCases || testCases.length === 0) {
     throw new Error("No test cases provided")
   }
 
-  // If RapidAPI key is configured, use cloud Judge0 CE
-  if (RAPIDAPI_KEY.trim()) {
+  // Tier 1: Try Cloud Judge0 CE first
+  try {
+    return await executeJudge0(params)
+  } catch (err: any) {
+    console.warn("Judge0 cloud execution failed, attempting local runner fallback:", err?.message || err)
+
+    // Tier 2: Fall back to local runner if available
     try {
-      return await executeJudge0(params)
-    } catch (err) {
-      console.warn("Judge0 cloud execution failed, falling back to local runner:", err)
       return await executeLocally({ sourceCode, language, testCases, timeLimitSec })
+    } catch (localErr: any) {
+      console.error("Local runner fallback also failed:", localErr?.message || localErr)
+      throw err || localErr
     }
   }
-
-  // Otherwise, use built-in local runner directly (zero setup required!)
-  return await executeLocally({ sourceCode, language, testCases, timeLimitSec })
 }
 
 interface AsyncProcessResult {
@@ -154,9 +177,13 @@ function runProcessAsync(
       }
     })
 
-    child.on("error", (err) => {
+    child.on("error", (err: any) => {
       clearTimeout(timer)
-      stderr += `\n${err.message}`
+      if (err?.code === "ENOENT" || err?.message?.includes("ENOENT")) {
+        stderr += `\nServer Error: Command '${command}' is not installed in the server environment.`
+      } else {
+        stderr += `\n${err.message}`
+      }
       resolve({
         stdout,
         stderr,
@@ -372,7 +399,9 @@ async function executeLocally(params: {
 }
 
 /**
- * Cloud Judge0 CE batch execution.
+ * Cloud Judge0 CE execution.
+ * - Single testcase: fast synchronous execution with wait=true (sub-second response).
+ * - Multi testcases: batch execution with fast 600ms polling.
  */
 async function executeJudge0(params: {
   sourceCode: string
@@ -381,25 +410,98 @@ async function executeJudge0(params: {
   timeLimitSec?: number
   memoryLimitKb?: number
 }): Promise<ExecutionResult> {
-  const { sourceCode, language, testCases, timeLimitSec = 2, memoryLimitKb = 256000 } = params
+  const { sourceCode, language, testCases, timeLimitSec = 3, memoryLimitKb = 256000 } = params
 
   const languageId = LANGUAGE_MAP[language]
   if (!languageId) {
     throw new Error(`Unsupported language: ${language}. Supported: ${Object.keys(LANGUAGE_MAP).join(", ")}`)
   }
 
-  const headers = getHeaders()
+  const { apiUrl, headers } = getJudge0Config()
 
-  const submissions = testCases.map((tc) => ({
-    language_id: languageId,
-    source_code: b64encode(sourceCode),
-    stdin: b64encode(tc.input),
-    expected_output: b64encode(tc.expectedOutput.trimEnd() + "\n"),
-    cpu_time_limit: timeLimitSec,
-    memory_limit: memoryLimitKb,
-  }))
+  // Optimization: If only 1 testcase (e.g. sample test or custom input), execute synchronously with wait=true
+  if (testCases.length === 1) {
+    const tc = testCases[0]
+    const submissionBody: any = {
+      language_id: languageId,
+      source_code: b64encode(sourceCode),
+      stdin: b64encode(tc.input || ""),
+      cpu_time_limit: timeLimitSec,
+      memory_limit: memoryLimitKb,
+    }
+    if (tc.expectedOutput && tc.expectedOutput.trim() !== "") {
+      submissionBody.expected_output = b64encode(tc.expectedOutput.trimEnd() + "\n")
+    }
 
-  const batchRes = await fetch(`${JUDGE0_API_URL}/submissions/batch?base64_encoded=true`, {
+    const singleRes = await fetch(`${apiUrl}/submissions?base64_encoded=true&wait=true`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(submissionBody),
+    })
+
+    if (!singleRes.ok) {
+      const errorText = await singleRes.text()
+      console.error("Judge0 single submission failed:", singleRes.status, errorText)
+      throw new Error(`Code execution service returned HTTP ${singleRes.status}.`)
+    }
+
+    const r = await singleRes.json()
+    const statusId = r.status?.id ?? 13
+    const verdict = JUDGE0_STATUS_MAP[statusId] || "INTERNAL_ERROR"
+    const decodedStdout = r.stdout ? b64decode(r.stdout) : null
+    const decodedStderr = r.stderr ? b64decode(r.stderr) : null
+    const decodedCompile = r.compile_output ? b64decode(r.compile_output) : null
+
+    let passed = statusId === 3
+    if (tc.expectedOutput && tc.expectedOutput.trim() !== "") {
+      const normalizedActual = (decodedStdout || "").replace(/\r\n/g, "\n").trimEnd()
+      const normalizedExpected = tc.expectedOutput.replace(/\r\n/g, "\n").trimEnd()
+      if (normalizedActual === normalizedExpected) {
+        passed = true
+      }
+    } else {
+      // Custom input: considered passed if no runtime or compile error
+      passed = statusId === 3 || (statusId !== 5 && statusId !== 6 && statusId < 7)
+    }
+
+    const testResult: TestCaseResult = {
+      passed,
+      statusId: passed ? 3 : statusId,
+      statusDescription: passed ? "Accepted" : (r.status?.description || "Failed"),
+      verdict: passed ? "ACCEPTED" : verdict,
+      stdout: decodedStdout,
+      stderr: decodedStderr,
+      compileOutput: decodedCompile,
+      time: r.time || null,
+      memory: r.memory || null,
+    }
+
+    return {
+      results: [testResult],
+      overallVerdict: testResult.verdict,
+      passedCount: passed ? 1 : 0,
+      totalCount: 1,
+      maxTimeMs: r.time ? Math.round(parseFloat(r.time) * 1000) : null,
+      maxMemoryKb: r.memory || null,
+    }
+  }
+
+  // Multiple testcases: Use batch submission
+  const submissions = testCases.map((tc) => {
+    const sub: any = {
+      language_id: languageId,
+      source_code: b64encode(sourceCode),
+      stdin: b64encode(tc.input || ""),
+      cpu_time_limit: timeLimitSec,
+      memory_limit: memoryLimitKb,
+    }
+    if (tc.expectedOutput && tc.expectedOutput.trim() !== "") {
+      sub.expected_output = b64encode(tc.expectedOutput.trimEnd() + "\n")
+    }
+    return sub
+  })
+
+  const batchRes = await fetch(`${apiUrl}/submissions/batch?base64_encoded=true`, {
     method: "POST",
     headers,
     body: JSON.stringify({ submissions }),
@@ -408,23 +510,23 @@ async function executeJudge0(params: {
   if (!batchRes.ok) {
     const errorText = await batchRes.text()
     console.error("Judge0 batch submission failed:", batchRes.status, errorText)
-    throw new Error(`Code execution service returned ${batchRes.status}. Please try again.`)
+    throw new Error(`Code execution service returned HTTP ${batchRes.status}.`)
   }
 
   const tokens: { token: string }[] = await batchRes.json()
   const tokenString = tokens.map((t) => t.token).join(",")
 
-  const maxAttempts = 30
+  const maxAttempts = 25
   let attempt = 0
   let allDone = false
   let batchResults: any[] = []
 
   while (!allDone && attempt < maxAttempts) {
     attempt++
-    await new Promise((r) => setTimeout(r, 1000))
+    await new Promise((r) => setTimeout(r, 600))
 
     const pollRes = await fetch(
-      `${JUDGE0_API_URL}/submissions/batch?tokens=${tokenString}&base64_encoded=true&fields=stdout,stderr,compile_output,status,time,memory`,
+      `${apiUrl}/submissions/batch?tokens=${tokenString}&base64_encoded=true&fields=stdout,stderr,compile_output,status,time,memory`,
       { method: "GET", headers }
     )
 
@@ -435,7 +537,7 @@ async function executeJudge0(params: {
 
     const pollData = await pollRes.json()
     batchResults = pollData.submissions || []
-    allDone = batchResults.every((s: any) => s.status && s.status.id >= 3)
+    allDone = batchResults.length > 0 && batchResults.every((s: any) => s.status && s.status.id >= 3)
   }
 
   if (!allDone) {
@@ -459,17 +561,31 @@ async function executeJudge0(params: {
     }
   }
 
-  const results: TestCaseResult[] = batchResults.map((r: any) => {
+  const results: TestCaseResult[] = batchResults.map((r: any, idx: number) => {
     const statusId = r.status?.id ?? 13
     const verdict = JUDGE0_STATUS_MAP[statusId] || "INTERNAL_ERROR"
+    const decodedStdout = r.stdout ? b64decode(r.stdout) : null
+    const decodedStderr = r.stderr ? b64decode(r.stderr) : null
+    const decodedCompile = r.compile_output ? b64decode(r.compile_output) : null
+    const tc = testCases[idx]
+
+    let passed = statusId === 3
+    if (tc && tc.expectedOutput && tc.expectedOutput.trim() !== "") {
+      const normalizedActual = (decodedStdout || "").replace(/\r\n/g, "\n").trimEnd()
+      const normalizedExpected = tc.expectedOutput.replace(/\r\n/g, "\n").trimEnd()
+      if (normalizedActual === normalizedExpected) {
+        passed = true
+      }
+    }
+
     return {
-      passed: statusId === 3,
-      statusId,
-      statusDescription: r.status?.description || "Unknown",
-      verdict,
-      stdout: r.stdout ? b64decode(r.stdout) : null,
-      stderr: r.stderr ? b64decode(r.stderr) : null,
-      compileOutput: r.compile_output ? b64decode(r.compile_output) : null,
+      passed,
+      statusId: passed ? 3 : statusId,
+      statusDescription: passed ? "Accepted" : (r.status?.description || "Failed"),
+      verdict: passed ? "ACCEPTED" : verdict,
+      stdout: decodedStdout,
+      stderr: decodedStderr,
+      compileOutput: decodedCompile,
       time: r.time || null,
       memory: r.memory || null,
     }
@@ -490,7 +606,7 @@ async function executeJudge0(params: {
     overallVerdict,
     passedCount,
     totalCount: results.length,
-    maxTimeMs: times.length > 0 ? Math.max(...times) : null,
-    maxMemoryKb: memories.length > 0 ? Math.max(...memories) : null,
+    maxTimeMs: times.length > 0 ? Math.round(Math.max(...times)) : null,
+    maxMemoryKb: memories.length > 0 ? Math.round(Math.max(...memories)) : null,
   }
 }
