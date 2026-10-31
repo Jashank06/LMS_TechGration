@@ -100,12 +100,29 @@ export function RecordingPlayerModal({ recording, onClose }: RecordingPlayerModa
       if (savedBms) {
         setBookmarks(JSON.parse(savedBms))
       } else {
-        // Default smart milestones for AI session
-        setBookmarks([
-          { id: "1", timeSeconds: 30, label: "Welcome & Cohort Kickoff" },
-          { id: "2", timeSeconds: 300, label: "Foundations & Landscape" },
-          { id: "3", timeSeconds: 900, label: "Core Concepts Walkthrough" },
-        ])
+        // Default smart milestones based on session
+        if (recording.title?.includes("Class 4")) {
+          setBookmarks([
+            { id: "1", timeSeconds: 30, label: "Welcome & Class 3 Recap" },
+            { id: "2", timeSeconds: 300, label: "Sequence Models & Attention" },
+            { id: "3", timeSeconds: 1080, label: "Transformer Mathematics (Q, K, V)" },
+            { id: "4", timeSeconds: 2280, label: "Hands-on Code Walkthrough" },
+            { id: "5", timeSeconds: 3240, label: "Q&A, Doubt Clearing & Next Steps" },
+          ])
+        } else if (recording.title?.includes("Class 3")) {
+          setBookmarks([
+            { id: "1", timeSeconds: 30, label: "Welcome & Architecture Review" },
+            { id: "2", timeSeconds: 300, label: "Multi-Head Attention & Math" },
+            { id: "3", timeSeconds: 900, label: "Transformer Coding & PyTorch Setup" },
+            { id: "4", timeSeconds: 2100, label: "Live Doubt Clearing & Project Guidance" },
+          ])
+        } else {
+          setBookmarks([
+            { id: "1", timeSeconds: 30, label: "Welcome & Cohort Kickoff" },
+            { id: "2", timeSeconds: 300, label: "Foundations & Landscape" },
+            { id: "3", timeSeconds: 900, label: "Core Concepts Walkthrough" },
+          ])
+        }
       }
     } catch {}
 

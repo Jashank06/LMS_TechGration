@@ -131,13 +131,14 @@ export interface CourseHubData {
 
 interface CourseHubClientProps {
   course: CourseHubData
+  initialTab?: "live" | "recordings" | "timetable" | "materials" | "assignments" | "quizzes"
 }
 
-export function CourseHubClient({ course }: CourseHubClientProps) {
+export function CourseHubClient({ course, initialTab = "live" }: CourseHubClientProps) {
   // 6 Primary Academic Sections
   const [activeTab, setActiveTab] = React.useState<
     "live" | "recordings" | "timetable" | "materials" | "assignments" | "quizzes"
-  >("live")
+  >(initialTab)
   const [copiedLink, setCopiedLink] = React.useState(false)
   const [materialFilter, setMaterialFilter] = React.useState<"ALL" | "PDF" | "IPYNB" | "ZIP">("ALL")
   const [assignmentFilter, setAssignmentFilter] = React.useState<"ALL" | "PENDING" | "SUBMITTED" | "GRADED">("ALL")

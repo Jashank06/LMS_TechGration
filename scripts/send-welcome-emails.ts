@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer"
+// @ts-ignore
 import dotenv from "dotenv"
 
 dotenv.config()

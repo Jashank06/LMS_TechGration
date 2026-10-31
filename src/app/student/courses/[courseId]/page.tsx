@@ -7,6 +7,7 @@ import { CourseHubClient, CourseHubData } from "./course-hub-client"
 
 interface PageProps {
   params: Promise<{ courseId: string }>
+  searchParams?: Promise<{ tab?: string }>
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -21,9 +22,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-export default async function CourseDetailPage({ params }: PageProps) {
+export default async function CourseDetailPage({ params, searchParams }: PageProps) {
   const user = await requireStudent()
   const resolvedParams = await params
+  const resolvedSearchParams = searchParams ? await searchParams : undefined
+  const validTabs = ["live", "recordings", "timetable", "materials", "assignments", "quizzes"] as const
+  const initialTab = (validTabs as readonly string[]).includes(resolvedSearchParams?.tab || "")
+    ? (resolvedSearchParams!.tab as (typeof validTabs)[number])
+    : "live"
 
   const course = await db.course.findUnique({
     where: { id: resolvedParams.courseId },
@@ -233,5 +239,5 @@ export default async function CourseDetailPage({ params }: PageProps) {
     timetableUpdatedAt: course.timetableUpdatedAt ? course.timetableUpdatedAt.toISOString() : null,
   }
 
-  return <CourseHubClient course={courseHubData} />
+  return <CourseHubClient course={courseHubData} initialTab={initialTab} />
 }
