@@ -3,6 +3,10 @@ import { Metadata } from "next"
 import { requireStudent } from "@/server/auth"
 import { db } from "@/server/db"
 import { StudentDashboardClient } from "./student-dashboard-client"
+import {
+  calculateStudentStudyMetrics,
+  recalculateCourseProgress,
+} from "@/server/services/course-progress"
 
 export const metadata: Metadata = {
   title: "Student Dashboard — TechGration LMS",
@@ -47,12 +51,7 @@ export default async function StudentDashboardPage() {
     return 0
   })
 
-  // 2. Fetch Completed Lessons Count
-  const completedLessonsCount = await db.lessonProgress.count({
-    where: { userId: user.id, status: "COMPLETED" },
-  })
-
-  // 3. Fetch Upcoming Live Classes
+  // 2. Fetch Upcoming Live Classes
   const enrolledCourseIds = enrollments
     .filter((e) => e.status === "ACTIVE")
     .map((e) => e.courseId)
@@ -70,7 +69,7 @@ export default async function StudentDashboardPage() {
     take: 3,
   })
 
-  // 4. Fetch Assignments
+  // 3. Fetch Assignments
   const assignments = await db.assignment.findMany({
     include: {
       course: true,
@@ -82,7 +81,7 @@ export default async function StudentDashboardPage() {
     take: 3,
   })
 
-  // 5. Fetch Certificates & Quizzes Passed
+  // 4. Fetch Certificates & Quizzes Passed
   const certificatesCount = await db.certificate.count({
     where: { userId: user.id },
   })
@@ -91,7 +90,7 @@ export default async function StudentDashboardPage() {
     where: { userId: user.id, scorePct: { gte: 70 } },
   })
 
-  // Calculate Resume Course & Next Lesson
+  // 5. Calculate Resume Course & Next Lesson
   const activeEnrollment = enrollments[0]
   let resumeLesson = null
 
@@ -102,58 +101,24 @@ export default async function StudentDashboardPage() {
         break
       }
     }
+    // Synchronize latest progress for active course
+    const fresh = await recalculateCourseProgress(user.id, activeEnrollment.course.id)
+    activeEnrollment.progressPct = fresh.progressPct
   }
 
-  // Calculate overall average progress
-  const avgProgress =
-    enrollments.length > 0
+  // 6. Fetch Authentic Student Study Metrics (Live classes, recordings, coding practice, lessons)
+  const studyMetrics = await calculateStudentStudyMetrics(user.id)
+
+  // Overall completion percentage (Prioritize active course progress if engaged)
+  const displayCompletionPct =
+    activeEnrollment && activeEnrollment.progressPct > 0
+      ? Math.round(activeEnrollment.progressPct)
+      : enrollments.length > 0
       ? Math.round(
           enrollments.reduce((acc, curr) => acc + curr.progressPct, 0) /
             enrollments.length
         )
       : 0
-
-  const hoursInvested = (completedLessonsCount * 0.5).toFixed(1) + " hrs"
-
-  // 6. Calculate Real Weekly Study Time from lessonProgress
-  const now = new Date()
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-
-  const recentProgress = await db.lessonProgress.findMany({
-    where: {
-      userId: user.id,
-      updatedAt: { gte: sevenDaysAgo },
-    },
-    select: {
-      watchedSec: true,
-      updatedAt: true,
-    },
-  })
-
-  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-  const past7DaysData = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => ({
-    day,
-    minutes: 0,
-    label: "0m",
-  }))
-
-  let totalWeeklyMinutes = 0
-  for (const prog of recentProgress) {
-    const d = new Date(prog.updatedAt)
-    const dayName = dayNames[d.getDay()]
-    const minutes = Math.round((prog.watchedSec || 0) / 60)
-    totalWeeklyMinutes += minutes
-    const dayEntry = past7DaysData.find((entry) => entry.day === dayName)
-    if (dayEntry) {
-      dayEntry.minutes += minutes
-      const h = Math.floor(dayEntry.minutes / 60)
-      const m = dayEntry.minutes % 60
-      dayEntry.label = h > 0 ? `${h}h ${m}m` : `${m}m`
-    }
-  }
-
-  const weeklyHoursText = `${(totalWeeklyMinutes / 60).toFixed(1)} hrs total`
-  const daysGoalReached = past7DaysData.filter((d) => d.minutes >= 45).length
 
   return (
     <StudentDashboardClient
@@ -165,9 +130,9 @@ export default async function StudentDashboardPage() {
       }}
       enrollmentsCount={enrollments.length}
       activeEnrollmentsCount={enrollments.filter((e) => e.status === "ACTIVE").length}
-      avgProgress={avgProgress}
-      completedLessonsCount={completedLessonsCount}
-      hoursInvested={hoursInvested}
+      avgProgress={displayCompletionPct}
+      completedLessonsCount={studyMetrics.completedLessonsCount}
+      hoursInvested={studyMetrics.hoursInvested}
       passedQuizzesCount={passedQuizzesCount}
       certificatesCount={certificatesCount}
       activeEnrollment={
@@ -193,9 +158,9 @@ export default async function StudentDashboardPage() {
             }
           : null
       }
-      past7DaysData={past7DaysData}
-      weeklyHoursText={weeklyHoursText}
-      daysGoalReached={daysGoalReached}
+      past7DaysData={studyMetrics.past7DaysData}
+      weeklyHoursText={studyMetrics.weeklyHoursText}
+      daysGoalReached={studyMetrics.daysGoalReached}
       upcomingLiveClasses={upcomingLiveClasses.map((cls) => ({
         id: cls.id,
         title: cls.title,

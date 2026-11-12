@@ -164,4 +164,60 @@ export async function uploadTimetableToCloudinary(
   })
 }
 
+/**
+ * Uploads a chat attachment (image, document, PDF, ZIP, code file) to Cloudinary.
+ */
+export async function uploadChatAttachmentToCloudinary(
+  buffer: Buffer,
+  fileName: string,
+  conversationId: string
+): Promise<UploadApiResponse> {
+  const cleanName = fileName.toLowerCase().replace(/[^a-z0-9_.-]+/g, "_")
+  const ext = fileName.split(".").pop()?.toLowerCase() || ""
+  const isImage = ["jpg", "jpeg", "png", "webp", "gif", "svg"].includes(ext)
+
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: `techgration_lms/chat/${conversationId}/attachments`,
+        public_id: `${Date.now()}_${cleanName}`,
+        resource_type: isImage ? "image" : "auto",
+        use_filename: true,
+      },
+      (error, result) => {
+        if (error) return reject(error)
+        if (!result) return reject(new Error("No response received from Cloudinary."))
+        resolve(result)
+      }
+    )
+    uploadStream.end(buffer)
+  })
+}
+
+/**
+ * Uploads a chat voice note audio buffer (WebM / OGG / MP3) to Cloudinary.
+ */
+export async function uploadVoiceNoteToCloudinary(
+  buffer: Buffer,
+  conversationId: string
+): Promise<UploadApiResponse> {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: `techgration_lms/chat/${conversationId}/voice_notes`,
+        public_id: `voicenote_${Date.now()}`,
+        resource_type: "video", // Cloudinary processes audio under video resource_type
+        format: "mp3", // Cloudinary can transcode to standard mp3 for universal browser support
+      },
+      (error, result) => {
+        if (error) return reject(error)
+        if (!result) return reject(new Error("No response received from Cloudinary."))
+        resolve(result)
+      }
+    )
+    uploadStream.end(buffer)
+  })
+}
+
+
 

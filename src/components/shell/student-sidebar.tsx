@@ -25,6 +25,8 @@ import {
   Briefcase,
   Code,
   Swords,
+  MessageSquareText,
+  Megaphone,
 } from "lucide-react"
 
 export interface StudentNavCountsProp {
@@ -62,6 +64,20 @@ const mainNavItems: AppleNavItem[] = [
     href: "/student/live-classes",
     icon: Video,
     iconGradient: "from-rose-500 to-red-600",
+  },
+  {
+    title: "Instructor Chat",
+    href: "/student/chat",
+    icon: MessageSquareText,
+    iconGradient: "from-teal-400 via-cyan-500 to-indigo-500",
+    badgeText: "Direct",
+  },
+  {
+    title: "Community Feed",
+    href: "/student/community",
+    icon: Megaphone,
+    iconGradient: "from-amber-400 via-orange-500 to-rose-500",
+    badgeText: "Live",
   },
   // {
   //   title: "Explore Courses",

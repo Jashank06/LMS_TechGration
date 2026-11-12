@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getCurrentUser } from "@/server/auth"
 import { db } from "@/server/db"
+import { calculateStudentStudyMetrics } from "@/server/services/course-progress"
 
 export async function GET(req: Request) {
   try {
@@ -42,10 +43,20 @@ export async function GET(req: Request) {
 
     const enrolledCourseIds = enrollments.map((e) => e.courseId)
 
-    // 2. Fetch Completed Lessons Count
-    const completedLessonsCount = await db.lessonProgress.count({
-      where: { userId: user.id, status: "COMPLETED" },
-    })
+    // 2. Fetch Study Metrics, Certificates & Passed Quizzes
+    const [studyMetrics, certificatesCount, passedQuizzesCount] = await Promise.all([
+      calculateStudentStudyMetrics(user.id),
+      db.certificate.count({ where: { userId: user.id } }),
+      db.assessmentAttempt.count({ where: { userId: user.id, scorePct: { gte: 70 } } }),
+    ])
+
+    const activeEnrollment = enrollments[0]
+    const displayProgressPct =
+      activeEnrollment && activeEnrollment.progressPct > 0
+        ? Math.round(activeEnrollment.progressPct)
+        : enrollments.length > 0
+        ? Math.round(enrollments.reduce((sum, e) => sum + e.progressPct, 0) / enrollments.length)
+        : 0
 
     // 3. Fetch Upcoming & Live Classes
     const liveClasses = await db.liveClass.findMany({
@@ -117,13 +128,11 @@ export async function GET(req: Request) {
       },
       stats: {
         enrolledCoursesCount: enrollments.length,
-        completedLessonsCount,
-        avgProgressPct: enrollments.length > 0
-          ? Math.round(enrollments.reduce((sum, e) => sum + e.progressPct, 0) / enrollments.length)
-          : 0,
-        hoursInvested: "0.0 hrs",
-        passedQuizzesCount: 0,
-        certificatesCount: 0,
+        completedLessonsCount: studyMetrics.completedLessonsCount,
+        avgProgressPct: displayProgressPct,
+        hoursInvested: studyMetrics.hoursInvested,
+        passedQuizzesCount,
+        certificatesCount,
       },
       enrollments: enrollments.map((e) => ({
         id: e.id,

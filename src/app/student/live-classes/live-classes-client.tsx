@@ -211,7 +211,7 @@ export function LiveClassesClient({
                           asChild
                           className="w-full sm:w-auto font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal h-11 px-6 rounded-xl shadow-md shadow-brand-teal/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                         >
-                          <a href={cls.meetingUrl} target="_blank" rel="noopener noreferrer">
+                          <a href={`/join/${cls.id}?direct=1`} target="_blank" rel="noopener noreferrer">
                             <Video className="w-4 h-4 mr-2" />
                             <span>Join Live Classroom</span>
                             <ExternalLink className="w-3.5 h-3.5 ml-1.5 opacity-70" />

@@ -96,6 +96,17 @@ export default async function CourseDetailPage({ params, searchParams }: PagePro
     userProgress.filter((p) => p.status === "COMPLETED").map((p) => p.lessonId)
   )
 
+  // Get user attendance for live classes & recordings in this course
+  const userAttendances = await db.attendanceRecord.findMany({
+    where: {
+      userId: user.id,
+      liveClassId: { in: course.liveClasses.map((lc) => lc.id) },
+      status: "PRESENT",
+    },
+    select: { liveClassId: true },
+  })
+  const attendedClassIdSet = new Set(userAttendances.map((a) => a.liveClassId))
+
   const isEnrolled = course.enrollments.length > 0
   const enrollment = course.enrollments[0]
   const progressPct = enrollment ? enrollment.progressPct : 0
@@ -185,7 +196,7 @@ export default async function CourseDetailPage({ params, searchParams }: PagePro
         platform: lc.platform,
         meetingPasscode: lc.meetingPasscode,
         position: idx + 1,
-        isCompleted: false,
+        isCompleted: attendedClassIdSet.has(lc.id),
         resourcesCount: 0,
       }
     })

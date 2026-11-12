@@ -165,6 +165,16 @@ model User {
   joinedDuels        CodingDuel[] @relation("DuelOpponent")
   wonDuels           CodingDuel[] @relation("DuelWinner")
   ghostDuels         CodingDuel[] @relation("DuelGhostUser")
+
+  // Student-Teacher Direct Chat relations
+  studentConversations Conversation[] @relation("StudentConversations")
+  teacherConversations Conversation[] @relation("TeacherConversations")
+  sentChatMessages     ChatMessage[]  @relation("SentChatMessages")
+  receivedChatMessages ChatMessage[]  @relation("ReceivedChatMessages")
+
+  // Community Post relations
+  authoredPosts        CommunityPost[] @relation("AuthoredCommunityPosts")
+  postComments         PostComment[]   @relation("CommunityPostComments")
 }
 
 model UserProfile {
@@ -242,6 +252,8 @@ model Course {
   payments     PaymentTransaction[]
   materials    CourseMaterial[]
   rewardClaims RewardClaim[]
+  conversations Conversation[]
+  communityPosts CommunityPost[]
 
   @@index([category])
   @@index([approvalStatus])
@@ -959,3 +971,147 @@ model CodingDuel {
   @@index([opponentId])
   @@index([expiresAt])
 }
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+}
+
+enum ConversationStatus {
+  ACTIVE
+  RESOLVED
+  ARCHIVED
+}
+
+model Conversation {
+  id                  String             @id @default(auto()) @map("_id") @db.ObjectId
+  studentId           String             @db.ObjectId
+  student             User               @relation("StudentConversations", fields: [studentId], references: [id], onDelete: Cascade)
+  teacherId           String             @db.ObjectId
+  teacher             User               @relation("TeacherConversations", fields: [teacherId], references: [id], onDelete: Cascade)
+  courseId            String?            @db.ObjectId
+  course              Course?            @relation(fields: [courseId], references: [id], onDelete: SetNull)
+
+  status              ConversationStatus @default(ACTIVE)
+  lastMessageText     String?
+  lastMessageAt       DateTime           @default(now())
+  lastSenderId        String?            @db.ObjectId
+
+  unreadCountStudent  Int                @default(0)
+  unreadCountTeacher  Int                @default(0)
+
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  messages            ChatMessage[]
+
+  @@unique([studentId, teacherId, courseId])
+  @@index([studentId, lastMessageAt])
+  @@index([teacherId, lastMessageAt])
+}
+
+model ChatMessage {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  conversationId  String        @db.ObjectId
+  conversation    Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId        String        @db.ObjectId
+  sender          User          @relation("SentChatMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId      String        @db.ObjectId
+  receiver        User          @relation("ReceivedChatMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  text            String
+  codeSnippet     String?
+  codeLanguage    String?
+  attachments     String[]      @default([])
+  attachmentMeta  Json?
+
+  voiceNoteUrl    String?
+  voiceNoteDuration Int?
+
+  status          MessageStatus @default(SENT)
+  readAt          DateTime?
+
+  reactions       Json?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([conversationId, createdAt])
+  @@index([receiverId, status])
+}
+
+enum PostCategory {
+  CLASS_RESCHEDULE
+  IMPORTANT_NOTICE
+  OCCASION_CELEBRATION
+  OPPORTUNITY_RESOURCE
+  GENERAL_UPDATE
+}
+
+enum PostPriority {
+  NORMAL
+  URGENT
+  CELEBRATION
+}
+
+model CommunityPost {
+  id                  String        @id @default(auto()) @map("_id") @db.ObjectId
+  title               String
+  content             String
+  category            PostCategory  @default(GENERAL_UPDATE)
+  priority            PostPriority  @default(NORMAL)
+  isPinned            Boolean       @default(false)
+
+  // Target audience (All students or specific course batch like AI)
+  courseId            String?       @db.ObjectId
+  course              Course?       @relation(fields: [courseId], references: [id], onDelete: SetNull)
+
+  // Instructor details
+  authorId            String        @db.ObjectId
+  author              User          @relation("AuthoredCommunityPosts", fields: [authorId], references: [id], onDelete: Cascade)
+  authorName          String
+  authorRole          String        @default("Instructor")
+
+  // Media, Banners & Action Links
+  bannerUrl           String?
+  actionUrl           String?
+  actionLabel         String?
+
+  // Reschedule specific details
+  rescheduledStartsAt DateTime?
+  meetingUrl          String?
+
+  // Reactions & Counters
+  reactions           Json?
+  viewsCount          Int           @default(0)
+
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  comments            PostComment[]
+
+  @@index([courseId, createdAt])
+  @@index([category, createdAt])
+  @@index([isPinned, createdAt])
+}
+
+model PostComment {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  postId          String        @db.ObjectId
+  post            CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  authorId        String        @db.ObjectId
+  author          User          @relation("CommunityPostComments", fields: [authorId], references: [id], onDelete: Cascade)
+  authorName      String
+  authorRole      String        @default("Student")
+  authorAvatarUrl String?
+
+  content         String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([postId, createdAt])
+}
+
+

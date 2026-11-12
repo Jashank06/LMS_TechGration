@@ -33,6 +33,7 @@ import {
   Award,
   Trophy,
   ArrowRight,
+  MessageSquareText,
 } from "lucide-react"
 import { QuickSubmitAssignmentModal } from "@/components/student/quick-submit-assignment-modal"
 import { RecordingPlayerModal, type RecordingModalData } from "@/components/video/recording-player-modal"
@@ -367,20 +368,34 @@ export function CourseHubClient({ course, initialTab = "live" }: CourseHubClient
             </div>
 
             {/* Instructor Info */}
-            <div className="pt-4 border-t border-border/60 flex items-center gap-3.5">
-              <Avatar className="h-12 w-12 border-2 border-brand-teal/30 shadow-xs ring-2 ring-brand-teal/10">
-                <AvatarFallback className="bg-brand-teal/20 text-brand-teal font-extrabold text-sm">
-                  JK
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Course Instructor</p>
-                <div className="flex items-center gap-1.5">
-                  <p className="text-sm sm:text-base font-bold text-foreground">{course.instructorName || "Jay Kumar"}</p>
-                  <ShieldCheck className="w-4 h-4 text-brand-teal" />
+            <div className="pt-4 border-t border-border/60 flex flex-wrap items-center justify-between gap-3.5">
+              <div className="flex items-center gap-3.5">
+                <Avatar className="h-12 w-12 border-2 border-brand-teal/30 shadow-xs ring-2 ring-brand-teal/10">
+                  <AvatarFallback className="bg-brand-teal/20 text-brand-teal font-extrabold text-sm">
+                    {course.instructorName ? course.instructorName.slice(0, 2).toUpperCase() : "VS"}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Course Instructor</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm sm:text-base font-bold text-foreground">{course.instructorName || "Vineet Sir"}</p>
+                    <ShieldCheck className="w-4 h-4 text-brand-teal" />
+                  </div>
+                  <p className="text-xs text-muted-foreground">{course.instructorTitle || "Lead AI & Cloud Architect"}</p>
                 </div>
-                <p className="text-xs text-muted-foreground">{course.instructorTitle || "Senior AI & Cloud Architect"}</p>
               </div>
+
+              <Button
+                asChild
+                size="sm"
+                variant="outline"
+                className="h-9 px-4 rounded-xl text-xs font-bold border-brand-teal/40 text-brand-teal hover:bg-brand-teal/15 gap-1.5 shadow-xs"
+              >
+                <Link href={`/student/chat?courseId=${course.id}`}>
+                  <MessageSquareText className="w-3.5 h-3.5" />
+                  <span>Ask {course.instructorName || "Instructor"}</span>
+                </Link>
+              </Button>
             </div>
           </div>
 
@@ -430,7 +445,7 @@ export function CourseHubClient({ course, initialTab = "live" }: CourseHubClient
                       asChild
                       className="w-full font-bold bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal h-12 rounded-2xl shadow-lg shadow-brand-teal/25 text-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
                     >
-                      <a href={defaultMeetUrl} target="_blank" rel="noopener noreferrer">
+                      <a href={`/join/${liveOrUpcomingClass.id}?direct=1`} target="_blank" rel="noopener noreferrer">
                         <Video className="w-5 h-5 mr-2" />
                         <span>Join Google Meet Room</span>
                       </a>
@@ -743,7 +758,7 @@ export function CourseHubClient({ course, initialTab = "live" }: CourseHubClient
                           className="w-full sm:w-auto bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold h-12 px-6 sm:px-8 rounded-2xl shadow-lg shadow-brand-teal/25 text-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
                         >
                           <a
-                            href={liveOrUpcomingClass.meetingUrl || defaultMeetUrl}
+                            href={`/join/${liveOrUpcomingClass.id}?direct=1`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center justify-center"
@@ -1231,7 +1246,7 @@ export function CourseHubClient({ course, initialTab = "live" }: CourseHubClient
                                     size="sm"
                                     className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold rounded-xl text-xs shrink-0"
                                   >
-                                    <a href={session.meetingUrl || defaultMeetUrl} target="_blank" rel="noopener noreferrer">
+                                    <a href={`/join/${session.id}?direct=1`} target="_blank" rel="noopener noreferrer">
                                       <Video className="w-3.5 h-3.5 mr-1" />
                                       <span>Join Room</span>
                                     </a>
@@ -1369,7 +1384,7 @@ export function CourseHubClient({ course, initialTab = "live" }: CourseHubClient
                                   className="bg-brand-teal hover:bg-brand-teal/90 text-brand-charcoal font-bold rounded-xl text-xs shadow-md shadow-brand-teal/20"
                                 >
                                   <a
-                                    href={session.meetingUrl || defaultMeetUrl}
+                                    href={`/join/${session.id}?direct=1`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                   >

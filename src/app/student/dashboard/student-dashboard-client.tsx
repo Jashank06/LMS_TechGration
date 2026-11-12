@@ -24,6 +24,7 @@ import { WeeklyActivityChart } from "@/components/dashboard/weekly-activity-char
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AnimatedCounter } from "@/components/ui/animated-counter"
 import { computeClassWindowStatus } from "@/lib/live-class-utils"
+import { PinnedAnnouncementBanner } from "@/components/community/pinned-announcement-banner"
 
 interface StudentDashboardClientProps {
   user: {
@@ -213,6 +214,9 @@ export function StudentDashboardClient({
       animate="show"
       className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto"
     >
+      {/* 0. Pinned Community / Class Reschedule Bulletins */}
+      <PinnedAnnouncementBanner />
+
       {/* 1. Welcome Greeting Banner */}
       <motion.div
         variants={itemVariants}
@@ -580,7 +584,7 @@ export function StudentDashboardClient({
                         className="w-full sm:w-auto shrink-0 bg-brand-teal text-brand-charcoal hover:bg-brand-teal/90 font-bold text-xs h-10 sm:h-9 px-4 rounded-xl"
                       >
                         {cls.meetingUrl ? (
-                          <a href={cls.meetingUrl} target="_blank" rel="noopener noreferrer">
+                          <a href={`/join/${cls.id}?direct=1`} target="_blank" rel="noopener noreferrer">
                             Join Live
                           </a>
                         ) : (

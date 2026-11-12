@@ -75,6 +75,35 @@ export function RecordingPlayerModal({ recording, onClose }: RecordingPlayerModa
   const [showBookmarkInput, setShowBookmarkInput] = React.useState(false)
 
   const controlsTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
+  const lastBeaconTimeRef = React.useRef<number>(0)
+  const hasCompletedRef = React.useRef<boolean>(false)
+
+  const sendProgressBeacon = React.useCallback(
+    async (currTime: number, totalDur: number, forceCompleted: boolean = false) => {
+      if (!recording?.id) return
+      const isCompleted = forceCompleted || (totalDur > 0 && currTime / totalDur >= 0.8)
+      if (isCompleted && hasCompletedRef.current && !forceCompleted) return
+
+      try {
+        await fetch(`/api/student/live-classes/${recording.id}/recording-progress`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            positionSec: Math.round(currTime),
+            durationSec: Math.round(totalDur),
+            completed: isCompleted,
+          }),
+        })
+        if (isCompleted && !hasCompletedRef.current) {
+          hasCompletedRef.current = true
+          toast.success("Class session completed! Course progress updated.")
+        }
+      } catch (e) {
+        // Non-blocking
+      }
+    },
+    [recording]
+  )
 
   // Formatting helper MM:SS or HH:MM:SS
   const formatTime = (seconds: number) => {
@@ -491,9 +520,18 @@ export function RecordingPlayerModal({ recording, onClose }: RecordingPlayerModa
               onDoubleClick={toggleFullscreen}
               onTimeUpdate={() => {
                 if (videoRef.current) {
-                  setCurrentTime(videoRef.current.currentTime)
+                  const cur = videoRef.current.currentTime
+                  const dur = videoRef.current.duration || duration
+                  setCurrentTime(cur)
                   if (videoRef.current.buffered.length > 0) {
                     setBufferedEnd(videoRef.current.buffered.end(videoRef.current.buffered.length - 1))
+                  }
+                  if (
+                    Math.abs(cur - lastBeaconTimeRef.current) >= 20 ||
+                    (dur > 0 && cur / dur >= 0.8 && !hasCompletedRef.current)
+                  ) {
+                    lastBeaconTimeRef.current = cur
+                    sendProgressBeacon(cur, dur)
                   }
                 }
               }}
@@ -503,10 +541,18 @@ export function RecordingPlayerModal({ recording, onClose }: RecordingPlayerModa
                 }
               }}
               onPlay={() => setIsPlaying(true)}
-              onPause={() => setIsPlaying(false)}
+              onPause={() => {
+                setIsPlaying(false)
+                if (videoRef.current) {
+                  sendProgressBeacon(videoRef.current.currentTime, videoRef.current.duration || duration)
+                }
+              }}
               onEnded={() => {
                 setIsPlaying(false)
                 setControlsVisible(true)
+                if (videoRef.current) {
+                  sendProgressBeacon(videoRef.current.currentTime, videoRef.current.duration || duration, true)
+                }
                 toast.success("Recording session finished! Great learning work.")
               }}
             />

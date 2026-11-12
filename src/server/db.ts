@@ -18,8 +18,11 @@ const isStale =
   Boolean(cachedClient) &&
   (!Boolean((cachedClient as unknown as { codingDuel?: unknown })?.codingDuel) ||
     !Boolean((cachedClient as unknown as { codingProblem?: unknown })?.codingProblem) ||
-    !(cachedClient as unknown as { _runtimeDataModel?: { models?: { CodingProgress?: { fields?: Array<{ name: string }> } } } })
-      ?._runtimeDataModel?.models?.CodingProgress?.fields?.some((f) => f.name === "lastCode"))
+    !Boolean((cachedClient as unknown as { communityPost?: unknown })?.communityPost) ||
+    !(cachedClient as unknown as { _runtimeDataModel?: { models?: { ChatMessage?: { fields?: Array<{ name: string }> } } } })
+      ?._runtimeDataModel?.models?.ChatMessage?.fields?.some((f) => f.name === "attachmentMeta") ||
+    !(cachedClient as unknown as { _runtimeDataModel?: { models?: { ChatMessage?: { fields?: Array<{ name: string }> } } } })
+      ?._runtimeDataModel?.models?.ChatMessage?.fields?.some((f) => f.name === "voiceNoteUrl"))
 
 if (isStale && cachedClient) {
   try {

@@ -1,9 +1,11 @@
 "use client"
 
 import * as React from "react"
+import { usePathname } from "next/navigation"
 import { StudentSidebar, type StudentNavCountsProp } from "@/components/shell/student-sidebar"
 import { StudentTopbar } from "@/components/shell/student-topbar"
 import { StudentBottomNav } from "@/components/shell/student-bottom-nav"
+import { FloatingChatWidget } from "@/components/chat/floating-chat-widget"
 import { X } from "lucide-react"
 
 interface StudentShellClientProps {
@@ -20,6 +22,8 @@ interface StudentShellClientProps {
 
 export function StudentShellClient({ user, counts, children }: StudentShellClientProps) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false)
+  const pathname = usePathname()
+  const isChatPage = pathname?.startsWith("/student/chat")
 
   return (
     <div className="flex h-[100dvh] w-full overflow-hidden bg-background">
@@ -65,6 +69,9 @@ export function StudentShellClient({ user, counts, children }: StudentShellClien
 
       {/* Mobile Floating Bottom Navigation Dock */}
       <StudentBottomNav counts={counts} />
+
+      {/* Floating Chat Launcher (Available across student portal, hidden when on full chat page) */}
+      {!isChatPage && <FloatingChatWidget currentUserId={user.id} />}
     </div>
   )
 }

@@ -18,6 +18,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
+  MessageSquareText,
+  Megaphone,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -92,6 +94,18 @@ export function TeacherSidebar({ user, counts: initialCounts }: TeacherSidebarPr
       href: "/teacher/attendance",
       icon: UserCheck,
       iconGradient: "from-emerald-400 to-teal-600",
+    },
+    {
+      label: "Student Messages",
+      href: "/teacher/chat",
+      icon: MessageSquareText,
+      iconGradient: "from-teal-400 via-cyan-500 to-indigo-500",
+    },
+    {
+      label: "Community & Notices",
+      href: "/teacher/community",
+      icon: Megaphone,
+      iconGradient: "from-amber-400 via-orange-500 to-rose-500",
     },
     {
       label: "Assignments & Grading",
