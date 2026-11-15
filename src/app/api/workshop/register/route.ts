@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/server/db"
 import { syncLeadToGoogleSheet } from "@/server/services/google-sheets"
 
-export const WORKSHOP_DOMAINS = [
+const WORKSHOP_DOMAINS = [
   "Artificial Intelligence & Gen AI",
   "Machine Learning",
   "Cyber Security & Ethical Hacking",
