@@ -130,7 +130,23 @@ export function RecordingPlayerModal({ recording, onClose }: RecordingPlayerModa
         setBookmarks(JSON.parse(savedBms))
       } else {
         // Default smart milestones based on session
-        if (recording.title?.includes("Class 4")) {
+        if (recording.title?.includes("Class 6")) {
+          setBookmarks([
+            { id: "1", timeSeconds: 30, label: "Welcome & Class 5 Recap" },
+            { id: "2", timeSeconds: 300, label: "Transformers, Self-Attention & Encoder-Decoder" },
+            { id: "3", timeSeconds: 1140, label: "Production AI Pipelines & PyTorch Deployment" },
+            { id: "4", timeSeconds: 2280, label: "Live Code Implementation & Loss Optimization" },
+            { id: "5", timeSeconds: 3120, label: "Q&A, Doubt Session & Wrap-up" },
+          ])
+        } else if (recording.title?.includes("Class 5")) {
+          setBookmarks([
+            { id: "1", timeSeconds: 30, label: "Welcome & Class 4 Recap" },
+            { id: "2", timeSeconds: 300, label: "Advanced Deep Learning Architectures & CNNs" },
+            { id: "3", timeSeconds: 1080, label: "Model Fine-Tuning & Hyperparameter Strategies" },
+            { id: "4", timeSeconds: 2100, label: "Hands-on Implementation in PyTorch" },
+            { id: "5", timeSeconds: 2880, label: "Q&A, Debugging & Doubt Clearing" },
+          ])
+        } else if (recording.title?.includes("Class 4")) {
           setBookmarks([
             { id: "1", timeSeconds: 30, label: "Welcome & Class 3 Recap" },
             { id: "2", timeSeconds: 300, label: "Sequence Models & Attention" },

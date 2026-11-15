@@ -19,6 +19,7 @@ const isStale =
   (!Boolean((cachedClient as unknown as { codingDuel?: unknown })?.codingDuel) ||
     !Boolean((cachedClient as unknown as { codingProblem?: unknown })?.codingProblem) ||
     !Boolean((cachedClient as unknown as { communityPost?: unknown })?.communityPost) ||
+    !Boolean((cachedClient as unknown as { workshopLead?: unknown })?.workshopLead) ||
     !(cachedClient as unknown as { _runtimeDataModel?: { models?: { ChatMessage?: { fields?: Array<{ name: string }> } } } })
       ?._runtimeDataModel?.models?.ChatMessage?.fields?.some((f) => f.name === "attachmentMeta") ||
     !(cachedClient as unknown as { _runtimeDataModel?: { models?: { ChatMessage?: { fields?: Array<{ name: string }> } } } })

@@ -1114,4 +1114,24 @@ model PostComment {
   @@index([postId, createdAt])
 }
 
+model WorkshopLead {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  name             String
+  phone            String
+  college          String
+  interestedDomain String
+  workshopName     String    @default("Python Fundamentals Workshop")
+  source           String    @default("WhatsApp / Direct Link")
+  ipAddress        String?
+  userAgent        String?
+  syncedToSheets   Boolean   @default(false)
+  sheetsSyncedAt   DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([phone])
+  @@index([createdAt])
+  @@index([interestedDomain])
+}
+
 
