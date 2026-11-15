@@ -308,18 +308,24 @@ export function WorkshopClient() {
             <div className="text-center space-y-2 mb-6">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 border border-teal-200/80 text-teal-700 text-xs font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />
-                Workshop Recording
+                Live Masterclass
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
                 Python Fundamentals Workshop
               </h1>
-              <p className="text-xs sm:text-sm text-slate-500">
-                Enter your details below to unlock and watch the full session.
-              </p>
             </div>
 
             {/* Clean White Card */}
             <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-7 shadow-xl shadow-slate-200/50">
+              <div className="text-center space-y-1 mb-5">
+                <h2 className="text-base sm:text-lg font-bold text-slate-800">
+                  Enter Details to Watch Workshop
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Fill out the quick form below to unlock instant access.
+                </p>
+              </div>
+
               <form onSubmit={handleJoinNow} className="space-y-4">
                 {/* 1. Full Name */}
                 <div className="space-y-1.5">
