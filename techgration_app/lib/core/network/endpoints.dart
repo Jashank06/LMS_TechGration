@@ -24,9 +24,20 @@ class Endpoints {
   static const String updatePassword = '$baseUrl/api/student/profile/password';
   static const String notifications = '$baseUrl/api/student/notifications';
   static const String avatar = '$baseUrl/api/student/avatar';
+  static const String referStats = '$baseUrl/api/student/refer';
+
+  // Chat & Community routes
+  static const String chatConversations = '$baseUrl/api/chat/conversations';
+  static String chatMessages(String convId) => '$baseUrl/api/chat/conversations/$convId/messages';
+  static String chatMarkRead(String convId) => '$baseUrl/api/chat/conversations/$convId/read';
+  static const String communityPosts = '$baseUrl/api/community/posts';
+  static const String communityPinned = '$baseUrl/api/community/pinned';
+  static String communityReaction(String postId) => '$baseUrl/api/community/posts/$postId/reaction';
 
   // Dynamic mutation & query routes
   static String courseDetail(String id) => '$baseUrl/api/student/courses/$id';
+  static String assessmentDetail(String id) => '$baseUrl/api/student/assessments/$id';
+  static String submitAssessment(String id) => '$baseUrl/api/student/assessments/$id/submit';
   static String leaderboard({String? courseId}) =>
       courseId != null ? '$baseUrl/api/student/leaderboard?courseId=$courseId' : '$baseUrl/api/student/leaderboard';
   static String submitAssignment(String id) => '$baseUrl/api/student/assignments/$id/submit';

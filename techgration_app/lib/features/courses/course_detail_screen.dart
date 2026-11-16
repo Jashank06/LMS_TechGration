@@ -11,6 +11,8 @@ import '../../core/services/haptic_service.dart';
 import '../../shared/widgets/bouncing_button.dart';
 import '../../shared/widgets/course_image.dart';
 import '../dashboard/student_dashboard_controller.dart';
+import '../assessments/quiz_player_screen.dart';
+import 'course_hub_screen.dart';
 
 class CourseDetailScreen extends ConsumerStatefulWidget {
   final String courseId;
@@ -51,10 +53,6 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> with Si
 
   bool _isLoading = false;
   Map<String, dynamic>? _apiCourseData;
-
-  final String _defaultMeetingUrl = 'https://meet.google.com/jan-hnzk-nhf';
-  final String _defaultTimetableUrl =
-      'https://res.cloudinary.com/dozazvcec/image/upload/v1792270601/techgration_lms/courses/6ad283b4e196d0b8fbfb9eae/timetable/timetable_1792270598486_ai_course_timetable_poster.png.png';
 
   @override
   void initState() {
@@ -112,12 +110,12 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> with Si
     }
   }
 
-  void _copyMeetingLink() {
+  void _copyCourseLink() {
     HapticService.selection();
-    Clipboard.setData(ClipboardData(text: _defaultMeetingUrl));
+    Clipboard.setData(ClipboardData(text: 'https://campus.techgration.live/courses/${widget.courseId}'));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Meeting link copied to clipboard! 📋'),
+        content: Text('Course link copied to clipboard! 📋'),
         backgroundColor: Color(0xFF008A8A),
         duration: Duration(seconds: 2),
       ),
@@ -208,13 +206,11 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> with Si
     final List<dynamic> assignments = (courseData['assignments'] as List<dynamic>?) ?? [];
     final List<dynamic> quizzes = (courseData['quizzes'] as List<dynamic>?) ?? [];
 
-    final timetableUrl = (courseData['timetableUrl'] as String?)?.isNotEmpty == true
-        ? courseData['timetableUrl'] as String
-        : _defaultTimetableUrl;
-    final timetableTitle = (courseData['timetableTitle'] as String?) ?? 'AI Course Timetable Poster';
-    final timetableFileName = (courseData['timetableFileName'] as String?) ?? 'AI Course Timetable Poster.png';
-    final timetableFileSize = (courseData['timetableFileSize'] as String?) ?? '2.0 MB';
-    final timetableFileType = (courseData['timetableFileType'] as String?) ?? 'PNG';
+    final timetableUrl = (courseData['timetableUrl'] as String?) ?? '';
+    final timetableTitle = (courseData['timetableTitle'] as String?) ?? 'Course Timetable Poster';
+    final timetableFileName = (courseData['timetableFileName'] as String?) ?? 'Schedule Poster';
+    final timetableFileSize = (courseData['timetableFileSize'] as String?) ?? '';
+    final timetableFileType = (courseData['timetableFileType'] as String?) ?? 'POSTER';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -245,8 +241,8 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> with Si
         actions: [
           IconButton(
             icon: const Icon(Icons.share_outlined, size: 20),
-            onPressed: _copyMeetingLink,
-            tooltip: 'Copy Meeting Link',
+            onPressed: _copyCourseLink,
+            tooltip: 'Share Course',
           ),
           const SizedBox(width: 8),
         ],
@@ -503,7 +499,19 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> with Si
                             const SizedBox(height: 16),
                             BouncingButton(
                               scaleDown: 0.96,
-                              onTap: () => _launchUrl(_defaultMeetingUrl),
+                              onTap: () {
+                                HapticService.lightTap();
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => CourseHubScreen(
+                                      courseId: widget.courseId,
+                                      courseTitle: title,
+                                      instructor: instructor,
+                                    ),
+                                  ),
+                                );
+                              },
                               child: Container(
                                 width: double.infinity,
                                 height: 48,
@@ -523,10 +531,10 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> with Si
                                 child: const Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.videocam_rounded, color: Colors.white, size: 20),
+                                    Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 20),
                                     SizedBox(width: 8),
                                     Text(
-                                      'Join Google Meet Room',
+                                      'Open Course Player ⚡',
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w800,
@@ -720,6 +728,7 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> with Si
           timetableFileName: timetableFileName,
           timetableFileSize: timetableFileSize,
           timetableFileType: timetableFileType,
+          instructorName: widget.instructorName ?? 'Course Faculty',
         );
       case 3:
         return _buildStudyMaterialsTab(materials);
@@ -811,7 +820,7 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> with Si
 
     final activeClass = liveClasses[0] as Map<String, dynamic>;
     final classTitle = (activeClass['title'] as String?) ?? 'Live Session';
-    final meetingUrl = (activeClass['meetingUrl'] as String?) ?? _defaultMeetingUrl;
+    final meetingUrl = (activeClass['meetingUrl'] as String?) ?? '';
     final platform = (activeClass['platform'] as String?) ?? 'Google Meet';
 
     return Container(
@@ -849,7 +858,18 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> with Si
           const SizedBox(height: 16),
           BouncingButton(
             scaleDown: 0.96,
-            onTap: () => _launchUrl(meetingUrl),
+            onTap: () {
+              if (meetingUrl.isNotEmpty) {
+                _launchUrl(meetingUrl);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Meeting link will be activated 15 minutes before session.'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
             child: Container(
               width: double.infinity,
               height: 46,
@@ -967,7 +987,44 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> with Si
     required String timetableFileName,
     required String timetableFileSize,
     required String timetableFileType,
+    required String instructorName,
   }) {
+    if (timetableUrl.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.borderLight),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: const Color(0xFF00D6D6).withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.calendar_month_outlined, color: Color(0xFF008A8A), size: 28),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No Timetable Published Yet',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'This course is in active progress. The official weekly timetable and lecture calendar will be published here by your instructor.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary, height: 1.45, fontSize: 12),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1061,7 +1118,7 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> with Si
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Uploaded by Vineet Sir • $timetableFileName • $timetableFileSize • Last updated Oct 18, 2026',
+                          'Uploaded by $instructorName • $timetableFileName ${timetableFileSize.isNotEmpty ? '• $timetableFileSize' : ''}',
                           style: const TextStyle(
                             fontSize: 11,
                             color: AppColors.textSecondary,
@@ -1599,6 +1656,7 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> with Si
         else
           Column(
             children: quizzes.map((q) {
+              final qId = (q['id'] ?? '').toString();
               final title = (q['title'] as String?) ?? 'Quiz';
               final questions = q['questionCount'] ?? 10;
               final passingPct = q['passingPct'] ?? 75;
@@ -1611,12 +1669,47 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> with Si
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(color: AppColors.borderLight),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-                    const SizedBox(height: 6),
-                    Text('$questions Questions • $passingPct% to Pass', style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                          const SizedBox(height: 6),
+                          Text('$questions Questions • $passingPct% to Pass', style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    BouncingButton(
+                      scaleDown: 0.94,
+                      onTap: () {
+                        HapticService.mediumImpact();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => QuizPlayerScreen(
+                              assessmentId: qId,
+                              assessmentTitle: title,
+                            ),
+                          ),
+                        ).then((_) => _fetchCourseDetails());
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF9333EA), Color(0xFFC026D3)],
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Text(
+                          'Take Quiz',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               );

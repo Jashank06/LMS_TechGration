@@ -41,6 +41,7 @@ class _LiveClassesScreenState extends ConsumerState<LiveClassesScreen> {
   Widget build(BuildContext context) {
     final dashboardState = ref.watch(studentDashboardProvider);
     final liveClasses = dashboardState.liveClasses;
+    final recordings = dashboardState.recordings;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -139,8 +140,8 @@ class _LiveClassesScreenState extends ConsumerState<LiveClassesScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        _buildTabButton(0, 'Upcoming (1)'),
-                        _buildTabButton(1, 'Recordings (0)'),
+                        _buildTabButton(0, 'Upcoming (${liveClasses.length})'),
+                        _buildTabButton(1, 'Recordings (${recordings.length})'),
                       ],
                     ),
                   ),
@@ -210,39 +211,45 @@ class _LiveClassesScreenState extends ConsumerState<LiveClassesScreen> {
                   ),
                 ],
               ] else ...[
-                // Recordings Tab Empty State
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceLight,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.borderLight),
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF00D6D6).withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
+                if (recordings.isNotEmpty) ...[
+                  for (final item in recordings) ...[
+                    _buildRecordingCardFromMap(context, item as Map<String, dynamic>),
+                  ],
+                ] else ...[
+                  // Recordings Tab Empty State
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceLight,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.borderLight),
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00D6D6).withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.play_circle_outline_rounded, color: Color(0xFF008A8A), size: 28),
                         ),
-                        child: const Icon(Icons.play_circle_outline_rounded, color: Color(0xFF008A8A), size: 28),
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        'No Past Recordings Available',
-                        style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w800),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Lecture video recordings are automatically processed and archived here 2 hours after each live session completes.',
-                        textAlign: TextAlign.center,
-                        style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary, height: 1.4),
-                      ),
-                    ],
+                        const SizedBox(height: 14),
+                        Text(
+                          'No Past Recordings Available',
+                          style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Lecture video recordings are automatically processed and archived here 2 hours after each live session completes.',
+                          textAlign: TextAlign.center,
+                          style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary, height: 1.4),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ],
 
               const SizedBox(height: 80),
@@ -295,6 +302,124 @@ class _LiveClassesScreenState extends ConsumerState<LiveClassesScreen> {
       meetingUrl: meetingUrl,
       platform: 'Google Meet',
       isLive: isLive,
+    );
+  }
+
+  Widget _buildRecordingCardFromMap(BuildContext context, Map<String, dynamic> item) {
+    final title = item['title'] as String? ?? 'Lecture Recording';
+    final course = item['courseTitle'] as String? ?? item['course']?['title'] as String? ?? 'Enrolled Track';
+    final instructor = item['instructorName'] as String? ?? item['instructor']?['name'] as String? ?? 'Faculty';
+    final recordingUrl = (item['recordingUrl'] as String?) ?? (item['meetingUrl'] as String?) ?? '';
+    final duration = item['durationMinutes'] != null ? '${item['durationMinutes']} mins' : 'Full Session';
+    final passcode = item['meetingPasscode'] as String?;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.borderLight, width: 1.2),
+        boxShadow: AppColors.cardShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  course.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.bodySmall.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF008A8A),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.check_circle_rounded, size: 12, color: Color(0xFF10B981)),
+                    const SizedBox(width: 4),
+                    Text(
+                      duration,
+                      style: const TextStyle(color: Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.w800),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            title,
+            style: AppTypography.headlineMedium.copyWith(fontSize: 16, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Instructor: $instructor',
+            style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+          ),
+          if (passcode != null && passcode.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceLight,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.borderLight),
+              ),
+              child: Text(
+                'Passcode: $passcode',
+                style: const TextStyle(fontSize: 11, fontFamily: 'monospace', fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          BouncingButton(
+            scaleDown: 0.97,
+            onTap: () => _joinMeeting(context, recordingUrl, title),
+            child: Container(
+              height: 44,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF00D6D6), Color(0xFF0284C7)],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF00D6D6).withValues(alpha: 0.25),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 18),
+                  SizedBox(width: 8),
+                  Text(
+                    'Watch HD Recording',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

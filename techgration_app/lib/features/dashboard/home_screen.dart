@@ -3,12 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
+import '../../core/providers/navigation_provider.dart';
 import '../../core/services/haptic_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../shared/widgets/bouncing_button.dart';
 import '../../shared/widgets/staggered_entrance.dart';
 import '../../shared/widgets/course_image.dart';
+import '../chat/student_chat_screen.dart';
+import '../community/community_feed_screen.dart';
 import '../courses/course_detail_screen.dart';
+import '../referral/refer_earn_screen.dart';
 import 'student_dashboard_controller.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -151,13 +155,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                         const Spacer(),
 
-                        // Notification Icon
+                        // Faculty Mentor Chat Icon
                         BouncingButton(
                           scaleDown: 0.9,
                           onTap: () {
                             HapticService.lightTap();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('All class schedules & reminders up to date')),
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const StudentChatScreen()),
+                            );
+                          },
+                          child: Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: AppColors.borderLight),
+                            ),
+                            child: const Icon(
+                              Icons.forum_outlined,
+                              size: 19,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+
+                        // Notification & Notice Board Icon
+                        BouncingButton(
+                          scaleDown: 0.9,
+                          onTap: () {
+                            HapticService.lightTap();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const CommunityFeedScreen()),
                             );
                           },
                           child: Stack(
@@ -420,10 +452,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               Expanded(
                                 child: BouncingButton(
                                   scaleDown: 0.96,
-                                  onTap: () => _openCourseHub(
-                                    activeCourse['title'] as String,
-                                    activeCourse['id'] as String,
-                                  ),
+                                  onTap: () {
+                                    if (activeCourse != null) {
+                                      _openCourseHub(
+                                        activeCourse['title'] as String,
+                                        activeCourse['id'] as String,
+                                      );
+                                    } else {
+                                      ref.read(selectedNavIndexProvider.notifier).state = 1;
+                                    }
+                                  },
                                   child: Container(
                                     height: 40,
                                     decoration: BoxDecoration(
@@ -462,10 +500,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   scaleDown: 0.96,
                                   onTap: () {
                                     HapticService.lightTap();
-                                    _openCourseHub(
-                                      activeCourse['title'] as String,
-                                      activeCourse['id'] as String,
-                                    );
+                                    ref.read(selectedNavIndexProvider.notifier).state = 1;
                                   },
                                   child: Container(
                                     height: 40,
@@ -574,7 +609,121 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
+
+                // Campus Hub: Refer & Earn Cashback Banner
+                StaggeredEntrance(
+                  delay: const Duration(milliseconds: 105),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: BouncingButton(
+                      scaleDown: 0.98,
+                      onTap: () {
+                        HapticService.selection();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ReferEarnScreen()),
+                        );
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: const Color(0xFF00D6D6).withValues(alpha: 0.35),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF00D6D6).withValues(alpha: 0.12),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.4),
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.redeem_rounded,
+                                color: Color(0xFF10B981),
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Text(
+                                        'Refer & Earn ₹500',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 15,
+                                          letterSpacing: -0.2,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF10B981),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: const Text(
+                                          'CASHBACK',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 9,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 3),
+                                  const Text(
+                                    'Invite friends to study at TechGration & get ₹500 cashback',
+                                    style: TextStyle(
+                                      color: Color(0xFF94A3B8),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              color: Color(0xFF00D6D6),
+                              size: 14,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
 
                 // 5. CONTINUE LEARNING (Matching Web LMS Card for "Machine Learning")
                 StaggeredEntrance(
@@ -604,7 +753,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             BouncingButton(
                               onTap: () {
                                 HapticService.selection();
-                                _openCourseHub(activeCourse['title'] as String, activeCourse['id'] as String);
+                                if (activeCourse != null) {
+                                  _openCourseHub(activeCourse['title'] as String, activeCourse['id'] as String);
+                                } else {
+                                  ref.read(selectedNavIndexProvider.notifier).state = 1;
+                                }
                               },
                               child: const Text(
                                 'My Courses →',
@@ -619,143 +772,196 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                         const SizedBox(height: 12),
 
-                        // Active Course Card
-                        Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(22),
-                            border: Border.all(color: AppColors.borderLight),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.03),
-                                blurRadius: 14,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          padding: const EdgeInsets.all(18),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  // Course Image Poster Thumbnail
-                                  CourseImage(
-                                    width: 80,
-                                    height: 80,
-                                    imageUrl: activeCourse['thumbnailUrl'] as String?,
-                                    courseTitle: activeCourse['title'] as String? ?? 'Artificial Intelligence',
-                                    borderRadius: BorderRadius.circular(16),
-                                    fit: BoxFit.cover,
+                        // Active Course Card or Authentic Empty State
+                        if (activeCourse != null)
+                          Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(22),
+                              border: Border.all(color: AppColors.borderLight),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.03),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            padding: const EdgeInsets.all(18),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    // Course Image Poster Thumbnail
+                                    CourseImage(
+                                      width: 80,
+                                      height: 80,
+                                      imageUrl: activeCourse['thumbnailUrl'] as String?,
+                                      courseTitle: activeCourse['title'] as String? ?? 'Course Track',
+                                      borderRadius: BorderRadius.circular(16),
+                                      fit: BoxFit.cover,
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            (activeCourse['category'] as String? ?? 'TECHNOLOGY').toUpperCase(),
+                                            style: const TextStyle(
+                                              color: Color(0xFF008A8A),
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 10,
+                                              letterSpacing: 0.6,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            activeCourse['title'] as String? ?? 'Course Track',
+                                            style: AppTypography.headlineMedium.copyWith(
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 17,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          const Text(
+                                            'Ready to begin your study journey',
+                                            style: TextStyle(
+                                              color: AppColors.textSecondary,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text(
+                                      'Progress',
+                                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+                                    ),
+                                    Text(
+                                      '${((activeCourse['progressPct'] as num?)?.toDouble() ?? 0.0).toInt()}%',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w800,
+                                        color: Color(0xFF008A8A),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: LinearProgressIndicator(
+                                    value: (((activeCourse['progressPct'] as num?)?.toDouble() ?? 0.0) / 100.0).clamp(0.0, 1.0),
+                                    minHeight: 6,
+                                    backgroundColor: AppColors.surfaceLight,
+                                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00D6D6)),
                                   ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                ),
+                                const SizedBox(height: 16),
+                                BouncingButton(
+                                  scaleDown: 0.97,
+                                  onTap: () => _openCourseHub(
+                                    activeCourse['title'] as String,
+                                    activeCourse['id'] as String,
+                                  ),
+                                  child: Container(
+                                    width: double.infinity,
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [Color(0xFF00D6D6), Color(0xFF0284C7)],
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFF00D6D6).withValues(alpha: 0.3),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: const Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
+                                        Icon(Icons.play_arrow_rounded, color: Colors.white, size: 20),
+                                        SizedBox(width: 6),
                                         Text(
-                                          (activeCourse['category'] as String? ?? 'AI & MACHINE LEARNING').toUpperCase(),
-                                          style: const TextStyle(
-                                            color: Color(0xFF008A8A),
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: 10,
-                                            letterSpacing: 0.6,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          activeCourse['title'] as String? ?? 'Machine Learning',
-                                          style: AppTypography.headlineMedium.copyWith(
-                                            fontWeight: FontWeight.w900,
-                                            fontSize: 17,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        const Text(
-                                          'Ready to begin your study journey',
+                                          'Start Learning',
                                           style: TextStyle(
-                                            color: AppColors.textSecondary,
-                                            fontSize: 12,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 14,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    'Progress',
-                                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
-                                  ),
-                                  Text(
-                                    '${((activeCourse['progressPct'] as num?)?.toDouble() ?? 0.0).toInt()}%',
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w800,
-                                      color: Color(0xFF008A8A),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(6),
-                                child: LinearProgressIndicator(
-                                  value: (((activeCourse['progressPct'] as num?)?.toDouble() ?? 0.0) / 100.0).clamp(0.0, 1.0),
-                                  minHeight: 6,
-                                  backgroundColor: AppColors.surfaceLight,
-                                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00D6D6)),
                                 ),
-                              ),
-                              const SizedBox(height: 16),
-                              BouncingButton(
-                                scaleDown: 0.97,
-                                onTap: () => _openCourseHub(
-                                  activeCourse['title'] as String,
-                                  activeCourse['id'] as String,
-                                ),
-                                child: Container(
-                                  width: double.infinity,
-                                  height: 44,
+                              ],
+                            ),
+                          )
+                        else
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(22),
+                              border: Border.all(color: AppColors.borderLight),
+                            ),
+                            child: Column(
+                              children: [
+                                Container(
+                                  width: 48,
+                                  height: 48,
                                   decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      colors: [Color(0xFF00D6D6), Color(0xFF0284C7)],
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(0xFF00D6D6).withValues(alpha: 0.3),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
+                                    color: const Color(0xFF00D6D6).withValues(alpha: 0.12),
+                                    shape: BoxShape.circle,
                                   ),
-                                  alignment: Alignment.center,
-                                  child: const Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.play_arrow_rounded, color: Colors.white, size: 20),
-                                      SizedBox(width: 6),
-                                      Text(
-                                        'Start Learning',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ],
+                                  child: const Icon(Icons.school_outlined, color: Color(0xFF008A8A), size: 24),
+                                ),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'No Enrolled Courses Yet',
+                                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                                ),
+                                const SizedBox(height: 4),
+                                const Text(
+                                  'Enroll in an industry-ready track to start learning and tracking your certificate progress.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.4),
+                                ),
+                                const SizedBox(height: 14),
+                                BouncingButton(
+                                  onTap: () {
+                                    HapticService.lightTap();
+                                    ref.read(selectedNavIndexProvider.notifier).state = 1;
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF00D6D6),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Text(
+                                      'Browse Courses',
+                                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),

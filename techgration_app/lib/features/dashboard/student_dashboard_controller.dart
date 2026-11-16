@@ -10,6 +10,7 @@ class StudentDashboardState {
   final Map<String, dynamic>? stats;
   final List<dynamic> enrollments;
   final List<dynamic> liveClasses;
+  final List<dynamic> recordings;
   final List<dynamic> assignments;
   final List<Map<String, dynamic>> past7DaysData;
 
@@ -20,6 +21,7 @@ class StudentDashboardState {
     this.stats,
     this.enrollments = const [],
     this.liveClasses = const [],
+    this.recordings = const [],
     this.assignments = const [],
     this.past7DaysData = const [],
   });
@@ -31,6 +33,7 @@ class StudentDashboardState {
     Map<String, dynamic>? stats,
     List<dynamic>? enrollments,
     List<dynamic>? liveClasses,
+    List<dynamic>? recordings,
     List<dynamic>? assignments,
     List<Map<String, dynamic>>? past7DaysData,
   }) {
@@ -41,6 +44,7 @@ class StudentDashboardState {
       stats: stats ?? this.stats,
       enrollments: enrollments ?? this.enrollments,
       liveClasses: liveClasses ?? this.liveClasses,
+      recordings: recordings ?? this.recordings,
       assignments: assignments ?? this.assignments,
       past7DaysData: past7DaysData ?? this.past7DaysData,
     );
@@ -69,7 +73,7 @@ class StudentDashboardState {
     }).length;
   }
 
-  Map<String, dynamic> get activeCourse {
+  Map<String, dynamic>? get activeCourse {
     if (enrollments.isNotEmpty) {
       // Prioritize "Artificial Intelligence" course
       final aiMatch = enrollments.cast<Map<String, dynamic>?>().firstWhere(
@@ -84,22 +88,15 @@ class StudentDashboardState {
       final first = aiMatch ?? (enrollments.first as Map<String, dynamic>);
       final course = (first['course'] as Map<String, dynamic>?) ?? {};
       return {
-        'id': first['courseId'] ?? course['id'] ?? '6ad283b4e196d0b8fbfb9eae',
-        'title': course['title'] ?? first['title'] ?? 'Artificial Intelligence & Modern Deep Learning Systems',
-        'category': course['category'] ?? first['category'] ?? 'AI & MACHINE LEARNING',
-        'instructor': course['instructor']?['name'] ?? first['instructor'] ?? 'Vineet Sir',
-        'thumbnailUrl': course['thumbnailUrl'] ?? first['thumbnailUrl'] ?? 'https://campus.techgration.live/brand/AI.png',
+        'id': first['courseId'] ?? course['id'] ?? first['id'] ?? '',
+        'title': course['title'] ?? first['title'] ?? 'Enrolled Course',
+        'category': course['category'] ?? first['category'] ?? 'TECHNOLOGY',
+        'instructor': course['instructor']?['name'] ?? first['instructor'] ?? 'Course Faculty',
+        'thumbnailUrl': course['thumbnailUrl'] ?? first['thumbnailUrl'] ?? '',
         'progressPct': (first['progressPct'] as num?)?.toDouble() ?? 0.0,
       };
     }
-    return {
-      'id': '6ad283b4e196d0b8fbfb9eae',
-      'title': 'Artificial Intelligence & Modern Deep Learning Systems',
-      'category': 'AI & MACHINE LEARNING',
-      'instructor': 'Vineet Sir',
-      'thumbnailUrl': 'https://campus.techgration.live/brand/AI.png',
-      'progressPct': 0.0,
-    };
+    return null;
   }
 }
 
@@ -158,12 +155,22 @@ class StudentDashboardNotifier extends Notifier<StudentDashboardState> {
       final liveClasses = (data['liveClasses'] as List<dynamic>?) ?? [];
       final assignments = (data['assignments'] as List<dynamic>?) ?? [];
 
+      List<dynamic> recordings = [];
+      try {
+        final lcRes = await ApiClient.get(Endpoints.liveClasses);
+        if (lcRes.success && lcRes.data is Map) {
+          final lcMap = lcRes.data as Map<String, dynamic>;
+          recordings = (lcMap['recordings'] as List<dynamic>?) ?? [];
+        }
+      } catch (_) {}
+
       state = state.copyWith(
         isLoading: false,
         user: user ?? state.user,
         stats: data['stats'] as Map<String, dynamic>?,
         enrollments: enrollments,
         liveClasses: liveClasses,
+        recordings: recordings,
         assignments: assignments,
       );
 
@@ -192,7 +199,7 @@ class StudentDashboardNotifier extends Notifier<StudentDashboardState> {
       await loadDashboard();
       return true;
     }
-    return true; // Mark submitted locally as well
+    return false;
   }
 
   Future<bool> toggleLessonProgress(String lessonId, bool isCompleted) async {
@@ -207,7 +214,7 @@ class StudentDashboardNotifier extends Notifier<StudentDashboardState> {
       await loadDashboard();
       return true;
     }
-    return true;
+    return false;
   }
 }
 

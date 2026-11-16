@@ -8,6 +8,7 @@ import '../../shared/widgets/bouncing_button.dart';
 import '../../shared/widgets/flippable_badge_card.dart';
 import '../dashboard/student_dashboard_controller.dart';
 import '../../core/providers/navigation_provider.dart';
+import '../assessments/quiz_player_screen.dart';
 import 'academics_controller.dart';
 
 class RewardsScreen extends ConsumerStatefulWidget {
@@ -284,9 +285,17 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
                 scaleDown: 0.94,
                 onTap: () {
                   HapticService.mediumImpact();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Starting evaluation: $title')),
-                  );
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => QuizPlayerScreen(
+                        assessmentId: quiz['id']?.toString() ?? '',
+                        assessmentTitle: title,
+                      ),
+                    ),
+                  ).then((_) {
+                    ref.read(academicsProvider.notifier).loadAll();
+                  });
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -579,57 +588,24 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
   ) {
     final earnedCertificates = academics.certificates;
 
-    // Authentic fallback courses matching Nakul's registered enrollments
-    final authenticFallbackCourses = [
-      {
-        'id': 'enrollment-ml',
-        'courseId': '6ad3e60d327ee4bd613509df',
-        'courseTitle': 'Machine Learning',
-        'courseSubtitle': 'Comprehensive Core Machine Learning Track',
-        'category': 'AI & MACHINE LEARNING',
-        'level': 'INTERMEDIATE',
-        'thumbnailUrl':
-            'https://res.cloudinary.com/dozazvcec/image/upload/v1792271801/techgration_lms/courses/course_course_1792271791434.jpg',
-        'instructorName': 'Vineet Sir',
-        'progressPct': 0,
-        'status': 'ACTIVE',
-      },
-      {
-        'id': 'enrollment-ai',
-        'courseId': '6ad283b4e196d0b8fbfb9eae',
-        'courseTitle': 'Artificial Intelligence & Modern Deep Learning Systems',
-        'courseSubtitle': 'Deep Neural Networks, LLMs and Vision Models',
-        'category': 'AI & MACHINE LEARNING',
-        'level': 'ADVANCED',
-        'thumbnailUrl': 'https://campus.techgration.live/brand/AI.png',
-        'instructorName': 'Vineet Sir',
-        'progressPct': 0,
-        'status': 'ACTIVE',
-      },
-    ];
-
     List<dynamic> inProgress = academics.inProgressCourses;
-    if (inProgress.isEmpty) {
-      if (fallbackEnrollments.isNotEmpty) {
-        inProgress = fallbackEnrollments.map((e) {
-          final m = e as Map<String, dynamic>;
-          final c = (m['course'] as Map<String, dynamic>?) ?? {};
-          return {
-            'id': m['id'] ?? '',
-            'courseId': m['courseId'] ?? c['id'] ?? '',
-            'courseTitle': c['title'] ?? m['title'] ?? 'Course',
-            'courseSubtitle': c['subtitle'] ?? m['subtitle'] ?? '',
-            'category': c['category'] ?? m['category'] ?? 'AI & MACHINE LEARNING',
-            'level': c['level'] ?? m['level'] ?? 'INTERMEDIATE',
-            'thumbnailUrl': c['thumbnailUrl'] ?? m['thumbnailUrl'] ?? '',
-            'instructorName': c['instructorName'] ?? c['instructor']?['name'] ?? m['instructor'] ?? 'Vineet Sir',
-            'progressPct': (m['progressPct'] as num?)?.round() ?? 0,
-            'status': m['status'] ?? 'ACTIVE',
-          };
-        }).toList();
-      } else {
-        inProgress = authenticFallbackCourses;
-      }
+    if (inProgress.isEmpty && fallbackEnrollments.isNotEmpty) {
+      inProgress = fallbackEnrollments.map((e) {
+        final m = e as Map<String, dynamic>;
+        final c = (m['course'] as Map<String, dynamic>?) ?? {};
+        return {
+          'id': m['id'] ?? '',
+          'courseId': m['courseId'] ?? c['id'] ?? '',
+          'courseTitle': c['title'] ?? m['title'] ?? 'Course',
+          'courseSubtitle': c['subtitle'] ?? m['subtitle'] ?? '',
+          'category': c['category'] ?? m['category'] ?? 'TECHNOLOGY',
+          'level': c['level'] ?? m['level'] ?? 'INTERMEDIATE',
+          'thumbnailUrl': c['thumbnailUrl'] ?? m['thumbnailUrl'] ?? '',
+          'instructorName': c['instructorName'] ?? c['instructor']?['name'] ?? m['instructor'] ?? 'Faculty',
+          'progressPct': (m['progressPct'] as num?)?.round() ?? 0,
+          'status': m['status'] ?? 'ACTIVE',
+        };
+      }).toList();
     }
 
     final activeIndex = (_selectedCertCourseIndex >= 0 && _selectedCertCourseIndex < inProgress.length)
@@ -773,105 +749,115 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
           // TAB CONTENT: IN PROGRESS
           // ------------------------------------------------------------------
           if (_certSubTab == 'in_progress') ...[
-            // MULTI-COURSE SELECTOR TABS (If > 1 course enrolled)
-            if (inProgress.length > 1) ...[
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                child: Row(
-                  children: inProgress.asMap().entries.map((entry) {
-                    final idx = entry.key;
-                    final course = entry.value as Map<String, dynamic>;
-                    final isSel = idx == activeIndex;
-                    final title = course['courseTitle'] as String? ?? 'Course';
-                    final pct = course['progressPct'] ?? 0;
+            if (inProgress.isEmpty)
+              _buildEmptyTabCard(
+                icon: Icons.school_outlined,
+                iconColor: const Color(0xFF00D6D6),
+                title: 'No Active Certification Tracks',
+                description:
+                    'You are not enrolled in any active course tracks yet. Complete 100% of any enrolled course to unlock your verified credential.',
+              )
+            else ...[
+              // MULTI-COURSE SELECTOR TABS (If > 1 course enrolled)
+              if (inProgress.length > 1) ...[
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    children: inProgress.asMap().entries.map((entry) {
+                      final idx = entry.key;
+                      final course = entry.value as Map<String, dynamic>;
+                      final isSel = idx == activeIndex;
+                      final title = course['courseTitle'] as String? ?? 'Course';
+                      final pct = course['progressPct'] ?? 0;
 
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: InkWell(
-                        onTap: () {
-                          HapticService.selection();
-                          setState(() => _selectedCertCourseIndex = idx);
-                        },
-                        borderRadius: BorderRadius.circular(14),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: isSel ? const Color(0xFFE6FFFA) : AppColors.surfaceLight,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: isSel ? const Color(0xFF00D6D6) : AppColors.borderLight,
-                              width: isSel ? 1.5 : 1.0,
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: InkWell(
+                          onTap: () {
+                            HapticService.selection();
+                            setState(() => _selectedCertCourseIndex = idx);
+                          },
+                          borderRadius: BorderRadius.circular(14),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: isSel ? const Color(0xFFE6FFFA) : AppColors.surfaceLight,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: isSel ? const Color(0xFF00D6D6) : AppColors.borderLight,
+                                width: isSel ? 1.5 : 1.0,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.menu_book_rounded,
+                                  size: 14,
+                                  color: isSel ? const Color(0xFF00D6D6) : AppColors.textSecondary,
+                                ),
+                                const SizedBox(width: 6),
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(maxWidth: 160),
+                                  child: Text(
+                                    title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
+                                      color: isSel ? const Color(0xFF008A8A) : AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: isSel ? const Color(0xFF00D6D6).withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.05),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    '$pct%',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      color: isSel ? const Color(0xFF008A8A) : AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.menu_book_rounded,
-                                size: 14,
-                                color: isSel ? const Color(0xFF008A8A) : AppColors.textSecondary,
-                              ),
-                              const SizedBox(width: 6),
-                              ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 160),
-                                child: Text(
-                                  title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
-                                    color: isSel ? const Color(0xFF008A8A) : AppColors.textSecondary,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: isSel ? const Color(0xFF00D6D6).withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.05),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  '$pct%',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800,
-                                    color: isSel ? const Color(0xFF008A8A) : AppColors.textSecondary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
                         ),
-                      ),
-                    );
-                  }).toList(),
+                      );
+                    }).toList(),
+                  ),
                 ),
+                const SizedBox(height: 16),
+              ],
+
+              // CENTER STAGE: CERTIFICATE SPOTLIGHT CARD (Screenshot 2 1:1 Match)
+              if (activeCourse != null)
+                _buildCertificatePodiumStage(
+                  context,
+                  course: activeCourse,
+                  studentName: studentName,
+                ),
+
+              const SizedBox(height: 20),
+
+              // Enrolled Certification Tracks List
+              Text(
+                'Enrolled Certification Tracks (${inProgress.length})',
+                style: AppTypography.headlineMedium.copyWith(fontWeight: FontWeight.w800, fontSize: 16),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
+              for (final item in inProgress)
+                _buildRealCourseCredentialCard(context, item as Map<String, dynamic>),
             ],
-
-            // CENTER STAGE: CERTIFICATE SPOTLIGHT CARD (Screenshot 2 1:1 Match)
-            if (activeCourse != null)
-              _buildCertificatePodiumStage(
-                context,
-                course: activeCourse,
-                studentName: studentName,
-              ),
-
-            const SizedBox(height: 20),
-
-            // Enrolled Certification Tracks List
-            Text(
-              'Enrolled Certification Tracks (${inProgress.length})',
-              style: AppTypography.headlineMedium.copyWith(fontWeight: FontWeight.w800, fontSize: 16),
-            ),
-            const SizedBox(height: 10),
-            for (final item in inProgress)
-              _buildRealCourseCredentialCard(context, item as Map<String, dynamic>),
           ] else ...[
             // ------------------------------------------------------------------
             // TAB CONTENT: EARNED
@@ -1079,6 +1065,67 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
                     ],
                   ),
                 ),
+                if (isUnlocked) ...[
+                  const SizedBox(height: 16),
+                  BouncingButton(
+                    scaleDown: 0.97,
+                    onTap: () async {
+                      HapticService.heavyImpact();
+                      final courseId = (course['courseId'] ?? course['id'] ?? '').toString();
+                      final res = await ref.read(academicsProvider.notifier).claimCertificate(courseId);
+                      if (!context.mounted) return;
+                      if (res['success'] == true) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Certificate issued successfully! Congratulations! 🎉'),
+                            backgroundColor: Color(0xFF10B981),
+                          ),
+                        );
+                        setState(() => _certSubTab = 'earned');
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(res['error']?.toString() ?? 'Failed to claim certificate'),
+                            backgroundColor: AppColors.error,
+                          ),
+                        );
+                      }
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF10B981), Color(0xFF00D6D6)],
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.35),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Claim & Mint Verified Certificate 🎉',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -1470,6 +1517,67 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> with SingleTicker
               ],
             ),
           ),
+          if (isComplete) ...[
+            const SizedBox(height: 12),
+            BouncingButton(
+              scaleDown: 0.96,
+              onTap: () async {
+                HapticService.heavyImpact();
+                final courseId = (item['courseId'] ?? item['id'] ?? '').toString();
+                final res = await ref.read(academicsProvider.notifier).claimCertificate(courseId);
+                if (!context.mounted) return;
+                if (res['success'] == true) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Certificate issued successfully! 🎉'),
+                      backgroundColor: Color(0xFF10B981),
+                    ),
+                  );
+                  setState(() => _certSubTab = 'earned');
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(res['error']?.toString() ?? 'Failed to claim certificate'),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                }
+              },
+              child: Container(
+                width: double.infinity,
+                height: 42,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF10B981), Color(0xFF00D6D6)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                alignment: Alignment.center,
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 18),
+                    SizedBox(width: 6),
+                    Text(
+                      'Claim Certificate 🎉',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -177,6 +177,19 @@ class AcademicsNotifier extends Notifier<AcademicsState> {
       state = state.copyWith(isLoading: false);
     }
   }
+
+  Future<Map<String, dynamic>> claimCertificate(String courseId) async {
+    final res = await ApiClient.post(
+      Endpoints.claimCertificate,
+      data: {'courseId': courseId},
+    );
+
+    if (res.success && res.data is Map) {
+      await loadAll();
+      return {'success': true, 'data': res.data};
+    }
+    return {'success': false, 'error': res.error ?? 'Failed to claim certificate.'};
+  }
 }
 
 final academicsProvider = NotifierProvider<AcademicsNotifier, AcademicsState>(

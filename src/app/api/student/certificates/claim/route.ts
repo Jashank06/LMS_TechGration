@@ -4,7 +4,7 @@ import { getSession } from "@/server/auth"
 
 export async function POST(request: Request) {
   try {
-    const session = await getSession()
+    const session = await getSession(request)
     if (!session || !session.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }

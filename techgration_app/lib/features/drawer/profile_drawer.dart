@@ -9,9 +9,12 @@ import '../../core/services/storage_service.dart';
 import '../../shared/sheets/support_helpdesk_sheet.dart';
 import '../../shared/widgets/bouncing_button.dart';
 import '../auth/login_screen.dart';
+import '../chat/student_chat_screen.dart';
+import '../community/community_feed_screen.dart';
 import '../dashboard/student_dashboard_controller.dart';
 import '../interview/interview_prep_screen.dart';
 import '../profile/profile_settings_screen.dart';
+import '../referral/refer_earn_screen.dart';
 import '../rewards/champion_swag_screen.dart';
 
 class ProfileDrawer extends ConsumerWidget {
@@ -380,6 +383,66 @@ class ProfileDrawer extends ConsumerWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(builder: (_) => const InterviewPrepScreen()),
+                            );
+                          },
+                        ),
+
+                        const SizedBox(height: 12),
+                        const Divider(color: AppColors.divider),
+                        const SizedBox(height: 8),
+
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 4),
+                          child: Text(
+                            'COMMUNITY & CONNECT',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textSecondary,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ),
+
+                        _buildMenuItem(
+                          icon: Icons.redeem_rounded,
+                          title: 'Refer & Earn',
+                          badge: '₹500 CASHBACK',
+                          badgeColor: const Color(0xFF10B981),
+                          onTap: () {
+                            HapticService.selection();
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const ReferEarnScreen()),
+                            );
+                          },
+                        ),
+                        _buildMenuItem(
+                          icon: Icons.forum_outlined,
+                          title: 'Faculty 1-on-1 Chat',
+                          badge: 'MENTOR',
+                          badgeColor: const Color(0xFF0284C7),
+                          onTap: () {
+                            HapticService.selection();
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const StudentChatScreen()),
+                            );
+                          },
+                        ),
+                        _buildMenuItem(
+                          icon: Icons.campaign_outlined,
+                          title: 'Community & Notices',
+                          badge: 'NEW',
+                          badgeColor: const Color(0xFF00D6D6),
+                          onTap: () {
+                            HapticService.selection();
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const CommunityFeedScreen()),
                             );
                           },
                         ),
