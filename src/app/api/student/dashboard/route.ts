@@ -130,10 +130,14 @@ export async function GET(req: Request) {
         enrolledCoursesCount: enrollments.length,
         completedLessonsCount: studyMetrics.completedLessonsCount,
         avgProgressPct: displayProgressPct,
+        avgProgress: displayProgressPct,
         hoursInvested: studyMetrics.hoursInvested,
         passedQuizzesCount,
         certificatesCount,
+        weeklyHoursText: studyMetrics.weeklyHoursText,
+        daysGoalReached: studyMetrics.daysGoalReached,
       },
+      past7DaysData: studyMetrics.past7DaysData,
       enrollments: enrollments.map((e) => ({
         id: e.id,
         courseId: e.courseId,
@@ -141,6 +145,13 @@ export async function GET(req: Request) {
         progressPct: e.progressPct,
         thumbnailUrl: e.course.thumbnailUrl,
         level: e.course.level,
+        course: {
+          id: e.course.id,
+          title: e.course.title,
+          thumbnailUrl: e.course.thumbnailUrl,
+          level: e.course.level,
+          format: e.course.format,
+        },
       })),
       liveClasses: liveClasses.map((lc) => ({
         id: lc.id,

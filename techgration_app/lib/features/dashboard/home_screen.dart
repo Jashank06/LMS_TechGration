@@ -342,6 +342,50 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                 const SizedBox(height: 20),
 
+                if (dashboardState.error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 20, right: 20, bottom: 16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF2F2),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFFCA5A5)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.info_outline_rounded, color: Color(0xFFEF4444), size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              !StorageService.isAuthenticated
+                                  ? 'Session expired. Please sign in again to sync your courses.'
+                                  : 'Could not sync latest data: ${dashboardState.error}',
+                              style: const TextStyle(
+                                color: Color(0xFF991B1B),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          if (!StorageService.isAuthenticated)
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pushNamedAndRemoveUntil('/login', (r) => false);
+                              },
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                backgroundColor: const Color(0xFFEF4444),
+                                foregroundColor: Colors.white,
+                                textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                              ),
+                              child: const Text('Sign In'),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+
                 // 3. Personalized Greeting Banner (Matching Web LMS Header)
                 StaggeredEntrance(
                   delay: const Duration(milliseconds: 60),

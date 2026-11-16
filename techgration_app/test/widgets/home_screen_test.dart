@@ -95,7 +95,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap banner
-      await tester.tap(find.text('Refer & Earn ₹500'));
+      final bannerFinder = find.text('Refer & Earn ₹500');
+      await tester.ensureVisible(bannerFinder);
+      await tester.pumpAndSettle();
+      await tester.tap(bannerFinder);
       await tester.pumpAndSettle();
 
       expect(find.byType(ReferEarnScreen), findsOneWidget);

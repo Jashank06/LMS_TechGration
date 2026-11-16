@@ -63,8 +63,8 @@ class _MyCoursesScreenState extends ConsumerState<MyCoursesScreen> {
     final filtered = enrollments.where((item) {
       final e = item as Map<String, dynamic>;
       final course = (e['course'] as Map<String, dynamic>?) ?? {};
-      final title = (course['title'] ?? '').toString().toLowerCase();
-      final category = (course['category'] ?? '').toString().toLowerCase();
+      final title = (course['title'] ?? e['title'] ?? '').toString().toLowerCase();
+      final category = (course['category'] ?? e['category'] ?? '').toString().toLowerCase();
       final matchesSearch = query.isEmpty || title.contains(query) || category.contains(query);
 
       final progress = (e['progressPct'] as num?)?.toDouble() ?? 0.0;
@@ -75,7 +75,7 @@ class _MyCoursesScreenState extends ConsumerState<MyCoursesScreen> {
       return matchesSearch && matchesFilter;
     }).toList();
 
-    final totalCount = enrollments.isNotEmpty ? enrollments.length : 2;
+    final totalCount = enrollments.length;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -223,37 +223,59 @@ class _MyCoursesScreenState extends ConsumerState<MyCoursesScreen> {
 
               const SizedBox(height: 20),
 
-              // Enrolled Course Cards (Screenshot 2 Match)
+              // Enrolled Course Cards
               if (filtered.isNotEmpty) ...[
                 for (final item in filtered) ...[
                   _buildEnrolledCourseCard(context, item as Map<String, dynamic>),
                 ],
               ] else ...[
-                // Fallback realistic course matching Nakul's portal
-                _buildCourseCardWidget(
-                  context,
-                  courseId: '6ad3e60d327ee4bd613509df',
-                  title: 'Machine Learning',
-                  category: 'AI & MACHINE LEARNING',
-                  instructor: 'Vineet Sir',
-                  thumbnailUrl: 'https://res.cloudinary.com/dozazvcec/image/upload/v1792271801/techgration_lms/courses/course_course_1792271791434.jpg',
-                  batchLabel: 'New Batch • Live Classes',
-                  progressPct: 0.0,
-                  totalLessons: 12,
-                  completedLessons: 0,
-                ),
-                const SizedBox(height: 16),
-                _buildCourseCardWidget(
-                  context,
-                  courseId: '6ad283b4e196d0b8fbfb9eae',
-                  title: 'Artificial Intelligence & Modern Deep Learning Systems',
-                  category: 'AI & MACHINE LEARNING',
-                  instructor: 'Vineet Sir',
-                  thumbnailUrl: 'https://campus.techgration.live/brand/AI.png',
-                  batchLabel: '0/3 Sessions Done',
-                  progressPct: 0.0,
-                  totalLessons: 15,
-                  completedLessons: 0,
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.borderLight),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF00D6D6).withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.menu_book_rounded,
+                          color: Color(0xFF00D6D6),
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _searchController.text.isNotEmpty
+                            ? 'No Matching Courses'
+                            : 'No Enrolled Courses',
+                        style: AppTypography.headlineMedium.copyWith(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _searchController.text.isNotEmpty
+                            ? 'Try searching with a different keyword.'
+                            : 'You have not enrolled in any courses yet.',
+                        textAlign: TextAlign.center,
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
 
@@ -296,15 +318,15 @@ class _MyCoursesScreenState extends ConsumerState<MyCoursesScreen> {
 
   Widget _buildEnrolledCourseCard(BuildContext context, Map<String, dynamic> item) {
     final course = (item['course'] as Map<String, dynamic>?) ?? {};
-    final courseId = item['courseId'] as String? ?? course['id'] as String? ?? '6ad283b4e196d0b8fbfb9eae';
-    final title = course['title'] as String? ?? 'Machine Learning';
-    final category = course['category'] as String? ?? 'AI & MACHINE LEARNING';
-    final instructor = course['instructor']?['name'] as String? ?? 'Vineet Sir';
-    final thumbnailUrl = course['thumbnailUrl'] as String? ?? item['thumbnailUrl'] as String?;
+    final courseId = (item['courseId'] ?? course['id'] ?? item['id'] ?? '').toString();
+    final title = (course['title'] ?? item['title'] ?? 'Enrolled Course').toString();
+    final category = (course['category'] ?? item['category'] ?? 'TECHNOLOGY').toString();
+    final instructor = (course['instructor']?['name'] ?? item['instructor'] ?? 'Course Faculty').toString();
+    final thumbnailUrl = (course['thumbnailUrl'] ?? item['thumbnailUrl'] ?? '').toString();
     final progressPct = (item['progressPct'] as num?)?.toDouble() ?? 0.0;
-    final batchLabel = item['batchName'] as String? ?? 'New Batch • Live Classes';
+    final batchLabel = (item['batchName'] ?? 'Enrolled Course • Active Batch').toString();
 
-    final modules = course['modules'] as List<dynamic>? ?? [];
+    final modules = (course['modules'] as List<dynamic>?) ?? [];
     int totalLessons = 0;
     for (final m in modules) {
       if (m is Map && m['lessons'] is List) {

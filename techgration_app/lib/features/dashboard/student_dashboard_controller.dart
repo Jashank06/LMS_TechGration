@@ -54,7 +54,10 @@ class StudentDashboardState {
   int get enrolledCoursesCount =>
       (stats?['enrolledCoursesCount'] as int?) ?? enrollments.length;
 
-  int get avgProgress => (stats?['avgProgress'] as int?) ?? 0;
+  int get avgProgress =>
+      (stats?['avgProgressPct'] as num?)?.toInt() ??
+      (stats?['avgProgress'] as num?)?.toInt() ??
+      0;
 
   int get completedLessonsCount => (stats?['completedLessonsCount'] as int?) ?? 0;
 
@@ -164,6 +167,14 @@ class StudentDashboardNotifier extends Notifier<StudentDashboardState> {
         }
       } catch (_) {}
 
+      final past7DaysRaw = data['past7DaysData'] as List<dynamic>?;
+      final past7DaysData = past7DaysRaw != null
+          ? past7DaysRaw
+              .whereType<Map>()
+              .map((item) => Map<String, dynamic>.from(item))
+              .toList()
+          : state.past7DaysData;
+
       state = state.copyWith(
         isLoading: false,
         user: user ?? state.user,
@@ -172,15 +183,19 @@ class StudentDashboardNotifier extends Notifier<StudentDashboardState> {
         liveClasses: liveClasses,
         recordings: recordings,
         assignments: assignments,
+        past7DaysData: past7DaysData,
       );
 
       if (user != null) {
         await StorageService.setUserData(user);
       }
     } else {
-      // Keep cached state and clear loading
+      if (res.statusCode == 401) {
+        await StorageService.clearSession();
+      }
       state = state.copyWith(
         isLoading: false,
+        error: res.error,
         user: StorageService.getUserData() ?? state.user,
       );
     }
