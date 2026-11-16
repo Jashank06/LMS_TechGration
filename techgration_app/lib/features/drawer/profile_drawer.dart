@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/providers/navigation_provider.dart';
@@ -384,6 +385,20 @@ class ProfileDrawer extends ConsumerWidget {
                               context,
                               MaterialPageRoute(builder: (_) => const InterviewPrepScreen()),
                             );
+                          },
+                        ),
+                        _buildMenuItem(
+                          icon: Icons.code_rounded,
+                          title: 'Coding Arena',
+                          badge: 'CHALLENGES',
+                          badgeColor: const Color(0xFF8B5CF6),
+                          onTap: () async {
+                            HapticService.selection();
+                            Navigator.pop(context);
+                            final uri = Uri.parse('https://campus.techgration.live/student/arena');
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(uri, mode: LaunchMode.externalApplication);
+                            }
                           },
                         ),
 

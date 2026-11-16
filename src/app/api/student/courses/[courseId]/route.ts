@@ -62,9 +62,48 @@ export async function GET(
     }
 
     const allLessons = course.modules.flatMap((m) => m.lessons)
+    const allLessonIds = allLessons.map((l) => l.id)
     const isEnrolled = course.enrollments && course.enrollments.length > 0
     const enrollment = isEnrolled ? course.enrollments[0] : null
     const progressPct = enrollment ? enrollment.progressPct : 0
+
+    const progressRecords = user
+      ? await db.lessonProgress.findMany({
+          where: {
+            userId: user.id,
+            lessonId: { in: allLessonIds },
+          },
+        })
+      : []
+
+    const progressMap = new Map(progressRecords.map((p) => [p.lessonId, p]))
+
+    const modules = course.modules.map((m) => ({
+      id: m.id,
+      title: m.title,
+      description: m.description,
+      position: m.position,
+      lessons: m.lessons.map((l) => {
+        const prog = progressMap.get(l.id)
+        return {
+          id: l.id,
+          title: l.title,
+          description: l.content || "",
+          durationSec: l.durationSec,
+          durationMinutes: Math.round(l.durationSec / 60),
+          videoUrl: l.videoUrl,
+          position: l.position,
+          isCompleted: prog?.status === "COMPLETED",
+          resources: l.resources.map((r) => ({
+            id: r.id,
+            title: r.title,
+            fileUrl: r.fileUrl,
+            fileSize: r.fileSize,
+            fileType: r.fileType,
+          })),
+        }
+      }),
+    }))
 
     const directMaterials = (course.materials || []).map((m) => ({
       id: m.id,
@@ -195,6 +234,7 @@ export async function GET(
         studyMaterials,
         assignments,
         quizzes,
+        modules,
       },
     })
   } catch (error: any) {

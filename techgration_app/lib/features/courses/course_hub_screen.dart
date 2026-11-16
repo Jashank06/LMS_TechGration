@@ -66,10 +66,16 @@ class _CourseHubScreenState extends ConsumerState<CourseHubScreen> {
           flatLessons.addAll(parsedLessons);
         }
 
+        final initialCompleted = flatLessons
+            .where((l) => l['isCompleted'] == true && l['id'] != null)
+            .map((l) => l['id'] as String)
+            .toSet();
+
         if (mounted) {
           setState(() {
             _modules = parsedModules;
             _lessons = flatLessons;
+            _localCompletedLessons.addAll(initialCompleted);
             if (flatLessons.isNotEmpty) {
               _selectedLesson = flatLessons.first;
             }
