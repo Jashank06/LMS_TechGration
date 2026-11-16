@@ -42,4 +42,17 @@ class Endpoints {
       courseId != null ? '$baseUrl/api/student/leaderboard?courseId=$courseId' : '$baseUrl/api/student/leaderboard';
   static String submitAssignment(String id) => '$baseUrl/api/student/assignments/$id/submit';
   static String updateLessonProgress(String id) => '$baseUrl/api/student/lessons/$id/progress';
+  static String recordingProgress(String classId) =>
+      '$baseUrl/api/student/live-classes/$classId/recording-progress';
+
+  /// Resolves relative paths (like `/Recordings/AI/Recording.mp4`) to full absolute URLs
+  static String resolveMediaUrl(String path) {
+    if (path.isEmpty) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    final cleanBase = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+    final cleanPath = path.startsWith('/') ? path : '/$path';
+    return '$cleanBase$cleanPath';
+  }
 }

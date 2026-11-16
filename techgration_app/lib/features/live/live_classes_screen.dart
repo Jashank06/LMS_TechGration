@@ -6,6 +6,7 @@ import '../../core/constants/app_typography.dart';
 import '../../core/services/haptic_service.dart';
 import '../../shared/widgets/bouncing_button.dart';
 import '../dashboard/student_dashboard_controller.dart';
+import '../video/recording_player_screen.dart';
 
 class LiveClassesScreen extends ConsumerStatefulWidget {
   const LiveClassesScreen({super.key});
@@ -388,7 +389,23 @@ class _LiveClassesScreenState extends ConsumerState<LiveClassesScreen> {
           const SizedBox(height: 16),
           BouncingButton(
             scaleDown: 0.97,
-            onTap: () => _joinMeeting(context, recordingUrl, title),
+            onTap: () {
+              HapticService.selection();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => RecordingPlayerScreen(
+                    classId: (item['id'] ?? item['classId'] ?? '').toString(),
+                    title: title,
+                    videoUrl: recordingUrl,
+                    courseTitle: course,
+                    instructorName: instructor,
+                    durationMinutes: item['durationMinutes'] as int?,
+                    conductedDate: 'Concluded • $duration',
+                  ),
+                ),
+              );
+            },
             child: Container(
               height: 44,
               width: double.infinity,

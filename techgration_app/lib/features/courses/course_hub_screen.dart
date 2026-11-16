@@ -7,6 +7,7 @@ import '../../core/network/endpoints.dart';
 import '../../core/services/haptic_service.dart';
 import '../../shared/widgets/bouncing_button.dart';
 import '../dashboard/student_dashboard_controller.dart';
+import '../video/recording_player_screen.dart';
 
 class CourseHubScreen extends ConsumerStatefulWidget {
   final String courseTitle;
@@ -93,7 +94,24 @@ class _CourseHubScreenState extends ConsumerState<CourseHubScreen> {
 
   void _togglePlay() {
     HapticService.lightTap();
-    setState(() => _isPlaying = !_isPlaying);
+    final vidUrl = (_selectedLesson?['videoUrl'] as String?) ?? '/Recordings/AI/Recording.mp4';
+    final title = (_selectedLesson?['title'] as String?) ?? 'Curriculum Lesson';
+    final lessonId = (_selectedLesson?['id'] as String?) ?? '';
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RecordingPlayerScreen(
+          classId: lessonId,
+          title: title,
+          videoUrl: vidUrl,
+          courseTitle: widget.courseTitle,
+          instructorName: widget.instructor,
+          durationMinutes: (_selectedLesson?['durationMinutes'] as int?) ?? 45,
+          conductedDate: 'Curriculum Video Lesson',
+        ),
+      ),
+    );
   }
 
   void _toggleSpeed() {

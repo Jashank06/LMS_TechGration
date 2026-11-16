@@ -12,6 +12,7 @@ import '../../shared/widgets/bouncing_button.dart';
 import '../../shared/widgets/course_image.dart';
 import '../dashboard/student_dashboard_controller.dart';
 import '../assessments/quiz_player_screen.dart';
+import '../video/recording_player_screen.dart';
 import 'course_hub_screen.dart';
 
 class CourseDetailScreen extends ConsumerStatefulWidget {
@@ -934,46 +935,99 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> with Si
 
     return Column(
       children: recordings.map((rec) {
+        final classId = (rec['id'] ?? rec['classId'] ?? '').toString();
         final title = (rec['title'] as String?) ?? 'Session Recording';
         final durMin = (rec['durationMinutes'] as int?) ?? 45;
-        final videoUrl = rec['videoUrl'] as String?;
+        final videoUrl = (rec['videoUrl'] as String?) ?? (rec['recordingUrl'] as String?) ?? '';
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.borderLight),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF00D6D6).withValues(alpha: 0.14),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.play_arrow_rounded, color: Color(0xFF008A8A), size: 24),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
-                    const SizedBox(height: 2),
-                    Text('$durMin mins • HD Recording', style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
-                  ],
+        return BouncingButton(
+          scaleDown: 0.98,
+          onTap: () {
+            HapticService.selection();
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => RecordingPlayerScreen(
+                  classId: classId,
+                  title: title,
+                  videoUrl: videoUrl,
+                  courseTitle: widget.courseTitle,
+                  instructorName: widget.instructorName,
+                  durationMinutes: durMin,
+                  conductedDate: 'Concluded • $durMin mins',
                 ),
               ),
-              if (videoUrl != null && videoUrl.isNotEmpty)
-                IconButton(
-                  icon: const Icon(Icons.open_in_new_rounded, size: 18, color: Color(0xFF008A8A)),
-                  onPressed: () => _launchUrl(videoUrl),
+            );
+          },
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.borderLight),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
                 ),
-            ],
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00D6D6).withValues(alpha: 0.14),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.play_arrow_rounded, color: Color(0xFF008A8A), size: 26),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '$durMin mins • HD Recording',
+                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00D6D6).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.play_circle_fill_rounded, color: Color(0xFF008A8A), size: 14),
+                      SizedBox(width: 4),
+                      Text(
+                        'Watch',
+                        style: TextStyle(
+                          color: Color(0xFF008A8A),
+                          fontWeight: FontWeight.w800,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       }).toList(),
