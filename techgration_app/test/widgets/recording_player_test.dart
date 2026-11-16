@@ -115,5 +115,65 @@ void main() {
       // Clean up controller
       await tester.pumpWidget(const SizedBox.shrink());
     });
+
+    testWidgets('Tapping Fullscreen button toggles fullscreen mode and hides top bar and tabs', (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: RecordingPlayerScreen(
+              classId: 'class_test_3',
+              title: 'Live Class: Artificial Intelligence & Modern Deep Learning Systems — Class 4',
+              videoUrl: 'https://campus.techgration.live/Recordings/AI/AI_Class_4.mp4',
+              courseTitle: 'Artificial Intelligence & Modern Deep Learning Systems',
+              instructorName: 'Vineet Sir',
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // Initially in portrait normal mode
+      expect(find.text('TECHGRATION PLAYER'), findsOneWidget);
+      expect(find.text('Fullscreen'), findsOneWidget);
+      expect(find.text('Chapters & Milestones'), findsOneWidget);
+
+      // Tap Fullscreen button in header
+      await tester.tap(find.text('Fullscreen'));
+      await tester.pump();
+
+      // In Fullscreen mode: Top bar and tabs are hidden, Exit Fullscreen button is visible
+      expect(find.text('TECHGRATION PLAYER'), findsNothing);
+      expect(find.text('Chapters & Milestones'), findsNothing);
+      expect(find.text('Exit Fullscreen'), findsOneWidget);
+
+      // Tap Exit Fullscreen button
+      final exitBtn = find.byKey(const Key('exit_fullscreen_button'));
+      expect(exitBtn, findsOneWidget);
+      await tester.tap(exitBtn);
+      await tester.pump(const Duration(milliseconds: 400));
+
+      // Restored back to normal mode
+      expect(find.text('TECHGRATION PLAYER'), findsOneWidget);
+      expect(find.text('Chapters & Milestones'), findsOneWidget);
+
+      // Now test the bottom scrubber bar's fullscreen toggle button
+      final bottomFullscreenToggle = find.byKey(const Key('fullscreen_toggle_button'));
+      expect(bottomFullscreenToggle, findsOneWidget);
+      await tester.tap(bottomFullscreenToggle);
+      await tester.pump(const Duration(milliseconds: 400));
+
+      // Verify entered fullscreen again
+      expect(find.text('TECHGRATION PLAYER'), findsNothing);
+      expect(find.byKey(const Key('exit_fullscreen_button')), findsOneWidget);
+
+      // Clean up controller
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
   });
 }
