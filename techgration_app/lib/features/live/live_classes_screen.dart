@@ -18,6 +18,18 @@ class LiveClassesScreen extends ConsumerStatefulWidget {
 class _LiveClassesScreenState extends ConsumerState<LiveClassesScreen> {
   int _activeTab = 0; // 0: Upcoming, 1: Recordings
 
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      if (!mounted) return;
+      final dash = ref.read(studentDashboardProvider);
+      if (!dash.isLoading && dash.recordings.isEmpty) {
+        ref.read(studentDashboardProvider.notifier).loadDashboard();
+      }
+    });
+  }
+
   void _joinMeeting(BuildContext context, String meetingUrl, String title) async {
     HapticService.mediumImpact();
     if (meetingUrl.isEmpty) {
@@ -310,7 +322,10 @@ class _LiveClassesScreenState extends ConsumerState<LiveClassesScreen> {
     final title = item['title'] as String? ?? 'Lecture Recording';
     final course = item['courseTitle'] as String? ?? item['course']?['title'] as String? ?? 'Enrolled Track';
     final instructor = item['instructorName'] as String? ?? item['instructor']?['name'] as String? ?? 'Faculty';
-    final recordingUrl = (item['recordingUrl'] as String?) ?? (item['meetingUrl'] as String?) ?? '';
+    final recordingUrl = (item['recordingUrl'] as String?) ??
+        (item['videoUrl'] as String?) ??
+        (item['meetingUrl'] as String?) ??
+        '';
     final duration = item['durationMinutes'] != null ? '${item['durationMinutes']} mins' : 'Full Session';
     final passcode = item['meetingPasscode'] as String?;
 
@@ -400,8 +415,9 @@ class _LiveClassesScreenState extends ConsumerState<LiveClassesScreen> {
                     videoUrl: recordingUrl,
                     courseTitle: course,
                     instructorName: instructor,
-                    durationMinutes: item['durationMinutes'] as int?,
+                    durationMinutes: (item['durationMinutes'] as num?)?.toInt(),
                     conductedDate: 'Concluded • $duration',
+                    description: item['description'] as String?,
                   ),
                 ),
               );
