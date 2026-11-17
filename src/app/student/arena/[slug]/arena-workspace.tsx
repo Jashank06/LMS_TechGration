@@ -437,7 +437,7 @@ export function ArenaWorkspace({
   const stagePct = stageTotalCount > 0 ? Math.round((stageSolvedCount / stageTotalCount) * 100) : 0
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-background select-none text-foreground">
+    <div className="flex flex-col flex-1 h-full min-h-0 bg-background select-none text-foreground">
       {/* ─── Top Bar (Coding Ninjas Style) ────────────────────────── */}
       <div className="flex items-center justify-between gap-3 px-4 py-2 border-b border-border/80 bg-card/80 backdrop-blur-xl shrink-0 z-20">
         <div className="flex items-center gap-3 min-w-0">

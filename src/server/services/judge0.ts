@@ -1,10 +1,12 @@
 import { LANGUAGE_MAP, JUDGE0_STATUS_MAP } from "@/lib/arena-constants"
-import { spawn } from "child_process"
+import { spawn, spawnSync } from "child_process"
 import fs from "fs"
 import path from "path"
 import os from "os"
 
 const DEFAULT_PUBLIC_JUDGE0 = "https://ce.judge0.com"
+const MAX_STDOUT_BYTES = 5 * 1024 * 1024
+const MAX_STDERR_BYTES = 2 * 1024 * 1024
 
 export interface TestCaseInput {
   input: string
@@ -40,13 +42,77 @@ function b64decode(str: string): string {
   return Buffer.from(str, "base64").toString("utf-8")
 }
 
+function getSafePath(): string {
+  const base = process.env.PATH || "/usr/local/bin:/usr/bin:/bin"
+  const extras = ["/usr/lib/jvm/java-17-openjdk/bin", "/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin"]
+  const parts = base.split(path.delimiter)
+  for (const extra of extras) {
+    if (!parts.includes(extra)) parts.push(extra)
+  }
+  return parts.join(path.delimiter)
+}
+
+const runtimeAvailabilityCache = new Map<string, string | null>()
+
+function commandExists(cmd: string, args: string[] = ["--version"]): boolean {
+  try {
+    const res = spawnSync(cmd, args, {
+      env: { PATH: getSafePath(), NODE_ENV: "production" },
+      timeout: 3000,
+      stdio: "pipe",
+    })
+    return !res.error && res.status === 0
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Checks whether the native runtime/compiler for a language is installed on this server.
+ * Result is cached per process for zero overhead on subsequent submissions.
+ */
+function resolveLocalCommand(language: string): string | null {
+  if (runtimeAvailabilityCache.has(language)) {
+    return runtimeAvailabilityCache.get(language) ?? null
+  }
+
+  let resolved: string | null = null
+
+  if (language === "python") {
+    if (commandExists("python3", ["--version"])) {
+      resolved = "python3"
+    } else if (commandExists("python", ["--version"])) {
+      resolved = "python"
+    }
+  } else if (language === "javascript") {
+    if (commandExists("node", ["--version"])) {
+      resolved = "node"
+    }
+  } else if (language === "cpp") {
+    if (commandExists("g++", ["--version"])) {
+      resolved = "g++"
+    }
+  } else if (language === "java") {
+    if (commandExists("javac", ["-version"]) && commandExists("java", ["-version"])) {
+      resolved = "javac"
+    }
+  }
+
+  runtimeAvailabilityCache.set(language, resolved)
+  return resolved
+}
+
 /**
  * Resolves Judge0 API endpoint and headers.
  * - If JUDGE0_RAPIDAPI_KEY is configured and host is RapidAPI: passes RapidAPI headers.
  * - If not configured or empty: seamlessly defaults to the official free public Judge0 CE (https://ce.judge0.com).
  * - If self-hosted (e.g. http://localhost:2358): uses self-hosted URL.
  */
-export function getJudge0Config(): { apiUrl: string; headers: Record<string, string> } {
+export function getJudge0Config(): {
+  apiUrl: string
+  headers: Record<string, string>
+  isDedicated: boolean
+} {
   let apiUrl = (process.env.JUDGE0_API_URL || "").trim()
   const rapidApiKey = (process.env.JUDGE0_RAPIDAPI_KEY || "").trim()
 
@@ -63,7 +129,10 @@ export function getJudge0Config(): { apiUrl: string; headers: Record<string, str
     "Content-Type": "application/json",
   }
 
-  if (apiUrl.includes("rapidapi.com") && rapidApiKey) {
+  const isRapidApiDedicated = apiUrl.includes("rapidapi.com") && Boolean(rapidApiKey)
+  const isSelfHostedDedicated = apiUrl !== DEFAULT_PUBLIC_JUDGE0 && !apiUrl.includes("rapidapi.com")
+
+  if (isRapidApiDedicated) {
     try {
       headers["X-RapidAPI-Key"] = rapidApiKey
       headers["X-RapidAPI-Host"] = new URL(apiUrl).hostname
@@ -72,13 +141,19 @@ export function getJudge0Config(): { apiUrl: string; headers: Record<string, str
     }
   }
 
-  return { apiUrl, headers }
+  return {
+    apiUrl,
+    headers,
+    isDedicated: isRapidApiDedicated || isSelfHostedDedicated,
+  }
 }
 
 /**
- * Executes student code.
- * - Tier 1: Cloud Judge0 CE (works in all environments: serverless, docker, local).
- * - Tier 2: Built-in local sandboxed executor fallback if machine has local compilers.
+ * Executes student code with intelligent hybrid routing:
+ * - If a dedicated/paid/self-hosted Judge0 is configured: tries Judge0 first, falls back to local sandbox.
+ * - Otherwise (standard Docker / local deployment): runs directly in the built-in local sandbox when the
+ *   native compiler/runtime is installed (~20ms, zero rate limits, 100% uptime), and automatically falls back
+ *   to Cloud Judge0 CE if a runtime is not present on the host.
  */
 export async function executeCode(params: {
   sourceCode: string
@@ -87,26 +162,40 @@ export async function executeCode(params: {
   timeLimitSec?: number
   memoryLimitKb?: number
 }): Promise<ExecutionResult> {
-  const { sourceCode, language, testCases, timeLimitSec = 3, memoryLimitKb = 256000 } = params
+  const { sourceCode, language, testCases, timeLimitSec = 3 } = params
 
   if (!testCases || testCases.length === 0) {
     throw new Error("No test cases provided")
   }
 
-  // Tier 1: Try Cloud Judge0 CE first
-  try {
-    return await executeJudge0(params)
-  } catch (err: any) {
-    console.warn("Judge0 cloud execution failed, attempting local runner fallback:", err?.message || err)
+  const { isDedicated } = getJudge0Config()
+  const localCmd = resolveLocalCommand(language)
 
-    // Tier 2: Fall back to local runner if available
+  // Dedicated / self-hosted Judge0 takes priority when explicitly configured
+  if (isDedicated) {
     try {
-      return await executeLocally({ sourceCode, language, testCases, timeLimitSec })
-    } catch (localErr: any) {
-      console.error("Local runner fallback also failed:", localErr?.message || localErr)
-      throw err || localErr
+      return await executeJudge0(params)
+    } catch (err: any) {
+      console.warn("Dedicated Judge0 execution failed, attempting local sandbox fallback:", err?.message || err)
+      if (localCmd) {
+        return await executeLocally({ sourceCode, language, testCases, timeLimitSec, resolvedCmd: localCmd })
+      }
+      throw err
     }
   }
+
+  // Standard mode: Prefer native local sandbox when compiler is installed (fast, zero rate-limit, reliable on VPS)
+  if (localCmd) {
+    try {
+      return await executeLocally({ sourceCode, language, testCases, timeLimitSec, resolvedCmd: localCmd })
+    } catch (localErr: any) {
+      console.warn("Local sandbox failed, falling back to Cloud Judge0 CE:", localErr?.message || localErr)
+      return await executeJudge0(params)
+    }
+  }
+
+  // Local runtime missing on this host -> use Cloud Judge0 CE
+  return await executeJudge0(params)
 }
 
 interface AsyncProcessResult {
@@ -114,12 +203,32 @@ interface AsyncProcessResult {
   stderr: string
   code: number | null
   timedOut: boolean
+  outputExceeded: boolean
+  missingBinary: boolean
   elapsedMs: number
 }
 
+function killProcessTree(child: ReturnType<typeof spawn>) {
+  if (!child.pid) return
+  try {
+    if (process.platform !== "win32") {
+      // Kill entire process group so forked/spawned child processes are cleaned up too
+      process.kill(-child.pid, "SIGKILL")
+    } else {
+      child.kill("SIGKILL")
+    }
+  } catch {
+    try {
+      child.kill("SIGKILL")
+    } catch {
+      // already exited
+    }
+  }
+}
+
 /**
- * Asynchronously spawns a non-blocking child process with timeout protection.
- * Prevents freezing the Node.js event loop during intensive code runs.
+ * Asynchronously spawns a non-blocking child process with timeout & output-cap protection.
+ * Prevents freezing the Node.js event loop during intensive or runaway code runs.
  */
 function runProcessAsync(
   command: string,
@@ -134,29 +243,35 @@ function runProcessAsync(
   return new Promise((resolve) => {
     const startTime = Date.now()
     let timedOut = false
+    let outputExceeded = false
+    let settled = false
     let stdout = ""
     let stderr = ""
 
     const child = spawn(command, args, {
       cwd: options.cwd,
       env: options.env,
+      detached: process.platform !== "win32",
       stdio: ["pipe", "pipe", "pipe"],
     })
 
+    const finish = (result: AsyncProcessResult) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      resolve(result)
+    }
+
     const timer = setTimeout(() => {
       timedOut = true
-      try {
-        child.kill("SIGKILL")
-      } catch {
-        // ignore
-      }
+      killProcessTree(child)
     }, options.timeoutMs)
 
     if (options.input !== undefined && options.input !== null) {
       try {
         child.stdin.write(options.input)
       } catch {
-        // ignore
+        // ignore EPIPE if process exits before reading stdin
       }
     }
     try {
@@ -166,40 +281,51 @@ function runProcessAsync(
     }
 
     child.stdout.on("data", (data) => {
-      if (stdout.length < 5 * 1024 * 1024) {
-        stdout += data.toString("utf-8")
+      const chunk = data.toString("utf-8")
+      if (stdout.length + chunk.length <= MAX_STDOUT_BYTES) {
+        stdout += chunk
+      } else if (!outputExceeded) {
+        outputExceeded = true
+        stdout += chunk.slice(0, Math.max(0, MAX_STDOUT_BYTES - stdout.length))
+        killProcessTree(child)
       }
     })
 
     child.stderr.on("data", (data) => {
-      if (stderr.length < 2 * 1024 * 1024) {
-        stderr += data.toString("utf-8")
+      const chunk = data.toString("utf-8")
+      if (stderr.length + chunk.length <= MAX_STDERR_BYTES) {
+        stderr += chunk
+      } else if (!outputExceeded) {
+        outputExceeded = true
+        stderr += chunk.slice(0, Math.max(0, MAX_STDERR_BYTES - stderr.length))
+        killProcessTree(child)
       }
     })
 
     child.on("error", (err: any) => {
-      clearTimeout(timer)
-      if (err?.code === "ENOENT" || err?.message?.includes("ENOENT")) {
-        stderr += `\nServer Error: Command '${command}' is not installed in the server environment.`
-      } else {
+      const missingBinary = err?.code === "ENOENT" || Boolean(err?.message?.includes("ENOENT"))
+      if (!missingBinary) {
         stderr += `\n${err.message}`
       }
-      resolve({
+      finish({
         stdout,
         stderr,
         code: 1,
         timedOut: false,
+        outputExceeded: false,
+        missingBinary,
         elapsedMs: Date.now() - startTime,
       })
     })
 
     child.on("close", (code) => {
-      clearTimeout(timer)
-      resolve({
+      finish({
         stdout,
         stderr,
         code,
         timedOut,
+        outputExceeded,
+        missingBinary: false,
         elapsedMs: Date.now() - startTime,
       })
     })
@@ -207,7 +333,21 @@ function runProcessAsync(
 }
 
 /**
- * Built-in local execution engine using the machine's native compilers / runtimes.
+ * Extracts the public class name (or first class name) from Java source code.
+ * Allows students to submit `public class Solution` or `public class Main` seamlessly.
+ */
+function detectJavaClassName(sourceCode: string): string {
+  const publicMatch = sourceCode.match(/\bpublic\s+(?:final\s+)?class\s+([A-Za-z_][A-Za-z0-9_]*)/)
+  if (publicMatch?.[1]) return publicMatch[1]
+
+  const anyClassMatch = sourceCode.match(/\bclass\s+([A-Za-z_][A-Za-z0-9_]*)/)
+  if (anyClassMatch?.[1]) return anyClassMatch[1]
+
+  return "Main"
+}
+
+/**
+ * Built-in local execution engine using the container's native compilers / runtimes.
  * Fully asynchronous, non-blocking, and sandboxed with isolated environment variables.
  */
 async function executeLocally(params: {
@@ -215,17 +355,20 @@ async function executeLocally(params: {
   language: string
   testCases: TestCaseInput[]
   timeLimitSec?: number
+  resolvedCmd?: string | null
 }): Promise<ExecutionResult> {
-  const { sourceCode, language, testCases, timeLimitSec = 3 } = params
+  const { sourceCode, language, testCases, timeLimitSec = 3, resolvedCmd } = params
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), `arena_${Date.now()}_`))
 
-  // SECURE ISOLATED ENVIRONMENT: Stripped of production credentials / secrets
+  // SECURE ISOLATED ENVIRONMENT: Stripped of ALL production credentials / secrets
   const safeEnv: NodeJS.ProcessEnv = {
-    PATH: process.env.PATH || "/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin",
+    PATH: getSafePath(),
     TMPDIR: tmpDir,
     HOME: tmpDir,
-    LANG: "en_US.UTF-8",
-    LC_ALL: "en_US.UTF-8",
+    LANG: "C.UTF-8",
+    LC_ALL: "C.UTF-8",
+    PYTHONIOENCODING: "utf-8",
+    PYTHONDONTWRITEBYTECODE: "1",
     NODE_ENV: "production",
   }
 
@@ -237,22 +380,26 @@ async function executeLocally(params: {
     if (language === "python") {
       const src = path.join(tmpDir, "solution.py")
       fs.writeFileSync(src, sourceCode)
-      runCommand = "python3"
+      runCommand = resolvedCmd || "python3"
       runArgs = ["-u", src]
     } else if (language === "javascript") {
       const src = path.join(tmpDir, "solution.js")
       fs.writeFileSync(src, sourceCode)
-      runCommand = "node"
+      runCommand = resolvedCmd || "node"
       runArgs = ["--max-old-space-size=128", src]
     } else if (language === "cpp") {
       const src = path.join(tmpDir, "main.cpp")
       const bin = path.join(tmpDir, "main")
       fs.writeFileSync(src, sourceCode)
-      const comp = await runProcessAsync("g++", ["-O2", "-std=c++17", src, "-o", bin], {
+      const comp = await runProcessAsync(resolvedCmd || "g++", ["-O2", "-std=c++17", src, "-o", bin], {
         cwd: tmpDir,
-        timeoutMs: 6000,
+        timeoutMs: 10000,
         env: safeEnv,
       })
+      if (comp.missingBinary) {
+        runtimeAvailabilityCache.set("cpp", null)
+        throw new Error("LOCAL_RUNTIME_MISSING: g++")
+      }
       if (comp.code !== 0) {
         compileOutput = comp.stderr || "Compilation Error"
         return {
@@ -277,13 +424,18 @@ async function executeLocally(params: {
       runCommand = bin
       runArgs = []
     } else if (language === "java") {
-      const src = path.join(tmpDir, "Main.java")
+      const className = detectJavaClassName(sourceCode)
+      const src = path.join(tmpDir, `${className}.java`)
       fs.writeFileSync(src, sourceCode)
       const comp = await runProcessAsync("javac", [src], {
         cwd: tmpDir,
-        timeoutMs: 6000,
+        timeoutMs: 10000,
         env: safeEnv,
       })
+      if (comp.missingBinary) {
+        runtimeAvailabilityCache.set("java", null)
+        throw new Error("LOCAL_RUNTIME_MISSING: javac")
+      }
       if (comp.code !== 0) {
         compileOutput = comp.stderr || "Compilation Error"
         return {
@@ -306,7 +458,7 @@ async function executeLocally(params: {
         }
       }
       runCommand = "java"
-      runArgs = ["-Xmx256m", "-cp", tmpDir, "Main"]
+      runArgs = ["-Xmx256m", "-cp", tmpDir, className]
     } else {
       throw new Error(`Unsupported language: ${language}`)
     }
@@ -318,9 +470,14 @@ async function executeLocally(params: {
       const proc = await runProcessAsync(runCommand, runArgs, {
         cwd: tmpDir,
         input: tc.input || "",
-        timeoutMs: timeLimitSec * 1000,
+        timeoutMs: Math.max(timeLimitSec, 2) * 1000,
         env: safeEnv,
       })
+
+      if (proc.missingBinary) {
+        runtimeAvailabilityCache.set(language, null)
+        throw new Error(`LOCAL_RUNTIME_MISSING: ${runCommand}`)
+      }
 
       if (proc.elapsedMs > maxTimeMs) maxTimeMs = proc.elapsedMs
 
@@ -336,7 +493,22 @@ async function executeLocally(params: {
           stdout,
           stderr: "Execution exceeded time limit.",
           compileOutput: null,
-          time: (proc.elapsedMs / 1000).toFixed(2),
+          time: (proc.elapsedMs / 1000).toFixed(3),
+          memory: null,
+        })
+        continue
+      }
+
+      if (proc.outputExceeded) {
+        results.push({
+          passed: false,
+          statusId: 8,
+          statusDescription: "Output Limit Exceeded",
+          verdict: "RUNTIME_ERROR",
+          stdout,
+          stderr: "Output exceeded maximum allowed size (5 MB). Check for infinite print loops.",
+          compileOutput: null,
+          time: (proc.elapsedMs / 1000).toFixed(3),
           memory: null,
         })
         continue
@@ -351,7 +523,7 @@ async function executeLocally(params: {
           stdout,
           stderr: stderr || "Process exited with non-zero exit code",
           compileOutput: null,
-          time: (proc.elapsedMs / 1000).toFixed(2),
+          time: (proc.elapsedMs / 1000).toFixed(3),
           memory: null,
         })
         continue
@@ -369,7 +541,7 @@ async function executeLocally(params: {
         stdout,
         stderr: stderr || null,
         compileOutput: null,
-        time: (proc.elapsedMs / 1000).toFixed(2),
+        time: (proc.elapsedMs / 1000).toFixed(3),
         memory: null,
       })
     }
@@ -386,7 +558,7 @@ async function executeLocally(params: {
       overallVerdict,
       passedCount,
       totalCount: results.length,
-      maxTimeMs,
+      maxTimeMs: Math.max(1, maxTimeMs),
       maxMemoryKb: null,
     }
   } finally {
@@ -437,6 +609,7 @@ async function executeJudge0(params: {
       method: "POST",
       headers,
       body: JSON.stringify(submissionBody),
+      signal: AbortSignal.timeout(15000),
     })
 
     if (!singleRes.ok) {
@@ -505,6 +678,7 @@ async function executeJudge0(params: {
     method: "POST",
     headers,
     body: JSON.stringify({ submissions }),
+    signal: AbortSignal.timeout(15000),
   })
 
   if (!batchRes.ok) {
@@ -527,7 +701,7 @@ async function executeJudge0(params: {
 
     const pollRes = await fetch(
       `${apiUrl}/submissions/batch?tokens=${tokenString}&base64_encoded=true&fields=stdout,stderr,compile_output,status,time,memory`,
-      { method: "GET", headers }
+      { method: "GET", headers, signal: AbortSignal.timeout(10000) }
     )
 
     if (!pollRes.ok) {

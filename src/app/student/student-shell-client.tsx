@@ -24,6 +24,9 @@ export function StudentShellClient({ user, counts, children }: StudentShellClien
   const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false)
   const pathname = usePathname()
   const isChatPage = pathname?.startsWith("/student/chat")
+  const isArenaWorkspacePage =
+    Boolean(pathname && /^\/student\/arena\/(?!duels(?:\/)?$)[^/]+$/.test(pathname)) ||
+    Boolean(pathname?.startsWith("/student/arena/duels/room/"))
 
   return (
     <div className="flex h-[100dvh] w-full overflow-hidden bg-background">
@@ -62,7 +65,13 @@ export function StudentShellClient({ user, counts, children }: StudentShellClien
           user={user}
           onToggleMobileSidebar={() => setMobileSidebarOpen((prev) => !prev)}
         />
-        <main className="flex-1 overflow-y-auto bg-aurora-mesh pb-24 md:pb-6">
+        <main
+          className={
+            isArenaWorkspacePage
+              ? "flex-1 overflow-hidden bg-aurora-mesh pb-16 md:pb-0 flex flex-col min-h-0"
+              : "flex-1 overflow-y-auto bg-aurora-mesh pb-24 md:pb-6"
+          }
+        >
           {children}
         </main>
       </div>

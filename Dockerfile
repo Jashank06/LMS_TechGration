@@ -43,9 +43,10 @@ RUN pnpm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-# OpenSSL needed by Prisma Client runtime
-RUN apk add --no-cache openssl
+# OpenSSL needed by Prisma Client runtime + Coding Arena runtimes (Python 3, C++17, Java 17)
+RUN apk add --no-cache openssl python3 g++ musl-dev openjdk17
 
+ENV PATH="/usr/lib/jvm/java-17-openjdk/bin:${PATH}"
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000

@@ -519,7 +519,7 @@ export function DuelRoomWorkspace({ initialRoom, currentUserId }: DuelRoomWorksp
 
   // ─── RENDER: LIVE DUEL SPLIT WORKSPACE ─────────────────────────────
   return (
-    <div className="relative flex flex-col h-[calc(100vh-4rem)] max-w-[1920px] mx-auto overflow-hidden bg-background text-foreground">
+    <div className="relative flex flex-col flex-1 h-full min-h-0 w-full max-w-[1920px] mx-auto overflow-hidden bg-background text-foreground">
       {/* ─── FULLSCREEN 3-2-1 COUNTDOWN OVERLAY ───────────────────────── */}
       <AnimatePresence>
         {countdown !== null && (
