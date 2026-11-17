@@ -35,6 +35,12 @@ void main() {
       // Verify app bar title
       expect(find.text('Course Player'), findsOneWidget);
       expect(find.byType(CourseHubScreen), findsOneWidget);
+
+      // Verify video player container spans full width (not collapsed to play-button width)
+      final sliderFinder = find.byType(Slider);
+      expect(sliderFinder, findsOneWidget);
+      final sliderSize = tester.getSize(sliderFinder);
+      expect(sliderSize.width, greaterThan(250));
     });
 
     testWidgets('Back button navigates back', (WidgetTester tester) async {

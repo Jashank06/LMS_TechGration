@@ -58,13 +58,35 @@ class _CourseHubScreenState extends ConsumerState<CourseHubScreen> {
         for (final m in rawModules) {
           final mObj = m as Map<String, dynamic>;
           final rawLessons = (mObj['lessons'] as List<dynamic>?) ?? [];
-          final parsedLessons = rawLessons.map((l) => l as Map<String, dynamic>).toList();
+          final parsedLessons = rawLessons
+              .map((l) => Map<String, dynamic>.from(l as Map))
+              .toList();
+          if (parsedLessons.isNotEmpty) {
+            parsedModules.add({
+              'id': mObj['id'],
+              'title': mObj['title'] ?? 'Module',
+              'lessons': parsedLessons,
+            });
+            flatLessons.addAll(parsedLessons);
+          }
+        }
+
+        // Also include real HD live class recordings from this course so Course Player
+        // displays all playable course sessions (1:1 sync with Course Detail & Web LMS)
+        final rawRecordings = (course['recordings'] as List<dynamic>?) ?? [];
+        if (rawRecordings.isNotEmpty) {
+          final parsedRecordings = rawRecordings.map((r) {
+            final rObj = Map<String, dynamic>.from(r as Map);
+            rObj['isRecording'] = true;
+            return rObj;
+          }).toList();
+
           parsedModules.add({
-            'id': mObj['id'],
-            'title': mObj['title'] ?? 'Module',
-            'lessons': parsedLessons,
+            'id': 'recorded_sessions',
+            'title': 'Recorded Class Sessions',
+            'lessons': parsedRecordings,
           });
-          flatLessons.addAll(parsedLessons);
+          flatLessons.addAll(parsedRecordings);
         }
 
         final initialCompleted = flatLessons
@@ -92,11 +114,33 @@ class _CourseHubScreenState extends ConsumerState<CourseHubScreen> {
     }
   }
 
-  void _togglePlay() {
+  void _openVideoLesson(Map<String, dynamic>? lesson) {
     HapticService.lightTap();
-    final vidUrl = (_selectedLesson?['videoUrl'] as String?) ?? '/Recordings/AI/Recording.mp4';
-    final title = (_selectedLesson?['title'] as String?) ?? 'Curriculum Lesson';
-    final lessonId = (_selectedLesson?['id'] as String?) ?? '';
+    final target = lesson ?? _selectedLesson;
+    final vidUrl = (target?['videoUrl'] as String?)?.trim() ?? '';
+
+    if (target == null || vidUrl.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No playable video lesson is available for this course yet.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final title = (target['title'] as String?) ?? 'Course Session';
+    final lessonId = (target['id'] ?? '').toString();
+    final isRecording = target['isRecording'] == true;
+    final durationMins = (target['durationMinutes'] as num?)?.toInt() ??
+        ((target['durationSec'] as num?) != null
+            ? ((target['durationSec'] as num) / 60).round()
+            : 45);
+
+    setState(() {
+      _selectedLesson = target;
+      _isPlaying = true;
+    });
 
     Navigator.push(
       context,
@@ -106,13 +150,20 @@ class _CourseHubScreenState extends ConsumerState<CourseHubScreen> {
           title: title,
           videoUrl: vidUrl,
           courseTitle: widget.courseTitle,
-          instructorName: widget.instructor,
-          durationMinutes: (_selectedLesson?['durationMinutes'] as int?) ?? 45,
-          conductedDate: 'Curriculum Video Lesson',
+          instructorName: (target['instructorName'] as String?) ?? widget.instructor,
+          durationMinutes: durationMins,
+          conductedDate: isRecording ? 'HD Class Recording • $durationMins mins' : 'Curriculum Video Lesson',
+          description: target['description'] as String?,
         ),
       ),
-    );
+    ).then((_) {
+      if (mounted) {
+        setState(() => _isPlaying = false);
+      }
+    });
   }
+
+  void _togglePlay() => _openVideoLesson(_selectedLesson);
 
   void _toggleSpeed() {
     HapticService.selection();
@@ -207,6 +258,7 @@ class _CourseHubScreenState extends ConsumerState<CourseHubScreen> {
                   children: [
                     // 1. Cinematic Video Player HUD
                     Container(
+                      width: double.infinity,
                       margin: const EdgeInsets.symmetric(horizontal: 20),
                       height: 220,
                       decoration: BoxDecoration(
@@ -230,55 +282,89 @@ class _CourseHubScreenState extends ConsumerState<CourseHubScreen> {
                               child: Container(
                                 decoration: const BoxDecoration(
                                   gradient: RadialGradient(
-                                    colors: [Color(0xFF1E1B4B), Color(0xFF090A0F)],
-                                    radius: 0.9,
+                                    colors: [Color(0xFF132A3E), Color(0xFF090A0F)],
+                                    radius: 0.95,
                                   ),
                                 ),
                               ),
                             ),
                           ),
 
-                          // Play/Pause Button
-                          BouncingButton(
-                            scaleDown: 0.88,
-                            onTap: _togglePlay,
-                            child: Container(
-                              width: 64,
-                              height: 64,
-                              decoration: BoxDecoration(
-                                color: AppColors.accentOrange,
-                                shape: BoxShape.circle,
-                                boxShadow: AppColors.orangeFabShadow,
+                          // Center Play CTA + Caption
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              BouncingButton(
+                                scaleDown: 0.88,
+                                onTap: _togglePlay,
+                                child: Container(
+                                  width: 64,
+                                  height: 64,
+                                  decoration: BoxDecoration(
+                                    color: _selectedLesson != null
+                                        ? const Color(0xFF00D6D6)
+                                        : Colors.white.withValues(alpha: 0.14),
+                                    shape: BoxShape.circle,
+                                    boxShadow: _selectedLesson != null
+                                        ? [
+                                            BoxShadow(
+                                              color: const Color(0xFF00D6D6).withValues(alpha: 0.45),
+                                              blurRadius: 18,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ]
+                                        : null,
+                                  ),
+                                  child: Icon(
+                                    _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                                    color: _selectedLesson != null
+                                        ? const Color(0xFF090A0F)
+                                        : Colors.white54,
+                                    size: 34,
+                                  ),
+                                ),
                               ),
-                              child: Icon(
-                                _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                                color: Colors.white,
-                                size: 34,
+                              const SizedBox(height: 10),
+                              Text(
+                                _selectedLesson != null
+                                    ? 'Tap to watch in Full HD Player'
+                                    : 'No video lessons published yet',
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: Colors.white70,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            ),
+                            ],
                           ),
 
                           // Top Active Lesson Pill
                           Positioned(
                             top: 14,
                             left: 16,
-                            right: 70,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.65),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                _selectedLesson != null
-                                    ? (_selectedLesson!['title'] as String? ?? 'Active Lesson')
-                                    : 'STUDY MODULE • ACTIVE TRACK',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: AppTypography.bodySmall.copyWith(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
+                            right: 76,
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.65),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: const Color(0xFF00D6D6).withValues(alpha: 0.35),
+                                  ),
+                                ),
+                                child: Text(
+                                  _selectedLesson != null
+                                      ? (_selectedLesson!['title'] as String? ?? 'Active Lesson')
+                                      : 'TECHGRATION COURSE PLAYER',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
                             ),
@@ -296,11 +382,12 @@ class _CourseHubScreenState extends ConsumerState<CourseHubScreen> {
                                 decoration: BoxDecoration(
                                   color: Colors.black.withValues(alpha: 0.65),
                                   borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
                                 ),
                                 child: Text(
                                   _playbackSpeed,
                                   style: AppTypography.bodySmall.copyWith(
-                                    color: Colors.white,
+                                    color: const Color(0xFF00D6D6),
                                     fontSize: 11,
                                     fontWeight: FontWeight.w800,
                                   ),
@@ -316,8 +403,8 @@ class _CourseHubScreenState extends ConsumerState<CourseHubScreen> {
                             right: 14,
                             child: SliderTheme(
                               data: SliderTheme.of(context).copyWith(
-                                thumbColor: AppColors.accentOrange,
-                                activeTrackColor: AppColors.accentOrange,
+                                thumbColor: const Color(0xFF00D6D6),
+                                activeTrackColor: const Color(0xFF00D6D6),
                                 inactiveTrackColor: Colors.white.withValues(alpha: 0.2),
                                 thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
                                 trackHeight: 3,
@@ -435,6 +522,7 @@ class _CourseHubScreenState extends ConsumerState<CourseHubScreen> {
                     if (_lessons.isEmpty) ...[
                       // Authentic Empty State
                       Container(
+                        width: double.infinity,
                         margin: const EdgeInsets.symmetric(horizontal: 20),
                         padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
                         decoration: BoxDecoration(
@@ -503,10 +591,15 @@ class _CourseHubScreenState extends ConsumerState<CourseHubScreen> {
   Widget _buildLessonTile(Map<String, dynamic> lesson) {
     final lessonId = (lesson['id'] ?? '').toString();
     final lessonTitle = (lesson['title'] ?? 'Lesson').toString();
+    final isRecording = lesson['isRecording'] == true;
     final isDone = _localCompletedLessons.contains(lessonId);
     final isSelected = _selectedLesson != null && _selectedLesson!['id'] == lessonId;
-    final durSec = lesson['durationSec'] as int?;
-    final durLabel = durSec != null && durSec > 0 ? '${(durSec / 60).round()} mins' : 'Video Lesson';
+    final durSec = (lesson['durationSec'] as num?)?.toInt();
+    final durMins = (lesson['durationMinutes'] as num?)?.toInt() ??
+        (durSec != null && durSec > 0 ? (durSec / 60).round() : null);
+    final durLabel = durMins != null && durMins > 0
+        ? (isRecording ? '$durMins mins • HD Recording' : '$durMins mins • Video Lesson')
+        : (isRecording ? 'HD Class Recording' : 'Video Lesson');
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
@@ -527,13 +620,7 @@ class _CourseHubScreenState extends ConsumerState<CourseHubScreen> {
         ),
       ),
       child: ListTile(
-        onTap: () {
-          HapticService.selection();
-          setState(() {
-            _selectedLesson = lesson;
-            _isPlaying = true;
-          });
-        },
+        onTap: () => _openVideoLesson(lesson),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Container(
           width: 34,
@@ -568,25 +655,41 @@ class _CourseHubScreenState extends ConsumerState<CourseHubScreen> {
           durLabel,
           style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
         ),
-        trailing: BouncingButton(
-          scaleDown: 0.85,
-          onTap: () => _toggleLesson(lessonId, isDone),
-          child: Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: isDone ? AppColors.success : Colors.transparent,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isDone ? AppColors.success : AppColors.borderLight,
-                width: 2,
+        trailing: isRecording
+            ? Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00D6D6).withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'Watch',
+                  style: TextStyle(
+                    color: Color(0xFF008A8A),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              )
+            : BouncingButton(
+                scaleDown: 0.85,
+                onTap: () => _toggleLesson(lessonId, isDone),
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: isDone ? AppColors.success : Colors.transparent,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isDone ? AppColors.success : AppColors.borderLight,
+                      width: 2,
+                    ),
+                  ),
+                  child: isDone
+                      ? const Icon(Icons.check, color: Colors.white, size: 16)
+                      : null,
+                ),
               ),
-            ),
-            child: isDone
-                ? const Icon(Icons.check, color: Colors.white, size: 16)
-                : null,
-          ),
-        ),
       ),
     );
   }
