@@ -113,7 +113,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(9),
                                 child: Image.asset(
-                                  'assets/images/logo.png',
+                                  'assets/icons/app_icon.png',
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) => const Center(
                                     child: Text(

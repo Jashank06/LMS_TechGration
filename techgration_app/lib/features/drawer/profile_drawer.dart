@@ -129,7 +129,7 @@ class ProfileDrawer extends ConsumerWidget {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: Image.asset(
-                            'assets/images/logo.png',
+                            'assets/icons/app_icon.png',
                             fit: BoxFit.cover,
                           ),
                         ),
