@@ -30,7 +30,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 })
     }
 
-    const { name, phone, college, interestedDomain } = body
+    const { name, phone, college, interestedDomain, workshopName } = body
+
+    const resolvedWorkshopName =
+      typeof workshopName === "string" && workshopName.trim().length > 0
+        ? workshopName.trim().slice(0, 120)
+        : "Python Fundamentals Workshop"
 
     if (!name || typeof name !== "string" || name.trim().length < 2) {
       return NextResponse.json({ error: "Please enter your full name." }, { status: 400 })
@@ -71,7 +76,7 @@ export async function POST(req: NextRequest) {
         phone: normalizedPhone,
         college: college.trim(),
         interestedDomain: interestedDomain.trim(),
-        workshopName: "Python Fundamentals Workshop",
+        workshopName: resolvedWorkshopName,
         source: "WhatsApp / Direct Link",
         ipAddress,
         userAgent,
