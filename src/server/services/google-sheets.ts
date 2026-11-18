@@ -12,11 +12,15 @@ export interface WorkshopLeadData {
  * Synchronizes lead data to a Google Sheet via Google Apps Script Webhook.
  * Returns true if successful or gracefully false if webhook is unconfigured.
  */
+const DEFAULT_WORKSHOP_SHEET_WEBHOOK =
+  "https://script.google.com/macros/s/AKfycbwfUtl0kJzxSSLYMeMb8oeoWaSk8kazYaGLIjVNi_Jrke4u7hdRQLeXX8Fva6nRvvOK/exec"
+
 export async function syncLeadToGoogleSheet(lead: WorkshopLeadData): Promise<boolean> {
   const webhookUrl =
     process.env.GOOGLE_SHEET_WEBHOOK_URL ||
     process.env.WORKSHOP_GOOGLE_SHEET_URL ||
-    process.env.NEXT_PUBLIC_GOOGLE_SHEET_URL
+    process.env.NEXT_PUBLIC_GOOGLE_SHEET_URL ||
+    DEFAULT_WORKSHOP_SHEET_WEBHOOK
 
   if (!webhookUrl || !webhookUrl.startsWith("http")) {
     console.log(
