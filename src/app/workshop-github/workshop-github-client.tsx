@@ -1,29 +1,33 @@
 "use client"
 
 import * as React from "react"
-import { motion } from "motion/react"
+import { motion, AnimatePresence } from "motion/react"
 import confetti from "canvas-confetti"
 import {
+  Play,
+  Pause,
+  RotateCcw,
+  RotateCw,
+  Volume2,
+  VolumeX,
+  Maximize,
+  Minimize,
   CheckCircle2,
   Lock,
   Unlock,
   ArrowRight,
   Share2,
   Loader2,
-  Video,
-  ExternalLink,
-  Copy,
-  Check,
-  Clock,
+  GitBranch,
+  Github,
+  BookOpen,
+  Code2,
+  Users,
+  Award,
 } from "lucide-react"
 import { toast } from "sonner"
 
-const LIVE_ZOOM_URL =
-  "https://us06web.zoom.us/j/83402526743?pwd=2GsWJFuRJB3X6oyIeHWuH8djg306D8.1"
-const ZOOM_MEETING_ID = "834 0252 6743"
-const STORAGE_KEY = "tg_workshop_github_unlocked_lead"
-
-const WORKSHOP_DOMAINS = [
+export const WORKSHOP_DOMAINS = [
   "Artificial Intelligence & Gen AI",
   "Machine Learning",
   "Cyber Security & Ethical Hacking",
@@ -44,11 +48,13 @@ const WORKSHOP_DOMAINS = [
   "Digital Marketing and Growth",
 ] as const
 
+const STORAGE_KEY = "tg_workshop_github_unlocked_lead"
+const VIDEO_SRC = "/Recordings/Workshops/Github_WorkShop.mp4"
+
 export function WorkshopGithubClient() {
+  // Gate / Lead State
   const [isUnlocked, setIsUnlocked] = React.useState(false)
   const [hasCheckedStorage, setHasCheckedStorage] = React.useState(false)
-  const [isRedirecting, setIsRedirecting] = React.useState(false)
-  const [copiedId, setCopiedId] = React.useState(false)
 
   // Form Fields
   const [name, setName] = React.useState("")
@@ -56,6 +62,24 @@ export function WorkshopGithubClient() {
   const [college, setCollege] = React.useState("")
   const [interestedDomain, setInterestedDomain] = React.useState("")
   const [isSubmitting, setIsSubmitting] = React.useState(false)
+
+  // Video Player State
+  const videoRef = React.useRef<HTMLVideoElement>(null)
+  const containerRef = React.useRef<HTMLDivElement>(null)
+  const progressBarRef = React.useRef<HTMLDivElement>(null)
+
+  const [isPlaying, setIsPlaying] = React.useState(false)
+  const [currentTime, setCurrentTime] = React.useState(0)
+  const [duration, setDuration] = React.useState(0)
+  const [volume, setVolume] = React.useState(1)
+  const [isMuted, setIsMuted] = React.useState(false)
+  const [playbackSpeed, setPlaybackSpeed] = React.useState(1.0)
+  const [isFullscreen, setIsFullscreen] = React.useState(false)
+  const [controlsVisible, setControlsVisible] = React.useState(true)
+  const [hoverTime, setHoverTime] = React.useState<number | null>(null)
+  const [hoverPosition, setHoverPosition] = React.useState<number>(0)
+
+  const controlsTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
 
   // Check localStorage on mount
   React.useEffect(() => {
@@ -84,6 +108,18 @@ export function WorkshopGithubClient() {
     college.trim().length >= 2 &&
     interestedDomain.trim().length > 0
 
+  // Format Time MM:SS or HH:MM:SS
+  const formatTime = (seconds: number) => {
+    if (isNaN(seconds) || seconds < 0) return "00:00"
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    const s = Math.floor(seconds % 60)
+    const pad = (n: number) => n.toString().padStart(2, "0")
+    if (h > 0) return `${h}:${pad(m)}:${pad(s)}`
+    return `${pad(m)}:${pad(s)}`
+  }
+
+  // Handle Join Now / Unlock Form Submission
   const handleJoinNow = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!isFormValid || isSubmitting) return
@@ -98,7 +134,7 @@ export function WorkshopGithubClient() {
           phone: cleanedPhone,
           college: college.trim(),
           interestedDomain,
-          workshopName: "Master GitHub Live Workshop",
+          workshopName: "Master GitHub Workshop",
         }),
       })
 
@@ -130,13 +166,14 @@ export function WorkshopGithubClient() {
       })
 
       setIsUnlocked(true)
-      setIsRedirecting(true)
-      toast.success("Registered! Opening Live Zoom Workshop...")
+      toast.success("Welcome! Workshop recording unlocked.")
 
-      // Smoothly redirect into Zoom live session (works reliably in WhatsApp in-app browser & mobile)
+      // Auto-play video after unlock
       setTimeout(() => {
-        window.location.href = LIVE_ZOOM_URL
-      }, 900)
+        if (videoRef.current) {
+          videoRef.current.play().catch(() => {})
+        }
+      }, 500)
     } catch (err: any) {
       toast.error(err.message || "Could not register. Please try again.")
     } finally {
@@ -144,18 +181,117 @@ export function WorkshopGithubClient() {
     }
   }
 
-  const handleShareOnWhatsApp = () => {
-    const text = encodeURIComponent(
-      `🚀 *TechGration Master GitHub Live Workshop (Today 6:00 PM – 7:00 PM IST)*\n\nLearn Version Control, Team Collaboration & Build a Real-World Dev Portfolio live with TechGration!\n\n👉 *Register & Join Live Here:* https://campus.techgration.live/workshop-github`
-    )
-    window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank")
+  // Video Player Controls
+  const togglePlay = () => {
+    if (!videoRef.current) return
+    if (isPlaying) {
+      videoRef.current.pause()
+    } else {
+      videoRef.current.play()
+    }
   }
 
-  const handleCopyMeetingId = () => {
-    navigator.clipboard?.writeText(ZOOM_MEETING_ID.replace(/\s+/g, "")).catch(() => {})
-    setCopiedId(true)
-    toast.success("Meeting ID copied")
-    setTimeout(() => setCopiedId(false), 2000)
+  const handleSkip = (seconds: number) => {
+    if (!videoRef.current) return
+    const maxDur = duration || videoRef.current.duration || 0
+    const newTime = Math.min(Math.max(videoRef.current.currentTime + seconds, 0), maxDur)
+    videoRef.current.currentTime = newTime
+    setCurrentTime(newTime)
+  }
+
+  const toggleMute = () => {
+    if (!videoRef.current) return
+    const newMuted = !isMuted
+    videoRef.current.muted = newMuted
+    setIsMuted(newMuted)
+  }
+
+  const handleVolumeChange = (newVol: number) => {
+    if (!videoRef.current) return
+    videoRef.current.volume = newVol
+    setVolume(newVol)
+    setIsMuted(newVol === 0)
+  }
+
+  const changePlaybackSpeed = (speed: number) => {
+    if (!videoRef.current) return
+    videoRef.current.playbackRate = speed
+    setPlaybackSpeed(speed)
+  }
+
+  const toggleFullscreen = () => {
+    if (!containerRef.current) return
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen().catch(() => {})
+      setIsFullscreen(true)
+    } else {
+      document.exitFullscreen().catch(() => {})
+      setIsFullscreen(false)
+    }
+  }
+
+  const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!progressBarRef.current || !videoRef.current) return
+    const currentDur = duration || videoRef.current.duration
+    if (!currentDur) return
+    const rect = progressBarRef.current.getBoundingClientRect()
+    const pos = (e.clientX - rect.left) / rect.width
+    const targetTime = Math.min(Math.max(pos * currentDur, 0), currentDur)
+    videoRef.current.currentTime = targetTime
+    setCurrentTime(targetTime)
+  }
+
+  const handleTimelineHover = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!progressBarRef.current) return
+    const currentDur = duration || (videoRef.current ? videoRef.current.duration : 0)
+    if (!currentDur) return
+    const rect = progressBarRef.current.getBoundingClientRect()
+    const pos = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1)
+    setHoverPosition(pos * 100)
+    setHoverTime(pos * currentDur)
+  }
+
+  const handleMouseMove = () => {
+    setControlsVisible(true)
+    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
+    controlsTimeoutRef.current = setTimeout(() => {
+      if (isPlaying) setControlsVisible(false)
+    }, 3500)
+  }
+
+  // Keyboard shortcuts
+  React.useEffect(() => {
+    if (!isUnlocked) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input
+      if (["INPUT", "TEXTAREA", "SELECT"].includes((e.target as HTMLElement)?.tagName)) return
+      if (e.code === "Space") {
+        e.preventDefault()
+        togglePlay()
+      } else if (e.code === "ArrowLeft") {
+        e.preventDefault()
+        handleSkip(-10)
+      } else if (e.code === "ArrowRight") {
+        e.preventDefault()
+        handleSkip(10)
+      } else if (e.key === "m" || e.key === "M") {
+        toggleMute()
+      } else if (e.key === "f" || e.key === "F") {
+        toggleFullscreen()
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [isUnlocked, isPlaying, duration, isMuted])
+
+  const effectiveDuration = duration || (videoRef.current ? videoRef.current.duration : 0)
+  const progressPct = effectiveDuration > 0 ? (currentTime / effectiveDuration) * 100 : 0
+
+  const handleShareOnWhatsApp = () => {
+    const text = encodeURIComponent(
+      `🚀 *TechGration Master GitHub Workshop Recording*\n\nWatch the full hands-on workshop covering Git commands, version control, branching, pull requests, and building a developer portfolio on GitHub.\n\n👉 *Watch here:* https://campus.techgration.live/workshop-github`
+    )
+    window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank")
   }
 
   if (!hasCheckedStorage) {
@@ -175,14 +311,19 @@ export function WorkshopGithubClient() {
 
       {/* MINIMAL NAVBAR */}
       <header className="relative z-10 w-full border-b border-slate-200/70 bg-white/70 backdrop-blur-md">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center text-white font-extrabold text-xs shadow-sm shadow-teal-600/30">
               TG
             </div>
-            <span className="font-semibold text-sm tracking-tight text-slate-900">
-              TechGration
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-semibold text-sm tracking-tight text-slate-900">
+                TechGration
+              </span>
+              <span className="text-[11px] font-mono font-medium text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200/60 hidden sm:inline">
+                Workshop
+              </span>
+            </div>
           </div>
 
           <button
@@ -197,7 +338,7 @@ export function WorkshopGithubClient() {
       </header>
 
       {/* MAIN CONTAINER */}
-      <main className="relative z-10 flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 flex flex-col items-center justify-center">
+      <main className="relative z-10 flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-10 flex flex-col items-center justify-center">
         {!isUnlocked ? (
           /* ========================================================
              GATE / REGISTRATION CARD (Light & Teal Minimal Theme)
@@ -211,22 +352,26 @@ export function WorkshopGithubClient() {
             {/* Header / Title */}
             <div className="text-center space-y-2 mb-6">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 border border-teal-200/80 text-teal-700 text-xs font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />
-                Live Workshop · 6:00 PM – 7:00 PM IST
+                <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
+                Workshop Recording
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-                Master GitHub Workshop
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 flex items-center justify-center gap-2">
+                <Github className="w-7 h-7 text-slate-900 inline-block" />
+                Master GitHub
               </h1>
+              <p className="text-xs sm:text-sm text-slate-600 max-w-sm mx-auto">
+                Learn Version Control, Team Collaboration, and Real-World Development Workflow with GitHub.
+              </p>
             </div>
 
             {/* Clean White Card */}
             <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-7 shadow-xl shadow-slate-200/50">
               <div className="text-center space-y-1 mb-5">
                 <h2 className="text-base sm:text-lg font-bold text-slate-800">
-                  Enter Details to Join Live Workshop
+                  Enter Details to Watch Workshop
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Fill out the quick form below to enter the live Zoom session.
+                  Fill out the quick form below to unlock instant access to the recording.
                 </p>
               </div>
 
@@ -330,100 +475,323 @@ export function WorkshopGithubClient() {
                     {isSubmitting ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin text-white" />
-                        <span>Joining Live Session...</span>
+                        <span>Unlocking...</span>
                       </>
                     ) : isFormValid ? (
                       <>
                         <Unlock className="w-4 h-4" />
-                        <span>Join Now</span>
+                        <span>Watch Workshop Recording</span>
                         <ArrowRight className="w-4 h-4" />
                       </>
                     ) : (
                       <>
                         <Lock className="w-4 h-4 text-slate-400" />
-                        <span>Fill all fields to Join</span>
+                        <span>Fill all fields to Watch</span>
                       </>
                     )}
                   </button>
                 </div>
 
                 <p className="text-[11px] text-center text-slate-400 pt-1">
-                  Instant entry to Live Zoom Workshop · Free for all learners
+                  Free instant access · Your details will be saved to continue
                 </p>
               </form>
             </div>
           </motion.div>
         ) : (
           /* ========================================================
-             UNLOCKED LIVE ZOOM LAUNCH CARD (Light & Teal Aesthetic)
+             UNLOCKED VIDEO THEATER (Clean, Light & Teal Aesthetic)
              ======================================================== */
           <motion.div
-            initial={{ opacity: 0, scale: 0.97 }}
+            initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.35 }}
-            className="w-full max-w-md mx-auto"
+            transition={{ duration: 0.4 }}
+            className="w-full space-y-5"
           >
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 text-center space-y-5">
-              <div className="w-14 h-14 mx-auto rounded-2xl bg-teal-50 border border-teal-200/80 flex items-center justify-center text-teal-600">
-                <Video className="w-7 h-7" />
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="inline-flex items-center gap-1.5 text-xs font-medium text-teal-700 bg-teal-50 border border-teal-200/80 rounded-full px-3 py-0.5">
+            {/* Minimal Unlocked Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
+              <div>
+                <div className="inline-flex items-center gap-1.5 text-xs font-medium text-teal-700 bg-teal-50 border border-teal-200/80 rounded-full px-2.5 py-0.5 mb-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
-                  Registered · {name}
+                  Unlocked for {name}
                 </div>
-                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight pt-1">
-                  Master GitHub Live Workshop
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                  <Github className="w-6 h-6 text-slate-900" />
+                  Master GitHub Workshop Recording
                 </h1>
-                <p className="text-xs sm:text-sm text-slate-500">
-                  {isRedirecting
-                    ? "Opening your live Zoom workshop room..."
-                    : "Your seat is confirmed. Tap below to enter the live Zoom session."}
-                </p>
               </div>
 
-              {/* Session Timing & Meeting ID */}
-              <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 text-xs text-slate-600 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1.5 text-slate-500">
-                    <Clock className="w-3.5 h-3.5 text-teal-600" />
-                    Timing
-                  </span>
-                  <span className="font-semibold text-slate-800">Today · 6:00 PM – 7:00 PM IST</span>
+              <button
+                type="button"
+                onClick={handleShareOnWhatsApp}
+                className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200/70 transition-colors cursor-pointer shadow-sm"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Share with Friends</span>
+              </button>
+            </div>
+
+            {/* Video Container */}
+            <div
+              ref={containerRef}
+              onMouseMove={handleMouseMove}
+              className="relative rounded-2xl overflow-hidden border border-slate-200/90 bg-black shadow-2xl aspect-video group select-none"
+            >
+              <video
+                ref={videoRef}
+                src={VIDEO_SRC}
+                playsInline
+                preload="metadata"
+                onTimeUpdate={() => {
+                  if (videoRef.current) {
+                    setCurrentTime(videoRef.current.currentTime)
+                  }
+                }}
+                onLoadedMetadata={() => {
+                  if (videoRef.current && videoRef.current.duration) {
+                    setDuration(videoRef.current.duration)
+                  }
+                }}
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onEnded={() => setIsPlaying(false)}
+                className="w-full h-full object-contain bg-black"
+              />
+
+              {/* VIDEO CONTROLS OVERLAY */}
+              <AnimatePresence>
+                {controlsVisible && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/30 flex flex-col justify-between p-3 sm:p-5 pointer-events-none"
+                  >
+                    {/* Top Bar inside Video */}
+                    <div className="flex items-center justify-between text-white/90 text-xs pointer-events-auto">
+                      <div className="inline-flex items-center gap-1.5 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-md border border-white/10 font-medium">
+                        <Github className="w-3.5 h-3.5 text-teal-400" />
+                        <span>Master GitHub Workshop</span>
+                      </div>
+                      <div className="text-[11px] text-white/70 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded border border-white/10 font-mono">
+                        HD 1080p
+                      </div>
+                    </div>
+
+                    {/* Big Center Play/Pause button when paused */}
+                    <div
+                      onClick={togglePlay}
+                      className="absolute inset-0 flex items-center justify-center pointer-events-auto cursor-pointer"
+                    >
+                      {!isPlaying && (
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-teal-500/90 text-white flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-transform backdrop-blur-sm border border-white/20">
+                          <Play className="w-7 h-7 fill-current translate-x-0.5" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bottom Controls Bar */}
+                    <div className="space-y-2 pointer-events-auto bg-black/70 backdrop-blur-md p-3 rounded-xl border border-white/10 shadow-lg">
+                      {/* Timeline Slider with Hover Preview */}
+                      <div
+                        ref={progressBarRef}
+                        onClick={handleTimelineClick}
+                        onMouseMove={handleTimelineHover}
+                        onMouseLeave={() => setHoverTime(null)}
+                        className="relative h-1.5 sm:h-2 bg-white/20 hover:h-2.5 rounded-full cursor-pointer transition-all group/timeline"
+                      >
+                        {/* Played Progress */}
+                        <div
+                          style={{ width: `${progressPct}%` }}
+                          className="h-full bg-teal-400 rounded-full relative"
+                        >
+                          <div className="w-3 h-3 rounded-full bg-white shadow absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 opacity-0 group-hover/timeline:opacity-100 transition-opacity" />
+                        </div>
+
+                        {/* Hover Tooltip */}
+                        {hoverTime !== null && (
+                          <div
+                            style={{ left: `${hoverPosition}%` }}
+                            className="absolute -top-7 -translate-x-1/2 px-2 py-0.5 rounded bg-black/90 text-white text-[10px] font-mono pointer-events-none whitespace-nowrap border border-white/20 shadow-md"
+                          >
+                            {formatTime(hoverTime)}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Controls Row */}
+                      <div className="flex items-center justify-between gap-2 pt-0.5 text-xs">
+                        {/* Left: Play/Pause, Rewind, Forward, Time */}
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <button
+                            type="button"
+                            onClick={togglePlay}
+                            className="text-white hover:text-teal-400 transition-colors p-1 cursor-pointer"
+                            title={isPlaying ? "Pause (Space)" : "Play (Space)"}
+                          >
+                            {isPlaying ? (
+                              <Pause className="w-4 h-4 fill-current" />
+                            ) : (
+                              <Play className="w-4 h-4 fill-current" />
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleSkip(-10)}
+                            className="text-slate-300 hover:text-white transition-colors cursor-pointer"
+                            title="Rewind 10s (←)"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleSkip(10)}
+                            className="text-slate-300 hover:text-white transition-colors cursor-pointer"
+                            title="Forward 10s (→)"
+                          >
+                            <RotateCw className="w-3.5 h-3.5" />
+                          </button>
+
+                          <div className="text-[11px] font-mono text-slate-300 pl-1">
+                            <span>{formatTime(currentTime)}</span>
+                            <span className="text-slate-500 mx-1">/</span>
+                            <span>{formatTime(effectiveDuration)}</span>
+                          </div>
+                        </div>
+
+                        {/* Right: Volume, Speed, Fullscreen */}
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          {/* Volume */}
+                          <div className="hidden xs:flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={toggleMute}
+                              className="text-slate-300 hover:text-white cursor-pointer"
+                              title="Mute/Unmute (M)"
+                            >
+                              {isMuted || volume === 0 ? (
+                                <VolumeX className="w-4 h-4" />
+                              ) : (
+                                <Volume2 className="w-4 h-4" />
+                              )}
+                            </button>
+                            <input
+                              type="range"
+                              min="0"
+                              max="1"
+                              step="0.05"
+                              value={isMuted ? 0 : volume}
+                              onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                              className="w-14 h-1 bg-white/30 rounded-lg accent-teal-400 cursor-pointer"
+                            />
+                          </div>
+
+                          {/* Speed Selector */}
+                          <div className="flex items-center bg-white/10 rounded-md p-0.5">
+                            {[1.0, 1.25, 1.5, 2.0].map((s) => (
+                              <button
+                                key={s}
+                                type="button"
+                                onClick={() => changePlaybackSpeed(s)}
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-semibold transition-colors cursor-pointer ${
+                                  playbackSpeed === s
+                                    ? "bg-teal-400 text-slate-900"
+                                    : "text-slate-300 hover:text-white"
+                                }`}
+                              >
+                                {s}x
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Fullscreen */}
+                          <button
+                            type="button"
+                            onClick={toggleFullscreen}
+                            className="text-slate-300 hover:text-white p-1 cursor-pointer"
+                            title="Fullscreen (F)"
+                          >
+                            {isFullscreen ? (
+                              <Minimize className="w-4 h-4" />
+                            ) : (
+                              <Maximize className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* WORKSHOP DETAILS & KEY TAKEAWAYS */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+              <div className="md:col-span-2 bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm space-y-3">
+                <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
+                  <BookOpen className="w-4 h-4 text-teal-600" />
+                  What you will learn in this session
                 </div>
-                <div className="flex items-center justify-between border-t border-slate-200/70 pt-2">
-                  <span className="text-slate-500">Zoom Meeting ID</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-600">
+                  <div className="flex items-start gap-2">
+                    <Code2 className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-slate-900 block">Version Control & Git</strong>
+                      Master git init, add, commit, logs, diffs, and head tracking.
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <GitBranch className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-slate-900 block">Branching & Conflicts</strong>
+                      Create feature branches, perform fast-forward & 3-way merges.
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Users className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-slate-900 block">Team Collaboration</strong>
+                      Pull requests, code reviews, handling remote repos, push & pull.
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Award className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-slate-900 block">Dev Portfolio on GitHub</strong>
+                      Build a standout profile README and showcase your projects.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Student Info Card */}
+              <div className="bg-teal-50/60 rounded-2xl p-5 border border-teal-200/70 shadow-sm space-y-3 flex flex-col justify-between">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wider text-teal-800 mb-1">
+                    Attendee Profile
+                  </div>
+                  <div className="text-sm font-bold text-slate-900">{name}</div>
+                  <div className="text-xs text-slate-600">{college}</div>
+                  {interestedDomain && (
+                    <div className="mt-2 inline-block px-2.5 py-1 rounded-md bg-white border border-teal-200 text-teal-800 text-[11px] font-medium">
+                      🎯 {interestedDomain}
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-2 border-t border-teal-200/60">
                   <button
                     type="button"
-                    onClick={handleCopyMeetingId}
-                    className="inline-flex items-center gap-1.5 font-mono font-semibold text-teal-700 hover:text-teal-800 cursor-pointer"
+                    onClick={handleShareOnWhatsApp}
+                    className="w-full h-9 rounded-xl text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                   >
-                    <span>{ZOOM_MEETING_ID}</span>
-                    {copiedId ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <Share2 className="w-3.5 h-3.5" />
+                    Share Recording Link
                   </button>
                 </div>
-              </div>
-
-              {/* Direct Live Zoom Button */}
-              <a
-                href={LIVE_ZOOM_URL}
-                className="w-full h-12 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white shadow-md shadow-teal-600/25 transition-all"
-              >
-                <Video className="w-4 h-4" />
-                <span>Join Live Zoom Session</span>
-                <ExternalLink className="w-4 h-4" />
-              </a>
-
-              <div className="pt-1 flex items-center justify-center gap-4 text-xs">
-                <button
-                  type="button"
-                  onClick={handleShareOnWhatsApp}
-                  className="inline-flex items-center gap-1.5 text-teal-700 hover:text-teal-800 font-medium cursor-pointer"
-                >
-                  <Share2 className="w-3.5 h-3.5" />
-                  Share with Friends
-                </button>
               </div>
             </div>
           </motion.div>
@@ -432,7 +800,7 @@ export function WorkshopGithubClient() {
 
       {/* CLEAN MINIMAL FOOTER */}
       <footer className="relative z-10 w-full py-6 text-center text-xs text-slate-400 border-t border-slate-200/60 bg-white/50">
-        <p>© 2026 TechGration. All rights reserved.</p>
+        <p>© 2026 TechGration Technologies Pvt. Ltd. All rights reserved.</p>
       </footer>
     </div>
   )
