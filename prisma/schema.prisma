@@ -477,6 +477,9 @@ model Assessment {
   description  String?
   timeLimitSec Int      @default(900)
   passingPct   Int      @default(70)
+  isPublished  Boolean  @default(true)
+  resultsPublished Boolean @default(false)
+  allowedEmails String[] @default([])
   createdAt    DateTime @default(now())
 
   questions Question[]
@@ -493,6 +496,7 @@ model Question {
   type         QuestionType @default(MCQ_SINGLE)
   position     Int
   explanation  String?
+  topic        String?
   points       Int          @default(10)
 
   options QuestionOption[]
@@ -519,6 +523,11 @@ model AssessmentAttempt {
   scorePct     Float      @default(0)
   earnedMarks  Int        @default(0)
   totalMarks   Int        @default(0)
+  mcqMarks     Int        @default(0)
+  codingMarks  Int        @default(0)
+  codingResponses Json?
+  allowReattempt Boolean  @default(false)
+  status       String     @default("SUBMITTED")
   passed       Boolean    @default(false)
   startedAt    DateTime   @default(now())
   submittedAt  DateTime?
@@ -802,6 +811,7 @@ model CodingProblem {
   starterCode        Json?
   solutionCode       Json?
   isPublished        Boolean           @default(false)
+  allowedEmails      String[]          @default([])
   isDailyChallenge   Boolean           @default(false)
   dailyChallengeDate DateTime?
   xpReward           Int               @default(10)

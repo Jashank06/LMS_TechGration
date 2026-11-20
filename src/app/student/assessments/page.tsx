@@ -33,6 +33,14 @@ export default async function AssessmentsPage() {
   const assessments = await db.assessment.findMany({
     where: {
       courseId: { in: enrolledCourseIds },
+      ...(user.role === "ADMIN" || user.role === "TEACHER"
+        ? {}
+        : {
+            OR: [
+              { isPublished: true },
+              { allowedEmails: { has: user.email } },
+            ],
+          }),
     },
     include: {
       course: true,
@@ -90,11 +98,17 @@ export default async function AssessmentsPage() {
                 className="group p-6 rounded-3xl border border-border/80 bg-card/80 backdrop-blur-xl shadow-xs hover:border-brand-teal/50 hover:shadow-[0_12px_35px_-8px_rgba(0,214,214,0.18)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
               >
                 <div className="space-y-3.5">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
                     <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-brand-teal/15 text-brand-teal border border-brand-teal/30">
                       {quiz.course.title}
                     </span>
-                    <span className="text-xs text-muted-foreground font-semibold flex items-center gap-1.5 bg-secondary/60 px-2 py-0.5 rounded-md">
+                    {!quiz.isPublished && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold tracking-tight px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                        <Sparkles className="w-3 h-3" />
+                        <span>Private Beta</span>
+                      </span>
+                    )}
+                    <span className="text-xs text-muted-foreground font-semibold flex items-center gap-1.5 bg-secondary/60 px-2 py-0.5 rounded-md ml-auto">
                       <Clock className="w-3.5 h-3.5 text-brand-teal" />
                       <span>{Math.round(quiz.timeLimitSec / 60)} mins</span>
                     </span>

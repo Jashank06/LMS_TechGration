@@ -33,10 +33,13 @@ export async function GET(
             prompt: true,
             points: true,
             position: true,
+            topic: true,
+            explanation: true,
             options: {
               select: {
                 id: true,
                 label: true,
+                isCorrect: true,
               },
             },
           },
@@ -45,6 +48,16 @@ export async function GET(
     })
 
     if (!assessment) {
+      return NextResponse.json({ error: "Assessment not found" }, { status: 404 })
+    }
+
+    const isAuthorizedTester =
+      assessment.isPublished ||
+      assessment.allowedEmails.includes(user.email) ||
+      user.role === "ADMIN" ||
+      user.role === "TEACHER"
+
+    if (!isAuthorizedTester) {
       return NextResponse.json({ error: "Assessment not found" }, { status: 404 })
     }
 
@@ -66,6 +79,19 @@ export async function GET(
       )
     }
 
+    const latestAttempt = await db.assessmentAttempt.findFirst({
+      where: {
+        assessmentId: id,
+        userId: user.id,
+      },
+      orderBy: { startedAt: "desc" },
+      include: {
+        answers: true,
+      },
+    })
+
+    const isResultsPublished = Boolean(assessment.resultsPublished)
+
     return NextResponse.json({
       success: true,
       assessment: {
@@ -77,16 +103,49 @@ export async function GET(
         timeLimitSec: assessment.timeLimitSec,
         timeLimitMinutes: Math.round(assessment.timeLimitSec / 60),
         passingScorePercent: assessment.passingPct,
-        questions: assessment.questions.map((q) => ({
-          id: q.id,
-          prompt: q.prompt,
-          points: q.points > 0 ? q.points : 10,
-          position: q.position,
-          options: q.options.map((o) => ({
-            id: o.id,
-            text: o.label,
-          })),
-        })),
+        isPublished: assessment.isPublished,
+        isPrivateBeta: !assessment.isPublished,
+        resultsPublished: isResultsPublished,
+        latestAttempt: latestAttempt
+          ? {
+              id: latestAttempt.id,
+              submittedAt: latestAttempt.submittedAt?.toISOString() || null,
+              scorePct: latestAttempt.scorePct,
+              earnedMarks: latestAttempt.earnedMarks,
+              totalMarks: latestAttempt.totalMarks,
+              mcqMarks: latestAttempt.mcqMarks,
+              codingMarks: latestAttempt.codingMarks,
+              allowReattempt: latestAttempt.allowReattempt,
+              passed: latestAttempt.passed,
+              codingResponses: latestAttempt.codingResponses,
+              selectedAnswers: latestAttempt.answers.reduce((acc, ans) => {
+                if (ans.selectedOptionIds && ans.selectedOptionIds.length > 0) {
+                  acc[ans.questionId] = ans.selectedOptionIds[0]
+                }
+                return acc
+              }, {} as Record<string, string>),
+            }
+          : null,
+        questions: assessment.questions.map((q) => {
+          const correctOption = isResultsPublished
+            ? q.options.find((o) => o.isCorrect)
+            : null
+
+          return {
+            id: q.id,
+            prompt: q.prompt,
+            points: q.points > 0 ? q.points : 1,
+            position: q.position,
+            topic: q.topic,
+            explanation: isResultsPublished ? q.explanation : null,
+            correctOptionId: correctOption?.id || null,
+            options: q.options.map((o) => ({
+              id: o.id,
+              text: o.label,
+              ...(isResultsPublished ? { isCorrect: o.isCorrect } : {}),
+            })),
+          }
+        }),
       },
     })
   } catch (error: any) {

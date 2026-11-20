@@ -35,7 +35,12 @@ export async function GET(req: Request) {
     // Total problems by difficulty (for progress bars)
     const totalByDifficulty = await db.codingProblem.groupBy({
       by: ["difficulty"],
-      where: { isPublished: true },
+      where: {
+        OR: [
+          { isPublished: true },
+          { allowedEmails: { has: user.email } },
+        ],
+      },
       _count: true,
     })
 

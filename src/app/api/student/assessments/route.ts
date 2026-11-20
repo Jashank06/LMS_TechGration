@@ -18,6 +18,10 @@ export async function GET(req: Request) {
     const assessments = await db.assessment.findMany({
       where: {
         courseId: { in: courseIds },
+        OR: [
+          { isPublished: true },
+          { allowedEmails: { has: user.email } },
+        ],
       },
       include: {
         course: {
@@ -65,6 +69,8 @@ export async function GET(req: Request) {
         bestScorePct: bestAttempt?.scorePct ?? null,
         isPassed: bestAttempt?.passed ?? false,
         attemptsCount: quiz.attempts.length,
+        isPublished: quiz.isPublished,
+        isPrivateBeta: !quiz.isPublished,
       }
     })
 

@@ -32,7 +32,14 @@ export async function POST(req: Request) {
       },
     })
 
-    if (!problem || !problem.isPublished) {
+    const canAccess =
+      problem &&
+      (problem.isPublished ||
+        problem.allowedEmails.includes(user.email) ||
+        user.role === "ADMIN" ||
+        user.role === "TEACHER")
+
+    if (!problem || !canAccess) {
       return NextResponse.json({ error: "Problem not found" }, { status: 404 })
     }
 

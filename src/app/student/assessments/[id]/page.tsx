@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   })
 
   return {
-    title: quiz ? `${quiz.title} — Quiz` : "Quiz",
+    title: quiz ? `${quiz.title} — Assessment` : "Assessment",
     description: quiz?.description || "Take interactive course assessment on TechGration LMS.",
   }
 }
@@ -39,6 +39,7 @@ export default async function AssessmentDetailPage({ params }: PageProps) {
             select: {
               id: true,
               label: true,
+              isCorrect: true,
             },
           },
         },
@@ -47,6 +48,16 @@ export default async function AssessmentDetailPage({ params }: PageProps) {
   })
 
   if (!assessment) {
+    notFound()
+  }
+
+  const isAuthorizedTester =
+    assessment.isPublished ||
+    assessment.allowedEmails.includes(user.email) ||
+    user.role === "ADMIN" ||
+    user.role === "TEACHER"
+
+  if (!isAuthorizedTester) {
     notFound()
   }
 
@@ -102,15 +113,54 @@ export default async function AssessmentDetailPage({ params }: PageProps) {
     )
   }
 
-  const questionData: QuizQuestionData[] = assessment.questions.map((q) => ({
-    id: q.id,
-    prompt: q.prompt,
-    points: q.points,
-    options: q.options.map((o) => ({
-      id: o.id,
-      text: o.label,
-    })),
-  }))
+  const latestAttempt = await db.assessmentAttempt.findFirst({
+    where: {
+      assessmentId: assessment.id,
+      userId: user.id,
+    },
+    orderBy: { startedAt: "desc" },
+    include: {
+      answers: true,
+    },
+  })
+
+  const isResultsPublished = Boolean(assessment.resultsPublished)
+
+  const codingProblems = await db.codingProblem.findMany({
+    where: {
+      slug: { in: ["student-marks-analyzer", "student-data-analysis-pandas"] },
+    },
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      difficulty: true,
+      topics: true,
+      statement: true,
+      starterCode: true,
+      solutionCode: true,
+      xpReward: true,
+    },
+    orderBy: { position: "asc" },
+  })
+
+  const questionData: QuizQuestionData[] = assessment.questions.map((q) => {
+    const correctOption = isResultsPublished ? q.options.find((o) => o.isCorrect) : null
+    return {
+      id: q.id,
+      prompt: q.prompt,
+      points: q.points,
+      topic: q.topic || undefined,
+      explanation: isResultsPublished ? q.explanation || undefined : undefined,
+      correctOptionId: correctOption?.id,
+      correctOptionText: correctOption?.label,
+      options: q.options.map((o) => ({
+        id: o.id,
+        text: o.label,
+        isCorrect: isResultsPublished ? o.isCorrect : undefined,
+      })),
+    }
+  })
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
@@ -132,7 +182,42 @@ export default async function AssessmentDetailPage({ params }: PageProps) {
           timeLimitMinutes: Math.round(assessment.timeLimitSec / 60),
           passingScorePercent: assessment.passingPct,
           courseTitle: assessment.course.title,
+          isPublished: assessment.isPublished,
+          isPrivateBeta: !assessment.isPublished,
+          resultsPublished: isResultsPublished,
+          userEmail: user.email,
+          latestAttempt: latestAttempt
+            ? {
+                id: latestAttempt.id,
+                submittedAt: latestAttempt.submittedAt?.toISOString() || null,
+                scorePct: latestAttempt.scorePct,
+                earnedMarks: latestAttempt.earnedMarks,
+                totalMarks: latestAttempt.totalMarks,
+                mcqMarks: latestAttempt.mcqMarks,
+                codingMarks: latestAttempt.codingMarks,
+                allowReattempt: latestAttempt.allowReattempt,
+                passed: latestAttempt.passed,
+                codingResponses: (latestAttempt.codingResponses as any) || [],
+                selectedAnswers: latestAttempt.answers.reduce((acc, ans) => {
+                  if (ans.selectedOptionIds && ans.selectedOptionIds.length > 0) {
+                    acc[ans.questionId] = ans.selectedOptionIds[0]
+                  }
+                  return acc
+                }, {} as Record<string, string>),
+              }
+            : null,
           questions: questionData,
+          codingProblems: codingProblems.map((cp) => ({
+            id: cp.id,
+            slug: cp.slug,
+            title: cp.title,
+            difficulty: cp.difficulty,
+            topics: cp.topics,
+            statement: cp.statement,
+            marks: 5,
+            starterCode: typeof cp.starterCode === "object" ? (cp.starterCode as any)?.python || "" : "",
+            solutionCode: isResultsPublished && typeof cp.solutionCode === "object" ? (cp.solutionCode as any)?.python || "" : undefined,
+          })),
         }}
       />
     </div>

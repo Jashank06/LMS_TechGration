@@ -43,6 +43,14 @@ export async function GET(
           orderBy: { dueAt: "asc" },
         },
         assessments: {
+          where: user && (user.role === "ADMIN" || user.role === "TEACHER")
+            ? undefined
+            : {
+                OR: [
+                  { isPublished: true },
+                  ...(user?.email ? [{ allowedEmails: { has: user.email } }] : []),
+                ],
+              },
           include: {
             questions: { select: { id: true } },
             attempts: user
@@ -163,6 +171,8 @@ export async function GET(
         bestScorePct: bestAttempt ? bestAttempt.scorePct : null,
         hasPassed: bestAttempt ? bestAttempt.passed : false,
         totalAttempts: q.attempts?.length || 0,
+        isPublished: q.isPublished,
+        isPrivateBeta: !q.isPublished,
       }
     })
 

@@ -19,7 +19,16 @@ export async function GET(req: Request) {
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50")))
 
     // Build where clause
-    const where: any = { isPublished: true }
+    const where: any = {
+      ...(user.role === "ADMIN" || user.role === "TEACHER"
+        ? {}
+        : {
+            OR: [
+              { isPublished: true },
+              { allowedEmails: { has: user.email } },
+            ],
+          }),
+    }
 
     if (difficulty && Object.values(CodingDifficulty).includes(difficulty as CodingDifficulty)) {
       where.difficulty = difficulty as CodingDifficulty
